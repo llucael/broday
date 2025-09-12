@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitação de Serviço de Frete - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+                    <div class="logo">
+            <span>Broday Transportes</span>
+        </div>
+            <nav class="nav">
+                <a href="cliente-dashboard.html">Dashboard</a>
+                <a href="cliente-fretes.html">Meus Fretes</a>
+                <a href="frete.html" class="nav-link active">Solicitar Frete</a>
+                <a href="cliente-perfil.html">Perfil</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <h1 class="form-title">Solicitação de Serviço de Frete</h1>
+            
+            <form class="frete-form">
+                <!-- Sender and Recipient Information -->
+                <div class="form-row">
+                    <div class="form-section">
+                        <h3 class="section-title">Informações do Remetente</h3>
+                        <div class="form-group">
+                            <label for="sender-name">Nome Completo/Razão Social</label>
+                            <input type="text" id="sender-name" placeholder="Insira o nome completo ou razão social do remetente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sender-document">CPF/CNPJ</label>
+                            <input type="text" id="sender-document" placeholder="Insira o CPF ou CNPJ do remetente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sender-phone">Telefone</label>
+                            <input type="tel" id="sender-phone" placeholder="Insira o telefone do remetente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sender-email">E-mail</label>
+                            <input type="email" id="sender-email" placeholder="Insira o e-mail do remetente" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">Informações do Destinatário</h3>
+                        <div class="form-group">
+                            <label for="recipient-name">Nome Completo/Razão Social</label>
+                            <input type="text" id="recipient-name" placeholder="Insira o nome completo ou razão social do destinatário" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="recipient-document">CPF/CNPJ</label>
+                            <input type="text" id="recipient-document" placeholder="Insira o CPF ou CNPJ do destinatário" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="recipient-phone">Telefone</label>
+                            <input type="tel" id="recipient-phone" placeholder="Insira o telefone do destinatário" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="recipient-email">E-mail</label>
+                            <input type="email" id="recipient-email" placeholder="Insira o e-mail do destinatário" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cargo Details -->
+                <div class="form-section">
+                    <h3 class="section-title">Detalhes da Carga</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cargo-type">Tipo de Carga</label>
+                            <input type="text" id="cargo-type" placeholder="Ex: Eletrônicos, Móveis" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cargo-value">Valor Declarado (R$)</label>
+                            <input type="number" id="cargo-value" placeholder="Insira o valor declarado" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cargo-weight">Peso (Kg)</label>
+                            <input type="number" id="cargo-weight" placeholder="Insira o peso em quilogramas" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cargo-dimensions">Dimensões (A x L x C) cm</label>
+                            <input type="text" id="cargo-dimensions" placeholder="Ex: 50x30x20" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Addresses -->
+                <div class="form-row">
+                    <div class="form-section">
+                        <h3 class="section-title">Endereço de Origem</h3>
+                        <div class="form-group">
+                            <label for="origin-cep">CEP</label>
+                            <input type="text" id="origin-cep" placeholder="Insira o CEP de origem" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="origin-street">Rua</label>
+                            <input type="text" id="origin-street" placeholder="Insira a rua de origem" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="origin-number">Número</label>
+                            <input type="text" id="origin-number" placeholder="Insira o número" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="origin-complement">Complemento</label>
+                            <input type="text" id="origin-complement" placeholder="Ex: Apto 101">
+                        </div>
+                        <div class="form-group">
+                            <label for="origin-city">Cidade</label>
+                            <input type="text" id="origin-city" placeholder="Insira a cidade de origem" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="origin-state">Estado</label>
+                            <input type="text" id="origin-state" placeholder="Insira o estado de origem" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">Endereço de Destino</h3>
+                        <div class="form-group">
+                            <label for="destination-cep">CEP</label>
+                            <input type="text" id="destination-cep" placeholder="Insira o CEP de destino" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="destination-street">Rua</label>
+                            <input type="text" id="destination-street" placeholder="Insira a rua de destino" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="destination-number">Número</label>
+                            <input type="text" id="destination-number" placeholder="Insira o número" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="destination-complement">Complemento</label>
+                            <input type="text" id="destination-complement" placeholder="Ex: Sala 200">
+                        </div>
+                        <div class="form-group">
+                            <label for="destination-city">Cidade</label>
+                            <input type="text" id="destination-city" placeholder="Insira a cidade de destino" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="destination-state">Estado</label>
+                            <input type="text" id="destination-state" placeholder="Insira o estado de destino" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-submit">
+                    <button type="submit" class="btn btn-primary">Enviar Solicitação</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="cliente-dashboard.html">Dashboard</a>
+                <a href="cliente-fretes.html">Meus Fretes</a>
+                <a href="frete.html">Solicitar Frete</a>
+                <a href="cliente-perfil.html">Perfil</a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Verificar se o usuário está logado
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // Verificar tipo de usuário
+        if (getUserType() !== 'cliente') {
+            window.location.href = 'login.html';
+        }
+
+        // Carregar dados do usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+        });
+
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.name || user.email;
+            }
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        });
+    </script>
+</body>
+</html>

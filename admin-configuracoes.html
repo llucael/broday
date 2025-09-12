@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Admin - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+                    <div class="logo">
+            <span>Broday Transportes</span>
+        </div>
+            <nav class="nav">
+                <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="admin-fretes.html" class="nav-link">Fretes</a>
+                <a href="admin-usuarios.html" class="nav-link">Usuários</a>
+                <a href="admin-motoristas.html" class="nav-link">Motoristas</a>
+                <a href="admin-configuracoes.html" class="nav-link active">Configurações</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Admin</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Configurações Section -->
+            <section id="configuracoes" class="configuracoes-section active">
+                <div class="section-header">
+                    <h1>Configurações do Sistema</h1>
+                    <p>Gerencie as configurações operacionais e de segurança</p>
+                </div>
+
+                <div class="config-tabs">
+                    <button class="tab-btn active" data-tab="operacionais">Operacionais</button>
+                    <button class="tab-btn" data-tab="seguranca">Segurança</button>
+                    <button class="tab-btn" data-tab="notificacoes">Notificações</button>
+                    <button class="tab-btn" data-tab="integracao">Integrações</button>
+                </div>
+
+                <!-- Configurações Operacionais Tab -->
+                <div class="config-tab-content active" id="operacionais">
+                    <form class="config-form" id="operacionais-form">
+                        <h3>Configurações Operacionais</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="empresa-cnpj">CNPJ</label>
+                                <input type="text" id="empresa-cnpj" name="empresa_cnpj">
+                            </div>
+                            <div class="form-group">
+                                <label for="empresa-telefone">Telefone</label>
+                                <input type="tel" id="empresa-telefone" name="empresa_telefone">
+                            </div>
+                        </div>
+
+
+                        <h4>Configurações de Frete</h4>
+                        <div class="form-group">
+                            <label for="frete-valor-minimo">Valor Mínimo do Frete</label>
+                            <input type="number" id="frete-valor-minimo" name="frete_valor_minimo" step="0.01">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Configurações
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Configurações de Segurança Tab -->
+                <div class="config-tab-content" id="seguranca">
+                    <form class="config-form" id="seguranca-form">
+                        <h3>Configurações de Segurança</h3>
+                        
+                        <div class="form-group">
+                            <label for="senha-minima">Tamanho Mínimo da Senha</label>
+                            <input type="number" id="senha-minima" name="senha_minima" value="6" min="4" max="20">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sessao-tempo">Tempo de Sessão (minutos)</label>
+                            <input type="number" id="sessao-tempo" name="sessao_tempo" value="60" min="15" max="480">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tentativas-login">Tentativas de Login</label>
+                            <input type="number" id="tentativas-login" name="tentativas_login" value="5" min="3" max="10">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="backup_automatico" checked>
+                                <span class="checkmark"></span>
+                                Backup Automático
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="logs_auditoria" checked>
+                                <span class="checkmark"></span>
+                                Logs de Auditoria
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="cors_habilitado" checked>
+                                <span class="checkmark"></span>
+                                CORS Habilitado
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Configurações
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Configurações de Notificações Tab -->
+                <div class="config-tab-content" id="notificacoes">
+                    <form class="config-form" id="notificacoes-form">
+                        <h3>Configurações de Notificações</h3>
+                        
+                        <div class="form-group">
+                            <label for="smtp-servidor">Servidor SMTP</label>
+                            <input type="text" id="smtp-servidor" name="smtp_servidor" placeholder="smtp.exemplo.com">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="smtp-porta">Porta SMTP</label>
+                                <input type="number" id="smtp-porta" name="smtp_porta" value="587">
+                            </div>
+                            <div class="form-group">
+                                <label for="smtp-usuario">Usuário SMTP</label>
+                                <input type="text" id="smtp-usuario" name="smtp_usuario">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="smtp-senha">Senha SMTP</label>
+                            <input type="password" id="smtp-senha" name="smtp_senha">
+                        </div>
+
+                        <h4>Tipos de Notificação</h4>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notif_novo_frete" checked>
+                                <span class="checkmark"></span>
+                                Novo Frete Disponível
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notif_status_frete" checked>
+                                <span class="checkmark"></span>
+                                Atualização de Status
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notif_documentos_vencidos" checked>
+                                <span class="checkmark"></span>
+                                Documentos Vencidos
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="notif_problemas_sistema" checked>
+                                <span class="checkmark"></span>
+                                Problemas no Sistema
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Configurações
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Configurações de Integração Tab -->
+                <div class="config-tab-content" id="integracao">
+                    <form class="config-form" id="integracao-form">
+                        <h3>Configurações de Integração</h3>
+                        
+                        <div class="form-group">
+                            <label for="api-key">Chave da API</label>
+                            <input type="text" id="api-key" name="api_key" readonly>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="gerarApiKey()">
+                                <i class="fas fa-sync"></i>
+                                Gerar Nova Chave
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="webhook-url">URL do Webhook</label>
+                            <input type="url" id="webhook-url" name="webhook_url" placeholder="https://exemplo.com/webhook">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="integracao_gps" checked>
+                                <span class="checkmark"></span>
+                                Integração com GPS
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="integracao_pagamento" checked>
+                                <span class="checkmark"></span>
+                                Integração com Pagamento
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="integracao_notificacao" checked>
+                                <span class="checkmark"></span>
+                                Integração com Notificações
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Configurações
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-fretes.html">Fretes</a>
+                <a href="admin-usuarios.html">Usuários</a>
+                <a href="admin-motoristas.html">Motoristas</a>
+                <a href="admin-configuracoes.html">Configurações</a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Verificar se o usuário está logado
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // Verificar tipo de usuário
+        if (getUserType() !== 'admin') {
+            window.location.href = 'login.html';
+        }
+
+        // Carregar dados do usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            setupEventListeners();
+        });
+
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.name || user.email;
+            }
+        }
+
+        function setupEventListeners() {
+            // Tabs de configuração
+            document.querySelectorAll('.config-tabs .tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const target = this.getAttribute('data-tab');
+                    showConfigTab(target);
+                });
+            });
+        }
+
+        function showConfigTab(tabId) {
+            // Ocultar todas as tabs
+            document.querySelectorAll('.config-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Mostrar tab selecionada
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // Atualizar botões
+            document.querySelectorAll('.config-tabs .tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        }
+
+        function gerarApiKey() {
+            const apiKey = 'api_' + Math.random().toString(36).substr(2, 9);
+            document.getElementById('api-key').value = apiKey;
+            showNotification('Nova chave API gerada!', 'success');
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        });
+    </script>
+</body>
+</html>

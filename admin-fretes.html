@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Fretes - Admin - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+                    <div class="logo">
+            <span>Broday Transportes</span>
+        </div>
+            <nav class="nav">
+                <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="admin-fretes.html" class="nav-link active">Fretes</a>
+                <a href="admin-usuarios.html" class="nav-link">Usuários</a>
+                <a href="admin-motoristas.html" class="nav-link">Motoristas</a>
+                <a href="admin-configuracoes.html" class="nav-link">Configurações</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Admin</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Fretes Section -->
+            <section id="fretes" class="fretes-section active">
+                <div class="section-header">
+                    <h1>Gerenciamento de Fretes</h1>
+                    <div class="filters">
+                        <select id="status-filter">
+                            <option value="">Todos os Status</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="aceito">Aceito</option>
+                            <option value="em_transito">Em Trânsito</option>
+                            <option value="entregue">Entregue</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                        <select id="cliente-filter">
+                            <option value="">Todos os Clientes</option>
+                        </select>
+                        <select id="motorista-filter">
+                            <option value="">Todos os Motoristas</option>
+                        </select>
+                        <input type="date" id="data-filter" placeholder="Filtrar por data">
+                        <button class="btn btn-primary" onclick="loadFretes()">
+                            <i class="fas fa-sync"></i>
+                            Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="fretes-list" id="fretes-list">
+                    <!-- Fretes serão carregados aqui -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-fretes.html">Fretes</a>
+                <a href="admin-usuarios.html">Usuários</a>
+                <a href="admin-motoristas.html">Motoristas</a>
+                <a href="admin-configuracoes.html">Configurações</a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Verificar se o usuário está logado
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // Verificar tipo de usuário
+        if (getUserType() !== 'admin') {
+            window.location.href = 'login.html';
+        }
+
+        // Carregar dados do usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            loadFretes();
+        });
+
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.name || user.email;
+            }
+        }
+
+        async function loadFretes() {
+            try {
+                // Simular carregamento de fretes
+                const container = document.getElementById('fretes-list');
+                container.innerHTML = '<p class="no-data">Carregando fretes...</p>';
+                
+                // Em produção, fazer chamada para API
+                setTimeout(() => {
+                    container.innerHTML = '<p class="no-data">Nenhum frete encontrado</p>';
+                }, 1000);
+            } catch (error) {
+                console.error('Erro ao carregar fretes:', error);
+                showNotification('Erro ao carregar fretes', 'error');
+            }
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        });
+    </script>
+</body>
+</html>

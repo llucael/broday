@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broday Transportes - Gerenciamento de Carga e Caminhões</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <span>Broday Transportes</span>
+            </div>
+            <nav class="nav">
+                <a href="#servicos">Serviços</a>
+                <a href="#sobre">Sobre nós</a>
+                <a href="#contato">Contato</a>
+            </nav>
+            <div class="header-buttons">
+                <a href="login.html" class="btn btn-secondary">Entrar</a>
+                <a href="login.html#register" class="btn btn-primary">Cadastrar</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Gerenciamento de Carga e Caminhões</h1>
+            <p>Broday Transportes oferece soluções completas para o gerenciamento de sua carga e frota. Nossa plataforma intuitiva e eficiente permite que você acompanhe cada etapa do processo, desde o planejamento até a entrega final.</p>
+        </div>
+    </section>
+
+    <!-- Serviços Section -->
+    <section id="servicos" class="services">
+        <div class="container">
+            <h2>Nossos Serviços</h2>
+            <p class="section-intro">Oferecemos uma gama completa de serviços para atender às suas necessidades de transporte e logística.</p>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h3>Gerenciamento de Carga</h3>
+                    <p>Planejamento e execução de transporte de cargas, garantindo segurança e pontualidade.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3>Rastreamento em Tempo Real</h3>
+                    <p>Acompanhe a localização de seus caminhões e cargas em tempo real, com atualizações constantes.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Suporte 24/7</h3>
+                    <p>Nossa equipe está disponível 24 horas por dia, 7 dias por semana, para auxiliar em qualquer necessidade.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Por que escolher Section -->
+    <section id="sobre" class="why-choose">
+        <div class="container">
+            <h2>Por que escolher a Broday Transportes?</h2>
+            <p class="section-intro">Somos líderes no mercado de gerenciamento de transporte, oferecendo soluções inovadoras e eficientes.</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h3>Tecnologia Avançada</h3>
+                    <p>Utilizamos as mais recentes tecnologias para otimizar processos e garantir a melhor experiência.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Segurança e Confiabilidade</h3>
+                    <p>Priorizamos a segurança de suas cargas e a confiabilidade de nossos serviços.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-image">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Experiência e Expertise</h3>
+                    <p>Contamos com uma equipe experiente e qualificada, pronta para atender às suas necessidades.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contato Section -->
+    <section id="contato" class="contact">
+        <div class="container">
+            <h2>Entre em Contato</h2>
+            <p class="section-intro">Descubra como a Broday Transportes pode transformar o gerenciamento de sua carga e caminhões. Entre em contato conosco para uma consulta personalizada.</p>
+            <div class="contact-buttons">
+                <a href="frete.html" class="btn btn-primary">Solicitar Cotação</a>
+                <button class="btn btn-primary">Entre em Contato</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="#servicos">Serviços</a>
+                <a href="#sobre">Sobre nós</a>
+                <a href="#contato">Contato</a>
+                <a href="#">Política de Privacidade</a>
+                <a href="#">Termos de Uso</a>
+            </div>
+            <div class="social-media">
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-linkedin"></i></a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Exemplo de uso da função de notificação em um bloco try-catch
+        try {
+            // Código que pode gerar erro
+        } catch (error) {
+            let errorMsg = error.message;
+            // Se for um erro de resposta da API, tente extrair a mensagem do JSON
+            if (error.response && error.response.json) {
+                const data = await error.response.json();
+                errorMsg = data.message || errorMsg;
+            }
+            if (errorMsg === 'E-mail não encontrado') {
+                showNotification('E-mail não encontrado. Verifique se o e-mail está correto.', 'error');
+            } else if (errorMsg === 'Senha incorreta') {
+                showNotification('Senha incorreta. Verifique sua senha e tente novamente.', 'error');
+            } else if (errorMsg === 'Conta desativada') {
+                showNotification('Sua conta está desativada. Entre em contato com o suporte.', 'error');
+            } else if (errorMsg && (
+                errorMsg.includes('credenciais') || 
+                errorMsg.includes('senha') || 
+                errorMsg.includes('password') ||
+                errorMsg.includes('incorreto') ||
+                errorMsg.includes('inválido')
+            )) {
+                showNotification('E-mail ou senha incorretos. Verifique suas credenciais.', 'error');
+            } else {
+                showNotification(errorMsg || 'Erro ao fazer login. Tente novamente.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

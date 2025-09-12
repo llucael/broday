@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Usuários - Admin - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+                    <div class="logo">
+            <span>Broday Transportes</span>
+        </div>
+            <nav class="nav">
+                <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="admin-fretes.html" class="nav-link">Fretes</a>
+                <a href="admin-usuarios.html" class="nav-link active">Usuários</a>
+                <a href="admin-motoristas.html" class="nav-link">Motoristas</a>
+                <a href="admin-configuracoes.html" class="nav-link">Configurações</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Admin</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Usuários Section -->
+            <section id="usuarios" class="usuarios-section active">
+                <div class="section-header">
+                    <h1>Gerenciamento de Usuários</h1>
+                    <div class="filters">
+                        <select id="tipo-usuario-filter">
+                            <option value="">Todos os Tipos</option>
+                            <option value="cliente">Clientes</option>
+                            <option value="motorista">Motoristas</option>
+                            <option value="admin">Administradores</option>
+                        </select>
+                        <select id="status-usuario-filter">
+                            <option value="">Todos os Status</option>
+                            <option value="ativo">Ativo</option>
+                            <option value="inativo">Inativo</option>
+                            <option value="bloqueado">Bloqueado</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadUsuarios()">
+                            <i class="fas fa-sync"></i>
+                            Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="usuarios-list" id="usuarios-list">
+                    <!-- Usuários serão carregados aqui -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-fretes.html">Fretes</a>
+                <a href="admin-usuarios.html">Usuários</a>
+                <a href="admin-motoristas.html">Motoristas</a>
+                <a href="admin-configuracoes.html">Configurações</a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Verificar se o usuário está logado
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // Verificar tipo de usuário
+        if (getUserType() !== 'admin') {
+            window.location.href = 'login.html';
+        }
+
+        // Carregar dados do usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            loadUsuarios();
+        });
+
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.name || user.email;
+            }
+        }
+
+        async function loadUsuarios() {
+            try {
+                // Simular carregamento de usuários
+                const container = document.getElementById('usuarios-list');
+                container.innerHTML = '<p class="no-data">Carregando usuários...</p>';
+                
+                // Em produção, fazer chamada para API
+                setTimeout(() => {
+                    container.innerHTML = '<p class="no-data">Nenhum usuário encontrado</p>';
+                }, 1000);
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+                showNotification('Erro ao carregar usuários', 'error');
+            }
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        });
+    </script>
+</body>
+</html>

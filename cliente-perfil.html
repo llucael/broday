@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Cliente - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+                    <div class="logo">
+            <span>Broday Transportes</span>
+        </div>
+            <nav class="nav">
+                <a href="cliente-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="cliente-fretes.html" class="nav-link">Meus Fretes</a>
+                <a href="frete.html" class="nav-link">Solicitar Frete</a>
+                <a href="cliente-perfil.html" class="nav-link active">Perfil</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Perfil Section -->
+            <section id="perfil" class="perfil-section active">
+                <div class="section-header">
+                    <h1>Meu Perfil</h1>
+                    <p>Gerencie seus dados pessoais e preferências</p>
+                </div>
+
+                <div class="profile-tabs">
+                    <button class="tab-btn active" data-tab="dados-pessoais">Dados Pessoais</button>
+                    <button class="tab-btn" data-tab="enderecos">Endereços</button>
+                    <button class="tab-btn" data-tab="documentos">Documentos</button>
+                    <button class="tab-btn" data-tab="preferencias">Preferências</button>
+                </div>
+
+                <!-- Dados Pessoais Tab -->
+                <div class="profile-tab-content active" id="dados-pessoais">
+                    <form class="profile-form" id="dados-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nome">Nome Completo *</label>
+                                <input type="text" id="nome" name="nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">E-mail *</label>
+                                <input type="email" id="email" name="email" required style="width: 100%;">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="telefone">Telefone *</label>
+                                <input type="tel" id="telefone" name="telefone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cpf">CPF *</label>
+                                <input type="text" id="cpf" name="cpf" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="empresa">Empresa</label>
+                            <input type="text" id="empresa" name="empresa" placeholder="Nome da empresa (opcional)">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Alterações
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Endereços Tab -->
+                <div class="profile-tab-content" id="enderecos">
+                    <div class="enderecos-header">
+                        <h3>Endereços Cadastrados</h3>
+                        <button class="btn btn-primary" onclick="showAddEnderecoModal()">
+                            <i class="fas fa-plus"></i>
+                            Adicionar Endereço
+                        </button>
+                    </div>
+                    <div class="enderecos-list" id="enderecos-list">
+                        <!-- Endereços serão carregados aqui -->
+                    </div>
+                </div>
+
+                <!-- Documentos Tab -->
+                <div class="profile-tab-content" id="documentos">
+                    <form class="documentos-form" id="documentos-form">
+                        <h3>Documentos</h3>
+                        <p>Insira os dados dos seus documentos</p>
+                        
+                        <div class="form-group">
+                            <label for="tipo-pessoa">Tipo de Pessoa *</label>
+                            <select id="tipo-pessoa" name="tipo_pessoa" required onchange="toggleDocumentFields()">
+                                <option value="">Selecione</option>
+                                <option value="fisica">Pessoa Física</option>
+                                <option value="juridica">Pessoa Jurídica</option>
+                            </select>
+                        </div>
+
+                        <!-- Campos para Pessoa Física -->
+                        <div id="pessoa-fisica-fields" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="nome-completo">Nome Completo *</label>
+                                    <input type="text" id="nome-completo" name="nome_completo">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cpf-documento">CPF *</label>
+                                    <input type="text" id="cpf-documento" name="cpf_documento">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="data-nascimento">Data de Nascimento *</label>
+                                <input type="date" id="data-nascimento" name="data_nascimento">
+                            </div>
+                        </div>
+
+                        <!-- Campos para Pessoa Jurídica -->
+                        <div id="pessoa-juridica-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="razao-social">Razão Social *</label>
+                                <input type="text" id="razao-social" name="razao_social">
+                            </div>
+                            <div class="form-group">
+                                <label for="cnpj-documento">CNPJ *</label>
+                                <input type="text" id="cnpj-documento" name="cnpj_documento">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Documentos
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Preferências Tab -->
+                <div class="profile-tab-content" id="preferencias">
+                    <form class="preferences-form" id="preferences-form">
+                        <h3>Preferências de Entrega</h3>
+                        <div class="form-group">
+                            <label>Horário Preferido</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="horario_preferido[]" value="manha">
+                                    <span class="checkmark"></span>
+                                    Manhã (8h - 12h)
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="horario_preferido[]" value="tarde">
+                                    <span class="checkmark"></span>
+                                    Tarde (12h - 18h)
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="horario_preferido[]" value="noite">
+                                    <span class="checkmark"></span>
+                                    Noite (18h - 22h)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notificacoes">Notificações</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notificacoes[]" value="email" checked>
+                                    <span class="checkmark"></span>
+                                    E-mail
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notificacoes[]" value="sms">
+                                    <span class="checkmark"></span>
+                                    SMS
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notificacoes[]" value="push">
+                                    <span class="checkmark"></span>
+                                    Notificações Push
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Preferências
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal para Adicionar Endereço -->
+    <div class="modal" id="endereco-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Endereço</h3>
+                <button class="close-btn" onclick="closeEnderecoModal()">&times;</button>
+            </div>
+            <form class="endereco-form" id="endereco-form">
+                <div class="form-group">
+                    <label for="endereco-nome">Nome do Endereço *</label>
+                    <input type="text" id="endereco-nome" name="nome" required placeholder="Ex: Casa, Trabalho, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="endereco-rua">Rua *</label>
+                    <input type="text" id="endereco-rua" name="rua" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="endereco-numero">Número *</label>
+                        <input type="text" id="endereco-numero" name="numero" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endereco-complemento">Complemento</label>
+                        <input type="text" id="endereco-complemento" name="complemento">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="endereco-cidade">Cidade *</label>
+                        <input type="text" id="endereco-cidade" name="cidade" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endereco-estado">Estado *</label>
+                        <select id="endereco-estado" name="estado" required>
+                            <option value="">Selecione</option>
+                            <option value="AC">Acre</option>
+                            <option value="AL">Alagoas</option>
+                            <option value="AP">Amapá</option>
+                            <option value="AM">Amazonas</option>
+                            <option value="BA">Bahia</option>
+                            <option value="CE">Ceará</option>
+                            <option value="DF">Distrito Federal</option>
+                            <option value="ES">Espírito Santo</option>
+                            <option value="GO">Goiás</option>
+                            <option value="MA">Maranhão</option>
+                            <option value="MT">Mato Grosso</option>
+                            <option value="MS">Mato Grosso do Sul</option>
+                            <option value="MG">Minas Gerais</option>
+                            <option value="PA">Pará</option>
+                            <option value="PB">Paraíba</option>
+                            <option value="PR">Paraná</option>
+                            <option value="PE">Pernambuco</option>
+                            <option value="PI">Piauí</option>
+                            <option value="RJ">Rio de Janeiro</option>
+                            <option value="RN">Rio Grande do Norte</option>
+                            <option value="RS">Rio Grande do Sul</option>
+                            <option value="RO">Rondônia</option>
+                            <option value="RR">Roraima</option>
+                            <option value="SC">Santa Catarina</option>
+                            <option value="SP">São Paulo</option>
+                            <option value="SE">Sergipe</option>
+                            <option value="TO">Tocantins</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="endereco-cep">CEP *</label>
+                    <input type="text" id="endereco-cep" name="cep" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEnderecoModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-nav">
+                <a href="cliente-dashboard.html">Dashboard</a>
+                <a href="cliente-fretes.html">Meus Fretes</a>
+                <a href="frete.html">Solicitar Frete</a>
+                <a href="cliente-perfil.html">Perfil</a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Verificar se o usuário está logado
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // Verificar tipo de usuário
+        if (getUserType() !== 'cliente') {
+            window.location.href = 'login.html';
+        }
+
+        // Carregar dados do usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            setupEventListeners();
+        });
+
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.name || user.email;
+            }
+        }
+
+        function setupEventListeners() {
+            // Tabs do perfil
+            document.querySelectorAll('.profile-tabs .tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const target = this.getAttribute('data-tab');
+                    showProfileTab(target);
+                });
+            });
+        }
+
+        function showProfileTab(tabId) {
+            // Ocultar todas as tabs
+            document.querySelectorAll('.profile-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Mostrar tab selecionada
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // Atualizar botões
+            document.querySelectorAll('.profile-tabs .tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        }
+
+        function showAddEnderecoModal() {
+            document.getElementById('endereco-modal').style.display = 'flex';
+        }
+
+        function closeEnderecoModal() {
+            document.getElementById('endereco-modal').style.display = 'none';
+        }
+
+        // Função para alternar campos de documento
+        function toggleDocumentFields() {
+            const tipoPessoa = document.getElementById('tipo-pessoa').value;
+            const pessoaFisicaFields = document.getElementById('pessoa-fisica-fields');
+            const pessoaJuridicaFields = document.getElementById('pessoa-juridica-fields');
+            
+            // Ocultar todos os campos
+            pessoaFisicaFields.style.display = 'none';
+            pessoaJuridicaFields.style.display = 'none';
+            
+            // Mostrar campos apropriados
+            if (tipoPessoa === 'fisica') {
+                pessoaFisicaFields.style.display = 'block';
+            } else if (tipoPessoa === 'juridica') {
+                pessoaJuridicaFields.style.display = 'block';
+            }
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        });
+    </script>
+</body>
+</html>

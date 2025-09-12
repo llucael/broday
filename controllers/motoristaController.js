@@ -1,0 +1,400 @@
+const { User, Frete } = require('../models');
+const { Op } = require('sequelize');
+
+// Dashboard do Motorista
+const getDashboard = async (req, res) => {
+  try {
+    const motoristaId = req.userId;
+    
+    // Buscar fretes disponíveis
+    const fretesDisponiveis = await Frete.findAll({
+      where: {
+        status: 'disponivel',
+        motorista_id: null
+      },
+      include: [
+        { model: User, as: 'cliente', attributes: ['id', 'email'] }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: 10
+    });
+
+    // Buscar fretes ativos do motorista
+    const fretesAtivos = await Frete.findAll({
+      where: {
+        motorista_id: motoristaId,
+        status: ['aceito', 'em_transito']
+      },
+      include: [
+        { model: User, as: 'cliente', attributes: ['id', 'email'] }
+      ],
+      order: [['updated_at', 'DESC']]
+    });
+
+    // Buscar fretes concluídos do motorista
+    const fretesConcluidos = await Frete.findAll({
+      where: {
+        motorista_id: motoristaId,
+        status: 'concluido'
+      },
+      include: [
+        { model: User, as: 'cliente', attributes: ['id', 'email'] }
+      ],
+      order: [['updated_at', 'DESC']],
+      limit: 5
+    });
+
+    // Estatísticas
+    const totalFretes = await Frete.count({
+      where: { motorista_id: motoristaId }
+    });
+
+    const fretesConcluidosCount = await Frete.count({
+      where: {
+        motorista_id: motoristaId,
+        status: 'concluido'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        dashboard: {
+          fretesDisponiveis,
+          fretesAtivos,
+          fretesConcluidos,
+          estatisticas: {
+            totalFretes,
+            fretesConcluidos: fretesConcluidosCount,
+            fretesAtivos: fretesAtivos.length
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro no dashboard do motorista:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Visualizar fretes disponíveis
+const getFretesDisponiveis = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, localizacao, tipoCarga, valorMin, valorMax } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereClause = {
+      status: 'disponivel',
+      motorista_id: null
+    };
+
+    // Filtros
+    if (localizacao) {
+      whereClause[Op.or] = [
+        { origem_cidade: { [Op.iLike]: `%${localizacao}%` } },
+        { destino_cidade: { [Op.iLike]: `%${localizacao}%` } }
+      ];
+    }
+
+    if (tipoCarga) {
+      whereClause.tipo_carga = { [Op.iLike]: `%${tipoCarga}%` };
+    }
+
+    if (valorMin || valorMax) {
+      whereClause.valor = {};
+      if (valorMin) whereClause.valor[Op.gte] = valorMin;
+      if (valorMax) whereClause.valor[Op.lte] = valorMax;
+    }
+
+    const fretes = await Frete.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: User, as: 'cliente', attributes: ['id', 'email'] }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    res.json({
+      success: true,
+      data: {
+        fretes: fretes.rows,
+        pagination: {
+          total: fretes.count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(fretes.count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar fretes disponíveis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Aceitar frete
+const aceitarFrete = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const motoristaId = req.userId;
+
+    const frete = await Frete.findByPk(id);
+    
+    if (!frete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Frete não encontrado'
+      });
+    }
+
+    if (frete.status !== 'disponivel') {
+      return res.status(400).json({
+        success: false,
+        message: 'Frete não está disponível para aceitação'
+      });
+    }
+
+    if (frete.motorista_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Frete já foi aceito por outro motorista'
+      });
+    }
+
+    // Aceitar o frete
+    await frete.update({
+      motorista_id: motoristaId,
+      status: 'aceito',
+      data_aceitacao: new Date()
+    });
+
+    res.json({
+      success: true,
+      message: 'Frete aceito com sucesso',
+      data: { frete }
+    });
+  } catch (error) {
+    console.error('Erro ao aceitar frete:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Atualizar status do frete
+const atualizarStatusFrete = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, observacoes } = req.body;
+    const motoristaId = req.userId;
+
+    const frete = await Frete.findByPk(id);
+    
+    if (!frete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Frete não encontrado'
+      });
+    }
+
+    if (frete.motorista_id !== motoristaId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Você não tem permissão para atualizar este frete'
+      });
+    }
+
+    // Validar transição de status
+    const statusValidos = ['aceito', 'em_transito', 'concluido'];
+    if (!statusValidos.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status inválido'
+      });
+    }
+
+    // Atualizar status
+    const updateData = { status };
+    if (observacoes) updateData.observacoes_motorista = observacoes;
+    
+    if (status === 'em_transito') {
+      updateData.data_inicio_transporte = new Date();
+    } else if (status === 'concluido') {
+      updateData.data_entrega = new Date();
+    }
+
+    await frete.update(updateData);
+
+    res.json({
+      success: true,
+      message: 'Status do frete atualizado com sucesso',
+      data: { frete }
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar status do frete:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Visualizar fretes do motorista
+const getMeusFretes = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    const offset = (page - 1) * limit;
+    const motoristaId = req.userId;
+
+    const whereClause = { motorista_id: motoristaId };
+    if (status) whereClause.status = status;
+
+    const fretes = await Frete.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: User, as: 'cliente', attributes: ['id', 'email'] }
+      ],
+      order: [['updated_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    res.json({
+      success: true,
+      data: {
+        fretes: fretes.rows,
+        pagination: {
+          total: fretes.count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(fretes.count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar fretes do motorista:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Atualizar perfil do motorista
+const atualizarPerfil = async (req, res) => {
+  try {
+    const motoristaId = req.userId;
+    const { nome, telefone, endereco, cidade, estado, cep } = req.body;
+
+    const user = await User.findByPk(motoristaId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    // Atualizar dados do usuário
+    await user.update({
+      email: req.body.email || user.email
+    });
+
+    // Atualizar dados do perfil do motorista
+    const motorista = await user.getMotorista();
+    if (motorista) {
+      await motorista.update({
+        nome: nome || motorista.nome,
+        telefone: telefone || motorista.telefone,
+        endereco: endereco || motorista.endereco,
+        cidade: cidade || motorista.cidade,
+        estado: estado || motorista.estado,
+        cep: cep || motorista.cep
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Perfil atualizado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar perfil do motorista:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Relatórios pessoais do motorista
+const getRelatoriosPessoais = async (req, res) => {
+  try {
+    const motoristaId = req.userId;
+    const { periodo = '30' } = req.query;
+    
+    const dataInicio = new Date();
+    dataInicio.setDate(dataInicio.getDate() - parseInt(periodo));
+
+    // Fretes concluídos no período
+    const fretesConcluidos = await Frete.count({
+      where: {
+        motorista_id: motoristaId,
+        status: 'concluido',
+        data_entrega: {
+          [Op.gte]: dataInicio
+        }
+      }
+    });
+
+    // Total de fretes
+    const totalFretes = await Frete.count({
+      where: { motorista_id: motoristaId }
+    });
+
+    // Fretes por status
+    const fretesPorStatus = await Frete.findAll({
+      where: { motorista_id: motoristaId },
+      attributes: [
+        'status',
+        [Frete.sequelize.fn('COUNT', Frete.sequelize.col('id')), 'count']
+      ],
+      group: ['status']
+    });
+
+    res.json({
+      success: true,
+      data: {
+        relatorios: {
+          fretesConcluidos,
+          totalFretes,
+          fretesPorStatus,
+          periodo: `${periodo} dias`
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao gerar relatórios do motorista:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+module.exports = {
+  getDashboard,
+  getFretesDisponiveis,
+  aceitarFrete,
+  atualizarStatusFrete,
+  getMeusFretes,
+  atualizarPerfil,
+  getRelatoriosPessoais
+};
