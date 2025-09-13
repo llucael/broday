@@ -83,6 +83,14 @@
                     </div>
                 </div>
 
+                <!-- Fretes Ativos -->
+                <div class="recent-section">
+                    <h2>Fretes Ativos</h2>
+                    <div class="fretes-list" id="fretes-ativos">
+                        <!-- Fretes ativos serão carregados aqui -->
+                    </div>
+                </div>
+
                 <!-- Recent Fretes -->
                 <div class="recent-section">
                     <h2>Fretes Recentes</h2>
@@ -97,14 +105,42 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-nav">
-                <a href="cliente-dashboard.html">Dashboard</a>
-                <a href="cliente-fretes.html">Meus Fretes</a>
-                <a href="frete.html">Solicitar Frete</a>
-                <a href="cliente-perfil.html">Perfil</a>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Broday Transportes</h3>
+                    <p>Conectando embarcadores e transportadores de forma inteligente e eficiente.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Navegação</h4>
+                    <div class="footer-nav">
+                        <a href="cliente-dashboard.html">Dashboard</a>
+                        <a href="cliente-fretes.html">Meus Fretes</a>
+                        <a href="frete.html">Solicitar Frete</a>
+                        <a href="cliente-perfil.html">Perfil</a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contato</h4>
+                    <div class="contact-info">
+                        <p><i class="fas fa-map-marker-alt"></i> Rua Cambara, 268 - Nova Russia</p>
+                        <p>Ponta Grossa - PR, 84.053-060</p>
+                        <p><i class="fas fa-phone"></i> (42) 99985-2606</p>
+                        <p><i class="fas fa-envelope"></i> brodaytransportes@gmail.com</p>
+                    </div>
+                </div>
+                
             </div>
-            <div class="copyright">
-                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            
+            <div class="footer-legal">
+                <div class="legal-info">
+                    <p><strong>CNPJ:</strong> 58.893.054/0001-03</p>
+                    <p><strong>Endereço:</strong> Rua Cambara, 268 - Nova Russia, Ponta Grossa - PR, 84.053-060</p>
+                </div>
+                <div class="copyright">
+                    <p>© 2025 Broday Transportes. Todos os direitos reservados.</p>
+                </div>
             </div>
         </div>
     </footer>
@@ -137,6 +173,8 @@
         function loadDashboardData() {
             // Carregar estatísticas
             loadStats();
+            // Carregar fretes ativos
+            loadFretesAtivos();
             // Carregar fretes recentes
             loadRecentFretes();
         }
@@ -157,6 +195,29 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        async function loadFretesAtivos() {
+            try {
+                const response = await api.getFretesByCliente(1, 10, 'aceito,em_transito');
+                if (response.success) {
+                    const fretes = response.data.fretes;
+                    const container = document.getElementById('fretes-ativos');
+                    container.innerHTML = '';
+                    
+                    if (fretes.length === 0) {
+                        container.innerHTML = '<p class="no-data">Nenhum frete ativo</p>';
+                        return;
+                    }
+                    
+                    fretes.forEach(frete => {
+                        const freteCard = createFreteCardAtivo(frete);
+                        container.appendChild(freteCard);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar fretes ativos:', error);
             }
         }
 
@@ -181,6 +242,34 @@
             } catch (error) {
                 console.error('Erro ao carregar fretes recentes:', error);
             }
+        }
+
+        function createFreteCardAtivo(frete) {
+            const card = document.createElement('div');
+            card.className = 'frete-card';
+            card.innerHTML = `
+                <div class="frete-header">
+                    <h3>Frete #${frete.id}</h3>
+                    <span class="status status-${frete.status}">${getStatusText(frete.status)}</span>
+                </div>
+                <div class="frete-info">
+                    <p><strong>Origem:</strong> ${frete.origem}</p>
+                    <p><strong>Destino:</strong> ${frete.destino}</p>
+                    <p><strong>Data:</strong> ${new Date(frete.data_coleta).toLocaleDateString('pt-BR')}</p>
+                    <p><strong>Motorista:</strong> ${frete.motorista_nome || 'Não atribuído'}</p>
+                </div>
+                <div class="frete-actions">
+                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
+                        <i class="fas fa-eye"></i>
+                        Ver Detalhes
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Rastrear
+                    </button>
+                </div>
+            `;
+            return card;
         }
 
         function createFreteCard(frete) {
@@ -220,6 +309,11 @@
         function viewFrete(freteId) {
             // Implementar visualização detalhada do frete
             showNotification('Funcionalidade em desenvolvimento', 'info');
+        }
+
+        function rastrearFrete(freteId) {
+            // Redirecionar para página de rastreamento
+            window.location.href = `rastreamento.html?frete=${freteId}`;
         }
 
         // Função para mostrar notificações

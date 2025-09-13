@@ -1338,6 +1338,15 @@ h2 {
     color: #A0AEC0;
 }
 
+/* Light mode - Documentos */
+body.light-mode .documentos-header h3 {
+    color: #1A202C;
+}
+
+body.light-mode .documentos-header p {
+    color: #4A5568;
+}
+
 .documentos-list {
     display: grid;
     gap: 1rem;
@@ -1379,6 +1388,11 @@ h2 {
 .enderecos-header h3 {
     color: white;
     margin: 0;
+}
+
+/* Light mode - Endereços */
+body.light-mode .enderecos-header h3 {
+    color: #1A202C;
 }
 
 .enderecos-list {
@@ -1700,6 +1714,22 @@ h2 {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
     color: white;
+}
+
+/* Light mode - Recent Section */
+body.light-mode .recent-section h2 {
+    color: #1A202C;
+}
+
+/* Light mode - Títulos de seções gerais */
+body.light-mode .fretes-list h2,
+body.light-mode .activity-list h2,
+body.light-mode .stats-section h2,
+body.light-mode .chart-section h2,
+body.light-mode .info-section h2,
+body.light-mode .profile-section h2,
+body.light-mode .config-section h2 {
+    color: #1A202C;
 }
 
 /* Responsive Design for Dashboards */
@@ -2530,6 +2560,25 @@ body.light-mode .section-header h1,
 body.light-mode .section-header h2,
 body.light-mode .dashboard-header p,
 body.light-mode .section-header p {
+    color: #1A202C;
+}
+
+/* Light mode - Títulos específicos das seções */
+body.light-mode .dashboard-section h2,
+body.light-mode .fretes-section h2,
+body.light-mode .usuarios-section h2,
+body.light-mode .motoristas-section h2,
+body.light-mode .configuracoes-section h2,
+body.light-mode .perfil-section h2,
+body.light-mode .rastreamento-section h2,
+body.light-mode .solicitar-section h2 {
+    color: #1A202C;
+}
+
+/* Light mode - Containers de conteúdo */
+body.light-mode div h2,
+body.light-mode .container h2,
+body.light-mode .main-content h2 {
     color: #1A202C;
 }
 

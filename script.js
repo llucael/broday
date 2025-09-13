@@ -19,10 +19,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Validação do formulário de frete
+    // Validação e envio do formulário de frete
     const freteForm = document.querySelector('.frete-form');
+    
     if (freteForm) {
-        freteForm.addEventListener('submit', function(e) {
+        freteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Validação básica
@@ -38,12 +39,97 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            if (isValid) {
-                // Simular envio do formulário
-                showNotification('Solicitação enviada com sucesso! Entraremos em contato em breve.', 'success');
-                this.reset();
-            } else {
-                showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
+            if (!isValid) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            try {
+                // Verificar se está logado
+                if (!isLoggedIn()) {
+                    alert('Você precisa estar logado para enviar um frete. Redirecionando para o login...');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Mostrar loading
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Enviando...';
+                submitBtn.disabled = true;
+                
+                // Coletar dados do formulário
+                const formData = {
+                    // Informações do remetente
+                    senderName: document.getElementById('sender-name').value.trim(),
+                    senderDocument: document.getElementById('sender-document').value.trim(),
+                    senderPhone: document.getElementById('sender-phone').value.trim(),
+                    senderEmail: document.getElementById('sender-email').value.trim(),
+                    // Informações do destinatário
+                    recipientName: document.getElementById('recipient-name').value.trim(),
+                    recipientDocument: document.getElementById('recipient-document').value.trim(),
+                    recipientPhone: document.getElementById('recipient-phone').value.trim(),
+                    recipientEmail: document.getElementById('recipient-email').value.trim(),
+                    // Detalhes da carga
+                    cargoType: document.getElementById('cargo-type').value.trim(),
+                    cargoValue: parseFloat(document.getElementById('cargo-value').getAttribute('data-numeric-value') || 
+                                document.getElementById('cargo-value').value.replace(/\./g, '').replace(',', '.')),
+                    cargoWeight: parseFloat(document.getElementById('cargo-weight').value),
+                    cargoDimensions: document.getElementById('cargo-dimensions').value.trim(),
+                    // Endereço de origem
+                    originCep: document.getElementById('origin-cep').value.trim(),
+                    originStreet: document.getElementById('origin-street').value.trim(),
+                    originNumber: document.getElementById('origin-number').value.trim(),
+                    originComplement: document.getElementById('origin-complement').value.trim(),
+                    originCity: document.getElementById('origin-city').value.trim(),
+                    originState: document.getElementById('origin-state').value.trim(),
+                    // Endereço de destino
+                    destinationCep: document.getElementById('destination-cep').value.trim(),
+                    destinationStreet: document.getElementById('destination-street').value.trim(),
+                    destinationNumber: document.getElementById('destination-number').value.trim(),
+                    destinationComplement: document.getElementById('destination-complement').value.trim(),
+                    destinationCity: document.getElementById('destination-city').value.trim(),
+                    destinationState: document.getElementById('destination-state').value.trim()
+                };
+                
+                // Verificar se tem token válido
+                const token = localStorage.getItem('accessToken');
+                
+                if (!token) {
+                    // Fazer login automático
+                    try {
+                        const loginResponse = await api.login('cliente@broday.com', 'cliente123');
+                        if (!loginResponse.success) {
+                            throw new Error('Não foi possível fazer login');
+                        }
+                    } catch (loginError) {
+                        console.error('Erro no login automático:', loginError);
+                        throw new Error('Não foi possível fazer login');
+                    }
+                }
+                
+                // Enviar para a API
+                const response = await api.createFrete(formData);
+                
+                if (response.success) {
+                    alert('Solicitação de frete enviada com sucesso! Você pode acompanhar o status em "Meus Fretes".');
+                    this.reset();
+                    
+                    // Redirecionar para meus fretes após 2 segundos
+                    setTimeout(() => {
+                        window.location.href = 'cliente-fretes.html';
+                    }, 2000);
+                } else {
+                    alert(response.message || 'Erro ao enviar solicitação. Tente novamente.');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao enviar frete:', error);
+                alert('Erro de conexão. Verifique se o servidor está rodando.');
+            } finally {
+                // Restaurar botão
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             }
         });
     }
@@ -92,13 +178,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Máscara para valor monetário
+    // Máscara para valor monetário melhorada
     const valueField = document.querySelector('#cargo-value');
     if (valueField) {
         valueField.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            value = (parseFloat(value) / 100).toFixed(2);
-            e.target.value = value;
+            let value = e.target.value.replace(/[^\d,]/g, ''); // Permite números e vírgulas
+            
+            // Se tem vírgula, trata como decimal
+            if (value.includes(',')) {
+                const parts = value.split(',');
+                if (parts.length === 2) {
+                    // Formato: 1.234,56
+                    const integerPart = parts[0].replace(/\D/g, '');
+                    const decimalPart = parts[1].replace(/\D/g, '').substring(0, 2);
+                    
+                    // Adiciona pontos para milhares
+                    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    e.target.value = formattedInteger + ',' + decimalPart;
+                }
+            } else {
+                // Sem vírgula, adiciona pontos para milhares
+                const cleanValue = value.replace(/\D/g, '');
+                if (cleanValue) {
+                    e.target.value = cleanValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                }
+            }
+        });
+        
+        // Converter para formato numérico ao sair do campo
+        valueField.addEventListener('blur', function(e) {
+            let value = e.target.value.replace(/\./g, '').replace(',', '.');
+            if (value && !isNaN(value)) {
+                e.target.setAttribute('data-numeric-value', value);
+            }
         });
     }
 

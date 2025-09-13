@@ -8,6 +8,20 @@ const motoristaRoutes = require('./motorista');
 const clienteRoutes = require('./cliente');
 const adminRoutes = require('./admin');
 
+// Rota raiz da API
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Bem-vindo à API da Broday Transportes!',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      fretes: '/api/fretes'
+    }
+  });
+});
+
 // Rota de health check
 router.get('/health', (req, res) => {
   res.json({

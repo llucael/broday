@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreamento - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <span>Broday Transportes</span>
+            </div>
+            <nav class="nav">
+                <a href="#" id="back-link" class="nav-link">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar
+                </a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Usuário</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Rastreamento Section -->
+            <section id="rastreamento" class="rastreamento-section active">
+                <div class="section-header">
+                    <h1>Rastreamento em Tempo Real</h1>
+                    <p>Acompanhe a localização e histórico de movimentações do frete</p>
+                </div>
+
+                <!-- Frete Info -->
+                <div class="frete-info-header" id="frete-info-header">
+                    <div class="frete-card">
+                        <div class="frete-header">
+                            <h3 id="frete-titulo">Frete #</h3>
+                            <span class="status" id="frete-status">Carregando...</span>
+                        </div>
+                        <div class="frete-info">
+                            <p><strong>Origem:</strong> <span id="frete-origem">-</span></p>
+                            <p><strong>Destino:</strong> <span id="frete-destino">-</span></p>
+                            <p><strong>Motorista:</strong> <span id="frete-motorista">-</span></p>
+                            <p><strong>Data:</strong> <span id="frete-data">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rastreamento-content">
+                    <div class="map-container">
+                        <div id="map" class="map">
+                            <div class="map-placeholder">
+                                <i class="fas fa-map"></i>
+                                <p>Mapa de rastreamento</p>
+                                <small>Integração com GPS em desenvolvimento</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rastreamento-info">
+                        <div class="info-card">
+                            <h3>Localização Atual</h3>
+                            <p id="localizacao-atual">Carregando...</p>
+                            <button class="btn btn-primary" onclick="atualizarLocalizacao()">
+                                <i class="fas fa-location-arrow"></i>
+                                Atualizar Localização
+                            </button>
+                        </div>
+
+                        <div class="info-card">
+                            <h3>Histórico de Movimentações</h3>
+                            <div class="movimentacoes-list" id="movimentacoes-list">
+                                <!-- Histórico será carregado aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Broday Transportes</h3>
+                    <p>Conectando embarcadores e transportadores de forma inteligente e eficiente.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Navegação</h4>
+                    <div class="footer-nav">
+                        <a href="#" id="footer-back-link">Voltar</a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contato</h4>
+                    <div class="contact-info">
+                        <p><i class="fas fa-map-marker-alt"></i> Rua Cambara, 268 - Nova Russia</p>
+                        <p>Ponta Grossa - PR, 84.053-060</p>
+                        <p><i class="fas fa-phone"></i> (42) 99985-2606</p>
+                        <p><i class="fas fa-envelope"></i> brodaytransportes@gmail.com</p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <div class="footer-legal">
+                <div class="legal-info">
+                    <p><strong>CNPJ:</strong> 58.893.054/0001-03</p>
+                    <p><strong>Endereço:</strong> Rua Cambara, 268 - Nova Russia, Ponta Grossa - PR, 84.053-060</p>
+                </div>
+                <div class="copyright">
+                    <p>© 2025 Broday Transportes. Todos os direitos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Verificar se o usuário está logado
+        if (!isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+
+        // Obter ID do frete da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const freteId = urlParams.get('frete');
+
+        // Carregar dados do usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            loadFreteData();
+            setupNavigation();
+        });
+
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.name || user.email;
+            }
+        }
+
+        function setupNavigation() {
+            const userType = getUserType();
+            let backUrl = '#';
+            
+            if (userType === 'cliente') {
+                backUrl = 'cliente-dashboard.html';
+            } else if (userType === 'admin') {
+                backUrl = 'admin-dashboard.html';
+            }
+            
+            document.getElementById('back-link').href = backUrl;
+            document.getElementById('footer-back-link').href = backUrl;
+        }
+
+        async function loadFreteData() {
+            if (!freteId) {
+                showNotification('ID do frete não fornecido', 'error');
+                return;
+            }
+
+            try {
+                const response = await api.getFrete(freteId);
+                if (response.success) {
+                    const frete = response.data;
+                    displayFreteInfo(frete);
+                } else {
+                    showNotification('Erro ao carregar dados do frete', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar frete:', error);
+                showNotification('Erro ao carregar dados do frete', 'error');
+            }
+        }
+
+        function displayFreteInfo(frete) {
+            document.getElementById('frete-titulo').textContent = `Frete #${frete.id}`;
+            document.getElementById('frete-status').textContent = getStatusText(frete.status);
+            document.getElementById('frete-origem').textContent = frete.origem;
+            document.getElementById('frete-destino').textContent = frete.destino;
+            document.getElementById('frete-motorista').textContent = frete.motorista_nome || 'Não atribuído';
+            document.getElementById('frete-data').textContent = new Date(frete.data_coleta).toLocaleDateString('pt-BR');
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pendente': 'Pendente',
+                'aceito': 'Aceito',
+                'em_transito': 'Em Trânsito',
+                'entregue': 'Entregue',
+                'cancelado': 'Cancelado'
+            };
+            return statusMap[status] || status;
+        }
+
+        function atualizarLocalizacao() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        document.getElementById('localizacao-atual').textContent = 
+                            `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                        showNotification('Localização atualizada!', 'success');
+                    },
+                    function(error) {
+                        showNotification('Erro ao obter localização', 'error');
+                    }
+                );
+            } else {
+                showNotification('Geolocalização não suportada', 'error');
+            }
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerText = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        });
+    </script>
+</body>
+</html>

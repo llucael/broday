@@ -1,4 +1,4 @@
-const { Frete, Cliente, Motorista, User } = require('../models');
+const { Frete, User } = require('../models');
 const { Op } = require('sequelize');
 
 // Gerar código único para frete
@@ -13,7 +13,7 @@ const createFrete = async (req, res) => {
   try {
     const freteData = {
       ...req.body,
-      clienteId: req.user.cliente.id,
+      clienteId: req.user.id,
       codigo: generateFreteCode(),
       status: 'solicitado'
     };
@@ -23,8 +23,8 @@ const createFrete = async (req, res) => {
     // Buscar frete completo com relacionamentos
     const completeFrete = await Frete.findByPk(frete.id, {
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ]
     });
 
@@ -48,7 +48,7 @@ const getFretesByCliente = async (req, res) => {
     const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = { clienteId: req.user.cliente.id };
+    const whereClause = { clienteId: req.user.id };
     if (status) {
       whereClause.status = status;
     }
@@ -56,8 +56,8 @@ const getFretesByCliente = async (req, res) => {
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ],
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
@@ -139,8 +139,8 @@ const getFretesByMotorista = async (req, res) => {
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ],
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
@@ -175,8 +175,8 @@ const getFreteById = async (req, res) => {
 
     const frete = await Frete.findByPk(id, {
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ]
     });
 
@@ -252,8 +252,8 @@ const acceptFrete = async (req, res) => {
     // Buscar frete atualizado
     const updatedFrete = await Frete.findByPk(id, {
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ]
     });
 
@@ -325,8 +325,8 @@ const updateFreteStatus = async (req, res) => {
     // Buscar frete atualizado
     const updatedFrete = await Frete.findByPk(id, {
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ]
     });
 
@@ -358,8 +358,8 @@ const getAllFretes = async (req, res) => {
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] },
-        { model: Motorista, as: 'motorista', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
       ],
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),

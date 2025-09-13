@@ -26,7 +26,7 @@ app.use(limiter);
 
 // CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL.split(','),
+  origin: ['http://localhost:5500', 'http://localhost:5501'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
