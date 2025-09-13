@@ -56,7 +56,10 @@
                         <select id="motorista-filter">
                             <option value="">Todos os Motoristas</option>
                         </select>
-                        <input type="date" id="data-filter" placeholder="Filtrar por data">
+                        <select id="order-filter">
+                            <option value="recent">Mais Recente</option>
+                            <option value="oldest">Mais Antigo</option>
+                        </select>
                         <button class="btn btn-primary" onclick="loadFretes()">
                             <i class="fas fa-sync"></i>
                             Atualizar
@@ -342,6 +345,14 @@
                     fretesFiltrados = fretesFiltrados.filter(f => f.status === statusFilter);
                 }
                 
+                // Aplicar ordenação
+                const orderFilter = document.getElementById('order-filter').value;
+                if (orderFilter === 'oldest') {
+                    fretesFiltrados.sort((a, b) => new Date(a.dataColeta) - new Date(b.dataColeta));
+                } else {
+                    fretesFiltrados.sort((a, b) => new Date(b.dataColeta) - new Date(a.dataColeta));
+                }
+                
                 container.innerHTML = '';
                 
                 if (fretesFiltrados.length === 0) {
@@ -501,7 +512,7 @@
             document.getElementById('status-filter').value = '';
             document.getElementById('cliente-filter').value = '';
             document.getElementById('motorista-filter').value = '';
-            document.getElementById('data-filter').value = '';
+            document.getElementById('order-filter').value = 'recent';
             loadFretes();
         }
 

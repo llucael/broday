@@ -189,8 +189,15 @@
                 const container = document.getElementById('clientes-list');
                 container.innerHTML = '<p class="no-data">Carregando clientes...</p>';
                 
-                // Dados reais dos clientes do banco
-                const clientes = [
+                // Dados reais dos usuários do banco
+                const usuarios = [
+                    {
+                        id: 3,
+                        email: 'admin@broday.com',
+                        user_type: 'admin',
+                        is_active: true,
+                        created_at: new Date().toISOString().split('T')[0]
+                    },
                     {
                         id: 2,
                         email: 'cliente@broday.com',
@@ -222,7 +229,7 @@
                 ];
 
                 setTimeout(() => {
-                    renderClientes(clientes);
+                    renderClientes(usuarios);
                 }, 1000);
             } catch (error) {
                 console.error('Erro ao carregar clientes:', error);
@@ -230,35 +237,42 @@
             }
         }
 
-        function renderClientes(clientes) {
+        function renderClientes(usuarios) {
             const container = document.getElementById('clientes-list');
             
-            if (clientes.length === 0) {
-                container.innerHTML = '<p class="no-data">Nenhum cliente encontrado</p>';
+            if (usuarios.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhum usuário encontrado</p>';
                 return;
             }
 
-            const clientesHTML = clientes.map(cliente => `
+            const usuariosHTML = usuarios.map(usuario => {
+                const tipoUsuario = usuario.user_type === 'admin' ? 'Administrador' : 
+                                  usuario.user_type === 'motorista' ? 'Motorista' : 'Cliente';
+                const iconeUsuario = usuario.user_type === 'admin' ? 'fa-crown' : 
+                                   usuario.user_type === 'motorista' ? 'fa-truck' : 'fa-user';
+                
+                return `
                 <div class="cliente-card">
                     <div class="cliente-info">
-                        <h3>${cliente.email.split('@')[0].charAt(0).toUpperCase() + cliente.email.split('@')[0].slice(1)}</h3>
-                        <p><i class="fas fa-envelope"></i> ${cliente.email}</p>
-                        <p><i class="fas fa-user"></i> Cliente</p>
-                        <p><i class="fas fa-calendar"></i> Cadastrado em: ${new Date(cliente.created_at).toLocaleDateString('pt-BR')}</p>
+                        <h3>${usuario.email.split('@')[0].charAt(0).toUpperCase() + usuario.email.split('@')[0].slice(1)}</h3>
+                        <p><i class="fas fa-envelope"></i> ${usuario.email}</p>
+                        <p><i class="fas ${iconeUsuario}"></i> ${tipoUsuario}</p>
+                        <p><i class="fas fa-calendar"></i> Cadastrado em: ${new Date(usuario.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div class="cliente-actions">
-                        <span class="status-badge ${cliente.is_active ? 'ativo' : 'inativo'}">${cliente.is_active ? 'Ativo' : 'Inativo'}</span>
-                        <button class="btn btn-sm btn-primary" onclick="editCliente(${cliente.id})">
+                        <span class="status-badge ${usuario.is_active ? 'ativo' : 'inativo'}">${usuario.is_active ? 'Ativo' : 'Inativo'}</span>
+                        <button class="btn btn-sm btn-primary" onclick="editCliente(${usuario.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCliente(${cliente.id})">
+                        <button class="btn btn-sm btn-danger" onclick="deleteCliente(${usuario.id})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
-            container.innerHTML = clientesHTML;
+            container.innerHTML = usuariosHTML;
         }
 
         function showAddClienteModal() {
