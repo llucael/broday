@@ -44,7 +44,7 @@
                     <div class="filters">
                         <select id="status-filter">
                             <option value="">Todos os Status</option>
-                            <option value="pendente">Pendente</option>
+                            <option value="solicitado">Solicitado</option>
                             <option value="aceito">Aceito</option>
                             <option value="em_transito">Em Trânsito</option>
                             <option value="entregue">Entregue</option>
@@ -60,6 +60,10 @@
                         <button class="btn btn-primary" onclick="loadFretes()">
                             <i class="fas fa-sync"></i>
                             Atualizar
+                        </button>
+                        <button class="btn btn-primary" onclick="clearFilters()">
+                            <i class="fas fa-times"></i>
+                            Limpar Filtros
                         </button>
                     </div>
                 </div>
@@ -130,6 +134,7 @@
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
+            loadFilters();
             loadFretes();
         });
 
@@ -140,20 +145,364 @@
             }
         }
 
+        async function loadFilters() {
+            try {
+                // Dados simulados para filtros
+                const clientesSimulados = [
+                    { id: 1, email: 'cliente1@email.com' },
+                    { id: 2, email: 'cliente2@email.com' },
+                    { id: 3, email: 'cliente3@email.com' }
+                ];
+                
+                const motoristasSimulados = [
+                    { id: 1, email: 'motorista1@email.com' },
+                    { id: 2, email: 'motorista2@email.com' }
+                ];
+                
+                // Carregar clientes
+                const clienteSelect = document.getElementById('cliente-filter');
+                clientesSimulados.forEach(cliente => {
+                    const option = document.createElement('option');
+                    option.value = cliente.id;
+                    option.textContent = cliente.email;
+                    clienteSelect.appendChild(option);
+                });
+
+                // Carregar motoristas
+                const motoristaSelect = document.getElementById('motorista-filter');
+                motoristasSimulados.forEach(motorista => {
+                    const option = document.createElement('option');
+                    option.value = motorista.id;
+                    option.textContent = motorista.email;
+                    motoristaSelect.appendChild(option);
+                });
+                
+                // Tentar carregar dados reais em background
+                try {
+                    const clientesResponse = await api.getClientes(1, 1000);
+                    if (clientesResponse.success) {
+                        clienteSelect.innerHTML = '<option value="">Todos os Clientes</option>';
+                        clientesResponse.data.clientes.forEach(cliente => {
+                            const option = document.createElement('option');
+                            option.value = cliente.id;
+                            option.textContent = cliente.name || cliente.email;
+                            clienteSelect.appendChild(option);
+                        });
+                    }
+
+                    const motoristasResponse = await api.getMotoristas(1, 1000);
+                    if (motoristasResponse.success) {
+                        motoristaSelect.innerHTML = '<option value="">Todos os Motoristas</option>';
+                        motoristasResponse.data.motoristas.forEach(motorista => {
+                            const option = document.createElement('option');
+                            option.value = motorista.id;
+                            option.textContent = motorista.name || motorista.email;
+                            motoristaSelect.appendChild(option);
+                        });
+                    }
+                } catch (apiError) {
+                    console.log('API não disponível, usando dados simulados para filtros');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar filtros:', error);
+            }
+        }
+
         async function loadFretes() {
             try {
-                // Simular carregamento de fretes
                 const container = document.getElementById('fretes-list');
                 container.innerHTML = '<p class="no-data">Carregando fretes...</p>';
                 
-                // Em produção, fazer chamada para API
-                setTimeout(() => {
+                // Dados simulados para teste
+                const fretesSimulados = [
+                    {
+                        id: 1,
+                        codigo: 'FR123456789',
+                        status: 'aceito',
+                        cargoType: 'Eletrônicos',
+                        cargoWeight: '15.5',
+                        cargoValue: '2500.00',
+                        originCity: 'Ponta Grossa',
+                        originState: 'PR',
+                        originStreet: 'Rua Cambara',
+                        originNumber: '268',
+                        destinationCity: 'Rio de Janeiro',
+                        destinationState: 'RJ',
+                        destinationStreet: 'Rua da Carioca',
+                        destinationNumber: '200',
+                        dataColeta: new Date(),
+                        cliente: { email: 'cliente1@email.com' },
+                        motorista: { email: 'motorista1@email.com' }
+                    },
+                    {
+                        id: 2,
+                        codigo: 'FR987654321',
+                        status: 'em_transito',
+                        cargoType: 'Roupas',
+                        cargoWeight: '8.2',
+                        cargoValue: '800.00',
+                        originCity: 'Ponta Grossa',
+                        originState: 'PR',
+                        originStreet: 'Rua Cambara',
+                        originNumber: '268',
+                        destinationCity: 'Belo Horizonte',
+                        destinationState: 'MG',
+                        destinationStreet: 'Rua da Bahia',
+                        destinationNumber: '1500',
+                        dataColeta: new Date(),
+                        cliente: { email: 'cliente2@email.com' },
+                        motorista: { email: 'motorista2@email.com' }
+                    },
+                    {
+                        id: 3,
+                        codigo: 'FR456789123',
+                        status: 'solicitado',
+                        cargoType: 'Documentos',
+                        cargoWeight: '0.5',
+                        cargoValue: '50.00',
+                        originCity: 'Ponta Grossa',
+                        originState: 'PR',
+                        originStreet: 'Rua Cambara',
+                        originNumber: '268',
+                        destinationCity: 'Florianópolis',
+                        destinationState: 'SC',
+                        destinationStreet: 'Rua Felipe Schmidt',
+                        destinationNumber: '456',
+                        dataColeta: new Date(),
+                        cliente: { email: 'cliente3@email.com' },
+                        motorista: null
+                    },
+                    {
+                        id: 4,
+                        codigo: 'FR111222333',
+                        status: 'entregue',
+                        cargoType: 'Livros',
+                        cargoWeight: '12.0',
+                        cargoValue: '300.00',
+                        originCity: 'Ponta Grossa',
+                        originState: 'PR',
+                        originStreet: 'Rua Cambara',
+                        originNumber: '268',
+                        destinationCity: 'Fortaleza',
+                        destinationState: 'CE',
+                        destinationStreet: 'Rua Barão do Rio Branco',
+                        destinationNumber: '100',
+                        dataColeta: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                        dataEntrega: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+                        cliente: { email: 'cliente4@email.com' },
+                        motorista: { email: 'motorista1@email.com' }
+                    },
+                    {
+                        id: 5,
+                        codigo: 'FR444555666',
+                        status: 'entregue',
+                        cargoType: 'Equipamentos',
+                        cargoWeight: '25.0',
+                        cargoValue: '5000.00',
+                        originCity: 'Ponta Grossa',
+                        originState: 'PR',
+                        originStreet: 'Rua Cambara',
+                        originNumber: '268',
+                        destinationCity: 'Porto Alegre',
+                        destinationState: 'RS',
+                        destinationStreet: 'Rua dos Andradas',
+                        destinationNumber: '500',
+                        dataColeta: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+                        dataEntrega: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+                        cliente: { email: 'cliente5@email.com' },
+                        motorista: { email: 'motorista2@email.com' }
+                    },
+                    {
+                        id: 6,
+                        codigo: 'FR777888999',
+                        status: 'entregue',
+                        cargoType: 'Móveis',
+                        cargoWeight: '35.0',
+                        cargoValue: '1200.00',
+                        originCity: 'Ponta Grossa',
+                        originState: 'PR',
+                        originStreet: 'Rua Cambara',
+                        originNumber: '268',
+                        destinationCity: 'Goiânia',
+                        destinationState: 'GO',
+                        destinationStreet: 'Rua 3',
+                        destinationNumber: '800',
+                        dataColeta: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+                        dataEntrega: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+                        cliente: { email: 'cliente6@email.com' },
+                        motorista: { email: 'motorista1@email.com' }
+                    }
+                ];
+                
+                // Aplicar filtros nos dados simulados
+                let fretesFiltrados = [...fretesSimulados];
+                
+                const statusFilter = document.getElementById('status-filter').value;
+                if (statusFilter) {
+                    fretesFiltrados = fretesFiltrados.filter(f => f.status === statusFilter);
+                }
+                
+                container.innerHTML = '';
+                
+                if (fretesFiltrados.length === 0) {
                     container.innerHTML = '<p class="no-data">Nenhum frete encontrado</p>';
-                }, 1000);
+                    return;
+                }
+                
+                fretesFiltrados.forEach(frete => {
+                    const freteCard = createFreteCard(frete);
+                    container.appendChild(freteCard);
+                });
+                
+                // Tentar carregar dados reais em background
+                try {
+                    const statusFilter = document.getElementById('status-filter').value;
+                    const clienteFilter = document.getElementById('cliente-filter').value;
+                    const motoristaFilter = document.getElementById('motorista-filter').value;
+                    const dataFilter = document.getElementById('data-filter').value;
+                    
+                    const filters = {};
+                    if (statusFilter) filters.status = statusFilter;
+                    if (clienteFilter) filters.clienteId = clienteFilter;
+                    if (motoristaFilter) filters.motoristaId = motoristaFilter;
+                    if (dataFilter) filters.data = dataFilter;
+                    
+                    const response = await api.getAllFretes(1, 10, filters);
+                    
+                    if (response.success && response.data.fretes.length > 0) {
+                        container.innerHTML = '';
+                        response.data.fretes.forEach(frete => {
+                            const freteCard = createFreteCard(frete);
+                            container.appendChild(freteCard);
+                        });
+                    }
+                } catch (apiError) {
+                    console.log('API não disponível, usando dados simulados');
+                }
+                
             } catch (error) {
                 console.error('Erro ao carregar fretes:', error);
-                showNotification('Erro ao carregar fretes', 'error');
+                const container = document.getElementById('fretes-list');
+                container.innerHTML = '<p class="no-data">Erro ao carregar fretes</p>';
             }
+        }
+
+        function createFreteCard(frete) {
+            const card = document.createElement('div');
+            card.className = 'frete-card';
+            
+            // Formatar origem e destino
+            const origem = `${frete.originCity}/${frete.originState}`;
+            const destino = `${frete.destinationCity}/${frete.destinationState}`;
+            
+            // Formatar data de coleta
+            const dataColeta = frete.dataColeta ? new Date(frete.dataColeta).toLocaleDateString('pt-BR') : 'Não definida';
+            
+            // Obter nomes do cliente e motorista
+            const clienteNome = frete.cliente ? (frete.cliente.name || frete.cliente.email) : 'N/A';
+            const motoristaNome = frete.motorista ? (frete.motorista.name || frete.motorista.email) : 'Não atribuído';
+            
+            // Formatar valor da carga
+            const valorCarga = frete.cargoValue ? `R$ ${parseFloat(frete.cargoValue).toFixed(2).replace('.', ',')}` : 'N/A';
+            
+            card.innerHTML = `
+                <div class="frete-header">
+                    <h3>${frete.codigo}</h3>
+                    <span class="status status-${frete.status}">${getStatusText(frete.status)}</span>
+                </div>
+                <div class="frete-info">
+                    <div class="frete-route">
+                        <div class="route-point">
+                            <i class="fas fa-map-marker-alt route-icon origin"></i>
+                            <div class="route-details">
+                                <strong>Origem:</strong> ${origem}
+                                <small>${frete.originStreet}, ${frete.originNumber}</small>
+                            </div>
+                        </div>
+                        <div class="route-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="route-point">
+                            <i class="fas fa-map-marker-alt route-icon destination"></i>
+                            <div class="route-details">
+                                <strong>Destino:</strong> ${destino}
+                                <small>${frete.destinationStreet}, ${frete.destinationNumber}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="frete-details">
+                        <div class="detail-item">
+                            <i class="fas fa-box"></i>
+                            <span>${frete.cargoType} (${frete.cargoWeight}kg)</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>${valorCarga}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Coleta: ${dataColeta}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-user"></i>
+                            <span>Cliente: ${clienteNome}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-truck"></i>
+                            <span>Motorista: ${motoristaNome}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="frete-actions">
+                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
+                        <i class="fas fa-eye"></i>
+                        Ver Detalhes
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Rastrear
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="editFrete(${frete.id})">
+                        <i class="fas fa-edit"></i>
+                        Editar
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'solicitado': 'Solicitado',
+                'aceito': 'Aceito',
+                'em_transito': 'Em Trânsito',
+                'entregue': 'Entregue',
+                'cancelado': 'Cancelado'
+            };
+            return statusMap[status] || status;
+        }
+
+        function viewFrete(freteId) {
+            // Implementar visualização detalhada do frete
+            showNotification('Funcionalidade em desenvolvimento', 'info');
+        }
+
+        function rastrearFrete(freteId) {
+            // Redirecionar para página de rastreamento
+            window.location.href = `rastreamento.html?frete=${freteId}`;
+        }
+
+        function editFrete(freteId) {
+            // Implementar edição do frete
+            showNotification('Funcionalidade em desenvolvimento', 'info');
+        }
+
+        function clearFilters() {
+            document.getElementById('status-filter').value = '';
+            document.getElementById('cliente-filter').value = '';
+            document.getElementById('motorista-filter').value = '';
+            document.getElementById('data-filter').value = '';
+            loadFretes();
         }
 
         // Função para mostrar notificações

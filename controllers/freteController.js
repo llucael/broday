@@ -347,13 +347,25 @@ const updateFreteStatus = async (req, res) => {
 // Listar todos os fretes (admin)
 const getAllFretes = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, clienteId, motoristaId } = req.query;
+    const { page = 1, limit = 10, status, clienteId, motoristaId, data } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = {};
     if (status) whereClause.status = status;
     if (clienteId) whereClause.clienteId = clienteId;
     if (motoristaId) whereClause.motoristaId = motoristaId;
+    
+    // Filtro por data
+    if (data) {
+      const dataInicio = new Date(data);
+      const dataFim = new Date(data);
+      dataFim.setDate(dataFim.getDate() + 1);
+      
+      whereClause.createdAt = {
+        [Op.gte]: dataInicio,
+        [Op.lt]: dataFim
+      };
+    }
 
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,

@@ -1167,6 +1167,7 @@ h2 {
 .fretes-list {
     display: grid;
     gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 }
 
 .frete-card {
@@ -1175,6 +1176,8 @@ h2 {
     border-radius: 12px;
     border: 1px solid #4A5568;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .frete-card:hover {
@@ -1190,13 +1193,108 @@ h2 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #4A5568;
 }
 
 .frete-header h3 {
-    color: white;
     font-size: 1.2rem;
+    font-weight: 600;
+    color: #60A5FA;
     margin: 0;
+}
+
+/* Rota do frete */
+.frete-route {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: rgba(96, 165, 250, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(96, 165, 250, 0.1);
+}
+
+.route-point {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.route-icon {
+    font-size: 1.2rem;
+    margin-top: 0.25rem;
+}
+
+.route-icon.origin {
+    color: #48BB78;
+}
+
+.route-icon.destination {
+    color: #F56565;
+}
+
+.route-details {
+    flex: 1;
+}
+
+.route-details strong {
+    display: block;
+    color: #E2E8F0;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.route-details small {
+    color: #A0AEC0;
+    font-size: 0.8rem;
+    display: block;
+}
+
+.route-arrow {
+    color: #60A5FA;
+    font-size: 1.1rem;
+    margin: 0 0.5rem;
+}
+
+/* Detalhes do frete */
+.frete-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.detail-item i {
+    color: #60A5FA;
+    width: 16px;
+    text-align: center;
+}
+
+.detail-item span {
+    color: #E2E8F0;
+}
+
+/* Ações do frete */
+.frete-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid #4A5568;
 }
 
 .frete-info {
@@ -1872,6 +1970,58 @@ body.light-mode .documento-item {
     background-color: #FFFFFF;
     border: 1px solid #E2E8F0;
     color: #2D3748;
+}
+
+/* Modo claro - Cards de frete */
+body.light-mode .frete-route {
+    background-color: rgba(96, 165, 250, 0.08);
+    border: 1px solid rgba(96, 165, 250, 0.15);
+}
+
+body.light-mode .route-details strong {
+    color: #1A202C !important;
+    font-weight: 600;
+}
+
+body.light-mode .route-details small {
+    color: #4A5568 !important;
+}
+
+body.light-mode .detail-item {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+body.light-mode .detail-item span {
+    color: #1A202C !important;
+}
+
+body.light-mode .detail-item i {
+    color: #3182CE !important;
+}
+
+body.light-mode .frete-header {
+    border-bottom: 1px solid #E2E8F0;
+}
+
+body.light-mode .frete-header h3 {
+    color: #3182CE !important;
+}
+
+body.light-mode .frete-actions {
+    border-top: 1px solid #E2E8F0;
+}
+
+/* Melhorar contraste geral no modo claro */
+body.light-mode .frete-card {
+    color: #1A202C !important;
+}
+
+body.light-mode .frete-card p {
+    color: #2D3748 !important;
+}
+
+body.light-mode .frete-card strong {
+    color: #1A202C !important;
 }
 
 body.light-mode .stat-content h3,

@@ -102,13 +102,6 @@
                     </div>
                 </div>
 
-                <!-- Fretes Ativos -->
-                <div class="recent-section">
-                    <h2>Fretes Ativos</h2>
-                    <div class="fretes-list" id="fretes-ativos">
-                        <!-- Fretes ativos serão carregados aqui -->
-                    </div>
-                </div>
 
                 <!-- Recent Activity -->
                 <div class="recent-section">
@@ -193,46 +186,60 @@
         function loadDashboardData() {
             // Carregar estatísticas
             loadStats();
-            // Carregar fretes ativos
-            loadFretesAtivos();
             // Carregar atividades recentes
             loadRecentActivity();
         }
 
         async function loadStats() {
             try {
-                // Simular dados - em produção, fazer chamadas para API
-                document.getElementById('fretes-ativos').textContent = '12';
-                document.getElementById('fretes-concluidos-mes').textContent = '156';
-                document.getElementById('total-motoristas').textContent = '45';
-                document.getElementById('total-clientes').textContent = '234';
+                // Usar dados simulados temporariamente para testar
+                document.getElementById('fretes-ativos').textContent = '3';
+                document.getElementById('fretes-concluidos-mes').textContent = '3';
+                document.getElementById('total-motoristas').textContent = '1';
+                document.getElementById('total-clientes').textContent = '1';
+                
+                // Tentar carregar dados reais em background
+                try {
+                    const [fretesResponse, clientesResponse, motoristasResponse] = await Promise.all([
+                        api.getAllFretes(1, 1000),
+                        api.getClientes(1, 1000),
+                        api.getMotoristas(1, 1000)
+                    ]);
+
+                    if (fretesResponse.success) {
+                        const fretesAtivos = fretesResponse.data.fretes.filter(f => ['solicitado', 'aceito', 'em_transito'].includes(f.status)).length;
+                        const fretesConcluidos = fretesResponse.data.fretes.filter(f => {
+                            if (f.status !== 'entregue') return false;
+                            const dataEntrega = new Date(f.dataEntrega);
+                            const agora = new Date();
+                            return dataEntrega.getMonth() === agora.getMonth() && 
+                                   dataEntrega.getFullYear() === agora.getFullYear();
+                        }).length;
+
+                        document.getElementById('fretes-ativos').textContent = fretesAtivos;
+                        document.getElementById('fretes-concluidos-mes').textContent = fretesConcluidos;
+                    }
+
+                    if (clientesResponse.success) {
+                        document.getElementById('total-clientes').textContent = clientesResponse.data.pagination.total;
+                    }
+
+                    if (motoristasResponse.success) {
+                        document.getElementById('total-motoristas').textContent = motoristasResponse.data.pagination.total;
+                    }
+                } catch (apiError) {
+                    console.log('API não disponível, usando dados simulados');
+                }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
+                // Valores padrão em caso de erro
+                document.getElementById('fretes-ativos').textContent = '0';
+                document.getElementById('fretes-concluidos-mes').textContent = '0';
+                document.getElementById('total-motoristas').textContent = '0';
+                document.getElementById('total-clientes').textContent = '0';
             }
         }
 
-        async function loadFretesAtivos() {
-            try {
-                const response = await api.getAllFretes(1, 10, 'aceito,em_transito');
-                if (response.success) {
-                    const fretes = response.data.fretes;
-                    const container = document.getElementById('fretes-ativos');
-                    container.innerHTML = '';
-                    
-                    if (fretes.length === 0) {
-                        container.innerHTML = '<p class="no-data">Nenhum frete ativo</p>';
-                        return;
-                    }
-                    
-                    fretes.forEach(frete => {
-                        const freteCard = createFreteCardAtivo(frete);
-                        container.appendChild(freteCard);
-                    });
-                }
-            } catch (error) {
-                console.error('Erro ao carregar fretes ativos:', error);
-            }
-        }
 
         async function loadRecentActivity() {
             try {
@@ -266,34 +273,6 @@
             }
         }
 
-        function createFreteCardAtivo(frete) {
-            const card = document.createElement('div');
-            card.className = 'frete-card';
-            card.innerHTML = `
-                <div class="frete-header">
-                    <h3>Frete #${frete.id}</h3>
-                    <span class="status status-${frete.status}">${getStatusText(frete.status)}</span>
-                </div>
-                <div class="frete-info">
-                    <p><strong>Origem:</strong> ${frete.origem}</p>
-                    <p><strong>Destino:</strong> ${frete.destino}</p>
-                    <p><strong>Data:</strong> ${new Date(frete.data_coleta).toLocaleDateString('pt-BR')}</p>
-                    <p><strong>Cliente:</strong> ${frete.cliente_nome || 'N/A'}</p>
-                    <p><strong>Motorista:</strong> ${frete.motorista_nome || 'Não atribuído'}</p>
-                </div>
-                <div class="frete-actions">
-                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
-                        <i class="fas fa-eye"></i>
-                        Ver Detalhes
-                    </button>
-                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
-                        <i class="fas fa-map-marker-alt"></i>
-                        Rastrear
-                    </button>
-                </div>
-            `;
-            return card;
-        }
 
         function getStatusText(status) {
             const statusMap = {
