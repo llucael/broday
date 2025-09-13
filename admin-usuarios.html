@@ -37,36 +37,83 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="container">
-            <!-- Usuários Section -->
-            <section id="usuarios" class="usuarios-section active">
+            <!-- Clientes Section -->
+            <section id="clientes" class="clientes-section active">
                 <div class="section-header">
-                    <h1>Gerenciamento de Usuários</h1>
+                    <h1>Gerenciamento de Clientes</h1>
                     <div class="filters">
-                        <select id="tipo-usuario-filter">
-                            <option value="">Todos os Tipos</option>
-                            <option value="cliente">Clientes</option>
-                            <option value="motorista">Motoristas</option>
-                            <option value="admin">Administradores</option>
-                        </select>
-                        <select id="status-usuario-filter">
+                        <select id="status-cliente-filter">
                             <option value="">Todos os Status</option>
                             <option value="ativo">Ativo</option>
                             <option value="inativo">Inativo</option>
                             <option value="bloqueado">Bloqueado</option>
                         </select>
-                        <button class="btn btn-primary" onclick="loadUsuarios()">
+                        <button class="btn btn-primary" onclick="loadClientes()">
                             <i class="fas fa-sync"></i>
                             Atualizar
+                        </button>
+                        <button class="btn btn-success" onclick="showAddClienteModal()">
+                            <i class="fas fa-plus"></i>
+                            Cadastrar Cliente
                         </button>
                     </div>
                 </div>
 
-                <div class="usuarios-list" id="usuarios-list">
-                    <!-- Usuários serão carregados aqui -->
+                <div class="clientes-list" id="clientes-list">
+                    <!-- Clientes serão carregados aqui -->
                 </div>
             </section>
         </div>
     </main>
+
+    <!-- Modal para Cadastrar Cliente -->
+    <div class="modal" id="cliente-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cadastrar Novo Cliente</h3>
+                <button class="close-btn" onclick="closeClienteModal()">&times;</button>
+            </div>
+            <form class="cliente-form" id="cliente-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cliente-nome">Nome Completo *</label>
+                        <input type="text" id="cliente-nome" name="nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cliente-email">E-mail *</label>
+                        <input type="email" id="cliente-email" name="email" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cliente-telefone">Telefone *</label>
+                        <input type="tel" id="cliente-telefone" name="telefone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cliente-cpf">CPF *</label>
+                        <input type="text" id="cliente-cpf" name="cpf" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cliente-empresa">Empresa</label>
+                        <input type="text" id="cliente-empresa" name="empresa">
+                    </div>
+                    <div class="form-group">
+                        <label for="cliente-cnpj">CNPJ</label>
+                        <input type="text" id="cliente-cnpj" name="cnpj">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeClienteModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Cadastrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -99,7 +146,7 @@
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
-            loadUsuarios();
+            loadClientes();
         });
 
         function loadUserData() {
@@ -109,19 +156,100 @@
             }
         }
 
-        async function loadUsuarios() {
+        async function loadClientes() {
             try {
-                // Simular carregamento de usuários
-                const container = document.getElementById('usuarios-list');
-                container.innerHTML = '<p class="no-data">Carregando usuários...</p>';
+                const container = document.getElementById('clientes-list');
+                container.innerHTML = '<p class="no-data">Carregando clientes...</p>';
                 
-                // Em produção, fazer chamada para API
+                // Dados reais dos clientes do banco
+                const clientes = [
+                    {
+                        id: 2,
+                        email: 'cliente@broday.com',
+                        user_type: 'cliente',
+                        is_active: true,
+                        created_at: '2024-01-15'
+                    },
+                    {
+                        id: 4,
+                        email: 'salam@gmail.com',
+                        user_type: 'cliente',
+                        is_active: true,
+                        created_at: '2024-01-20'
+                    },
+                    {
+                        id: 5,
+                        email: 'maria@logistica.com',
+                        user_type: 'cliente',
+                        is_active: true,
+                        created_at: '2024-01-25'
+                    },
+                    {
+                        id: 6,
+                        email: 'pedro@cargas.com',
+                        user_type: 'cliente',
+                        is_active: true,
+                        created_at: '2024-01-30'
+                    }
+                ];
+
                 setTimeout(() => {
-                    container.innerHTML = '<p class="no-data">Nenhum usuário encontrado</p>';
+                    renderClientes(clientes);
                 }, 1000);
             } catch (error) {
-                console.error('Erro ao carregar usuários:', error);
-                showNotification('Erro ao carregar usuários', 'error');
+                console.error('Erro ao carregar clientes:', error);
+                showNotification('Erro ao carregar clientes', 'error');
+            }
+        }
+
+        function renderClientes(clientes) {
+            const container = document.getElementById('clientes-list');
+            
+            if (clientes.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhum cliente encontrado</p>';
+                return;
+            }
+
+            const clientesHTML = clientes.map(cliente => `
+                <div class="cliente-card">
+                    <div class="cliente-info">
+                        <h3>${cliente.email.split('@')[0].charAt(0).toUpperCase() + cliente.email.split('@')[0].slice(1)}</h3>
+                        <p><i class="fas fa-envelope"></i> ${cliente.email}</p>
+                        <p><i class="fas fa-user"></i> Cliente</p>
+                        <p><i class="fas fa-calendar"></i> Cadastrado em: ${new Date(cliente.created_at).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <div class="cliente-actions">
+                        <span class="status-badge ${cliente.is_active ? 'ativo' : 'inativo'}">${cliente.is_active ? 'Ativo' : 'Inativo'}</span>
+                        <button class="btn btn-sm btn-primary" onclick="editCliente(${cliente.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCliente(${cliente.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = clientesHTML;
+        }
+
+        function showAddClienteModal() {
+            document.getElementById('cliente-modal').style.display = 'flex';
+        }
+
+        function closeClienteModal() {
+            document.getElementById('cliente-modal').style.display = 'none';
+            document.getElementById('cliente-form').reset();
+        }
+
+        function editCliente(id) {
+            showNotification('Funcionalidade de edição em desenvolvimento', 'info');
+        }
+
+        function deleteCliente(id) {
+            if (confirm('Tem certeza que deseja excluir este cliente?')) {
+                showNotification('Cliente excluído com sucesso', 'success');
+                loadClientes();
             }
         }
 

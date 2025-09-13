@@ -191,6 +191,67 @@ class ApiService {
     
     return await this.request(`/fretes?${params}`);
   }
+
+  // ===== MÉTODOS DE USUÁRIOS (ADMIN) =====
+
+  // Listar todos os clientes
+  async getClientes(page = 1, limit = 10, filters = {}) {
+    const params = new URLSearchParams({ page, limit, user_type: 'cliente' });
+    Object.keys(filters).forEach(key => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    
+    return await this.request(`/admin/users?${params}`);
+  }
+
+  // Listar todos os motoristas
+  async getMotoristas(page = 1, limit = 10, filters = {}) {
+    const params = new URLSearchParams({ page, limit, user_type: 'motorista' });
+    Object.keys(filters).forEach(key => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    
+    return await this.request(`/admin/users?${params}`);
+  }
+
+  // Criar novo cliente
+  async createCliente(clienteData) {
+    return await this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ ...clienteData, user_type: 'cliente' })
+    });
+  }
+
+  // Criar novo motorista
+  async createMotorista(motoristaData) {
+    return await this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ ...motoristaData, user_type: 'motorista' })
+    });
+  }
+
+  // Atualizar usuário
+  async updateUser(userId, userData) {
+    return await this.request(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData)
+    });
+  }
+
+  // Excluir usuário
+  async deleteUser(userId) {
+    return await this.request(`/admin/users/${userId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Ativar/Desativar usuário
+  async toggleUserStatus(userId, isActive) {
+    return await this.request(`/admin/users/${userId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: isActive })
+    });
+  }
 }
 
 // Instância global da API

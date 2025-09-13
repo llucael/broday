@@ -20,6 +20,9 @@
                 <a href="#contato">Contato</a>
             </nav>
             <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
                 <a href="login.html" class="btn btn-secondary">Entrar</a>
                 <a href="login.html#register" class="btn btn-primary">Cadastrar</a>
             </div>
@@ -65,32 +68,32 @@
         </div>
     </section>
 
-    <!-- Por que escolher Section -->
-    <section id="sobre" class="why-choose">
+    <!-- Sobre nós Section -->
+    <section id="sobre" class="about-section">
         <div class="container">
-            <h2>Por que escolher a Broday Transportes?</h2>
-            <p class="section-intro">Somos líderes no mercado de gerenciamento de transporte, oferecendo soluções inovadoras e eficientes.</p>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-image">
-                        <i class="fas fa-truck"></i>
-                    </div>
-                    <h3>Tecnologia Avançada</h3>
-                    <p>Utilizamos as mais recentes tecnologias para otimizar processos e garantir a melhor experiência.</p>
+            <div class="about-content">
+                <div class="about-image">
+                    <img src="image0.jpg" alt="Sérgio José Broday Filho - CEO da Broday Transportes" class="ceo-photo">
                 </div>
-                <div class="feature-card">
-                    <div class="feature-image">
-                        <i class="fas fa-shield-alt"></i>
+                <div class="about-text">
+                    <h2>Nossa História</h2>
+                    <div class="story-content">
+                        <p class="story-intro">"E aí, você já acordou querendo revolucionar o ramo de transportes?"</p>
+                        
+                        <p>Foi com esse pensamento que eu decidi dar início a uma jornada que mudou a minha vida — e a de muitos ao meu redor. Eu sou <strong>Sérgio José Broday Filho</strong>, sócio da Broday Transportes, e quero te contar como uma ideia ousada, aliada à paixão por inovação, transformou uma empresa familiar em uma referência nacional no setor logístico.</p>
+
+                        <p>A Broday nasceu do zero. Começamos com poucos recursos, mas com um propósito muito claro: <em>fazer diferente</em>. Desde o início, acreditei que o transporte não precisava ser burocrático, limitado ou engessado. A logística no Brasil tinha — e ainda tem — um enorme potencial. Só precisava de alguém disposto a enxergar além da rota óbvia.</p>
+
+                        <p>Em vez de manter uma frota própria e operar de forma tradicional, decidimos conectar embarcadores e transportadores de forma estratégica, ágil e sob demanda. Criamos uma verdadeira plataforma inteligente de logística, onde a eficiência, a economia e a tecnologia trabalham juntas para entregar resultados reais.</p>
+
+                        <p>Hoje, a Broday Transportes movimenta mais do que cargas. Nós movimentamos <strong>sonhos, negócios, histórias</strong>. E fazemos isso com transparência, tecnologia de ponta, rastreamento em tempo real, e, acima de tudo, com respeito pelas pessoas — nossos clientes, nossos parceiros e nossa equipe.</p>
+
+                        <p>Mas nada disso seria possível sem manter os pés no chão e os olhos no futuro. Cada desafio que enfrentei me fortaleceu. Cada barreira superada me ensinou. E cada cliente satisfeito me prova que valeu a pena acreditar.</p>
+
+                        <p>Se você chegou até aqui, talvez também esteja querendo fazer diferente. E eu te digo: <strong>é possível <em>sim</em></strong>. Com coragem, visão e dedicação, qualquer negócio pode se tornar uma revolução.</p>
+
+                        <p class="story-conclusion">Seja bem-vindo à Broday Transportes — onde a inovação é o nosso ponto de partida, e o seu sucesso, o nosso destino.</p>
                     </div>
-                    <h3>Segurança e Confiabilidade</h3>
-                    <p>Priorizamos a segurança de suas cargas e a confiabilidade de nossos serviços.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-image">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3>Experiência e Expertise</h3>
-                    <p>Contamos com uma equipe experiente e qualificada, pronta para atender às suas necessidades.</p>
                 </div>
             </div>
         </div>
@@ -99,11 +102,36 @@
     <!-- Contato Section -->
     <section id="contato" class="contact">
         <div class="container">
-            <h2>Entre em Contato</h2>
+            <h2>Contatos</h2>
             <p class="section-intro">Descubra como a Broday Transportes pode transformar o gerenciamento de sua carga e caminhões. Entre em contato conosco para uma consulta personalizada.</p>
-            <div class="contact-buttons">
-                <a href="frete.html" class="btn btn-primary">Solicitar Cotação</a>
-                <button class="btn btn-primary">Entre em Contato</button>
+            
+            <div class="contact-info-section">
+                <div class="contact-details">
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-text">
+                            <h3>E-mail</h3>
+                            <p>brodaytransportes@gmail.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-text">
+                            <h3>Telefone(s)</h3>
+                            <p>(42) 99985-2606</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-buttons">
+                    <a href="frete.html" class="btn btn-primary">Solicitar Cotação</a>
+                    <a href="mailto:brodaytransportes@gmail.com" class="btn btn-secondary">Enviar E-mail</a>
+                </div>
             </div>
         </div>
     </section>
@@ -111,21 +139,43 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-nav">
-                <a href="#servicos">Serviços</a>
-                <a href="#sobre">Sobre nós</a>
-                <a href="#contato">Contato</a>
-                <a href="#">Política de Privacidade</a>
-                <a href="#">Termos de Uso</a>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Broday Transportes</h3>
+                    <p>Conectando embarcadores e transportadores de forma inteligente e eficiente.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Navegação</h4>
+                    <div class="footer-nav">
+                        <a href="#servicos">Serviços</a>
+                        <a href="#sobre">Sobre nós</a>
+                        <a href="#contato">Contato</a>
+                        <a href="#">Política de Privacidade</a>
+                        <a href="#">Termos de Uso</a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contato</h4>
+                    <div class="contact-info">
+                        <p><i class="fas fa-map-marker-alt"></i> Rua Cambara, 268 - Nova Russia</p>
+                        <p>Ponta Grossa - PR, 84.053-060</p>
+                        <p><i class="fas fa-phone"></i> (42) 99985-2606</p>
+                        <p><i class="fas fa-envelope"></i> brodaytransportes@gmail.com</p>
+                    </div>
+                </div>
+                
             </div>
-            <div class="social-media">
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-linkedin"></i></a>
-            </div>
-            <div class="copyright">
-                <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+            
+            <div class="footer-legal">
+                <div class="legal-info">
+                    <p><strong>CNPJ:</strong> 58.893.054/0001-03</p>
+                    <p><strong>Endereço:</strong> Rua Cambara, 268 - Nova Russia, Ponta Grossa - PR, 84.053-060</p>
+                </div>
+                <div class="copyright">
+                    <p>© 2024 Broday Transportes. Todos os direitos reservados.</p>
+                </div>
             </div>
         </div>
     </footer>
@@ -143,9 +193,7 @@
         }
 
         // Exemplo de uso da função de notificação em um bloco try-catch
-        try {
-            // Código que pode gerar erro
-        } catch (error) {
+        async function handleLoginError(error) {
             let errorMsg = error.message;
             // Se for um erro de resposta da API, tente extrair a mensagem do JSON
             if (error.response && error.response.json) {
@@ -170,6 +218,58 @@
                 showNotification(errorMsg || 'Erro ao fazer login. Tente novamente.', 'error');
             }
         }
+        
+        // Função para alternar tema
+        function toggleTheme() {
+            console.log('Toggle theme clicked!');
+            
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            console.log('Theme changed to:', isLightMode ? 'light' : 'dark');
+            
+            // Alternar ícone do botão
+            const themeToggle = document.querySelector('.theme-toggle i');
+            if (themeToggle) {
+                if (isLightMode) {
+                    themeToggle.className = 'fas fa-moon';
+                    themeToggle.parentElement.title = 'Alternar para modo escuro';
+                } else {
+                    themeToggle.className = 'fas fa-sun';
+                    themeToggle.parentElement.title = 'Alternar para modo claro';
+                }
+                console.log('Icon changed to:', themeToggle.className);
+            } else {
+                console.error('Theme toggle button not found!');
+            }
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing theme...');
+            
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggle = document.querySelector('.theme-toggle i');
+            
+            console.log('Saved theme:', savedTheme);
+            console.log('Theme toggle element:', themeToggle);
+            
+            if (themeToggle) {
+                if (savedTheme === 'light') {
+                    document.body.classList.add('light-mode');
+                    themeToggle.className = 'fas fa-moon';
+                    themeToggle.parentElement.title = 'Alternar para modo escuro';
+                    console.log('Applied light theme');
+                } else {
+                    themeToggle.className = 'fas fa-sun';
+                    themeToggle.parentElement.title = 'Alternar para modo claro';
+                    console.log('Applied dark theme');
+                }
+            } else {
+                console.error('Theme toggle button not found on page load!');
+            }
+        });
     </script>
 </body>
 </html>
