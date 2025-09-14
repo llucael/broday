@@ -16,13 +16,15 @@ app.use(helmet());
 // Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limite de 100 requests por IP
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // limite de 1000 requests por IP (aumentado para desenvolvimento)
   message: {
     success: false,
     message: 'Muitas tentativas. Tente novamente em alguns minutos.'
   }
 });
 app.use(limiter);
+
+// Arquivos estáticos removidos - frontend roda em servidor separado na porta 5501
 
 // CORS
 app.use(cors({
@@ -86,7 +88,7 @@ const startServer = async () => {
     
     // Sincronizar modelos com banco (apenas em desenvolvimento)
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync({ force: false });
       console.log('✅ Modelos sincronizados com o banco de dados');
     }
     

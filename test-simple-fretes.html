@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Simples</title>
+</head>
+<body>
+    <h1>Teste de Conexão</h1>
+    <p>Se você está vendo esta página, o servidor frontend está funcionando!</p>
+    
+    <h2>Teste os endpoints:</h2>
+    <button onclick="testLogin()">Testar Login</button>
+    <button onclick="testFretes()">Testar Fretes Disponíveis</button>
+    <button onclick="testPerfil()">Testar Perfil</button>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        let token = null;
+
+        async function testLogin() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'motorista@broday.com',
+                        password: '123456'
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Login response:', data);
+
+                if (data.success) {
+                    token = data.data.tokens.accessToken;
+                    document.getElementById('result').innerHTML = '<p style="color: green;">✅ Login OK</p>';
+                } else {
+                    document.getElementById('result').innerHTML = '<p style="color: red;">❌ Login falhou: ' + data.message + '</p>';
+                }
+            } catch (error) {
+                console.error('Erro no login:', error);
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Erro no login: ' + error.message + '</p>';
+            }
+        }
+
+        async function testFretes() {
+            if (!token) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Faça login primeiro</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/fretes/disponiveis', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                console.log('Fretes response:', data);
+
+                if (data.success) {
+                    document.getElementById('result').innerHTML = '<p style="color: green;">✅ Fretes OK - ' + data.data.fretes.length + ' fretes</p>';
+                } else {
+                    document.getElementById('result').innerHTML = '<p style="color: red;">❌ Fretes falhou: ' + data.message + '</p>';
+                }
+            } catch (error) {
+                console.error('Erro nos fretes:', error);
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Erro nos fretes: ' + error.message + '</p>';
+            }
+        }
+
+        async function testPerfil() {
+            if (!token) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Faça login primeiro</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                console.log('Perfil response:', data);
+
+                if (data.success) {
+                    document.getElementById('result').innerHTML = '<p style="color: green;">✅ Perfil OK - Nome: ' + (data.data.nome || 'N/A') + '</p>';
+                } else {
+                    document.getElementById('result').innerHTML = '<p style="color: red;">❌ Perfil falhou: ' + data.message + '</p>';
+                }
+            } catch (error) {
+                console.error('Erro no perfil:', error);
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Erro no perfil: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

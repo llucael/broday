@@ -65,15 +65,6 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="avaliacao-media">0.0</h3>
-                            <p>Avaliação Média</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
                             <i class="fas fa-map-marker-alt"></i>
                         </div>
                         <div class="stat-content">
@@ -86,7 +77,7 @@
                 <!-- Fretes Ativos -->
                 <div class="recent-section">
                     <h2>Fretes Ativos</h2>
-                    <div class="fretes-list" id="fretes-ativos">
+                    <div class="fretes-list" id="fretes-ativos-list">
                         <!-- Fretes ativos serão carregados aqui -->
                     </div>
                 </div>
@@ -162,11 +153,26 @@
             }
         }
 
-        function loadDashboardData() {
-            // Carregar estatísticas
-            loadStats();
-            // Carregar fretes ativos
-            loadFretesAtivos();
+        async function loadDashboardData() {
+            try {
+                const response = await api.getDashboard();
+                
+                if (response.success) {
+                    const data = response.data.dashboard;
+                    
+                    // Atualizar estatísticas
+                    document.getElementById('fretes-ativos').textContent = data.fretesAtivos || 0;
+                    document.getElementById('fretes-concluidos').textContent = data.fretesConcluidos || 0;
+                    
+                    // Carregar fretes ativos usando os dados do dashboard
+                    loadFretesAtivosFromDashboard(data.fretesAtivosList);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+                // Fallback para carregar dados individualmente
+                loadStats();
+                loadFretesAtivos();
+            }
         }
 
         async function loadStats() {
@@ -179,19 +185,34 @@
                     
                     document.getElementById('fretes-ativos').textContent = ativos;
                     document.getElementById('fretes-concluidos').textContent = concluidos;
-                    document.getElementById('avaliacao-media').textContent = '4.8'; // Placeholder
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
             }
         }
 
+        function loadFretesAtivosFromDashboard(fretes) {
+            const container = document.getElementById('fretes-ativos-list');
+            container.innerHTML = '';
+            
+            if (!fretes || fretes.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhum frete ativo</p>';
+                return;
+            }
+            
+            fretes.forEach(frete => {
+                const freteCard = createFreteCard(frete);
+                container.appendChild(freteCard);
+            });
+        }
+
         async function loadFretesAtivos() {
             try {
                 const response = await api.getFretesByMotorista(1, 10, 'aceito,em_transito');
+                
                 if (response.success) {
                     const fretes = response.data.fretes;
-                    const container = document.getElementById('fretes-ativos');
+                    const container = document.getElementById('fretes-ativos-list');
                     container.innerHTML = '';
                     
                     if (fretes.length === 0) {
@@ -218,10 +239,10 @@
                     <span class="status status-${frete.status}">${getStatusText(frete.status)}</span>
                 </div>
                 <div class="frete-info">
-                    <p><strong>Origem:</strong> ${frete.origem}</p>
-                    <p><strong>Destino:</strong> ${frete.destino}</p>
-                    <p><strong>Data:</strong> ${new Date(frete.data_coleta).toLocaleDateString('pt-BR')}</p>
-                    <p><strong>Tipo:</strong> ${frete.tipo_carga}</p>
+                    <p><strong>Origem:</strong> ${frete.origin_city || 'N/A'}</p>
+                    <p><strong>Destino:</strong> ${frete.destination_city || 'N/A'}</p>
+                    <p><strong>Data:</strong> ${frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p><strong>Tipo:</strong> ${frete.cargo_type || 'N/A'}</p>
                 </div>
                 <div class="frete-actions">
                     <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
@@ -247,7 +268,7 @@
 
         function getStatusText(status) {
             const statusMap = {
-                'pendente': 'Pendente',
+                'solicitado': 'Solicitado',
                 'aceito': 'Aceito',
                 'em_transito': 'Em Trânsito',
                 'entregue': 'Entregue',
@@ -256,9 +277,133 @@
             return statusMap[status] || status;
         }
 
-        function viewFrete(freteId) {
-            // Implementar visualização detalhada do frete
-            showNotification('Funcionalidade em desenvolvimento', 'info');
+        async function viewFrete(freteId) {
+            try {
+                const response = await api.getFreteById(freteId);
+                if (response.success) {
+                    const frete = response.data;
+                    displayFreteDetails(frete);
+                    openModal('freteDetailsModal');
+                } else {
+                    showNotification('Erro ao carregar detalhes do frete', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar detalhes:', error);
+                showNotification('Erro ao carregar detalhes do frete', 'error');
+            }
+        }
+
+        function displayFreteDetails(frete) {
+            const content = document.getElementById('freteDetailsContent');
+            const origem = `${frete.origin_city || 'N/A'}, ${frete.origin_state || 'N/A'}`;
+            const destino = `${frete.destination_city || 'N/A'}, ${frete.destination_state || 'N/A'}`;
+            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A';
+            const dataEntrega = frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A';
+            const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'A negociar';
+            
+            content.innerHTML = `
+                <div class="frete-details-container">
+                    <div class="detail-section">
+                        <h3>Informações do Frete</h3>
+                        <div class="detail-item">
+                            <strong>Código:</strong>
+                            <span>${frete.codigo || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Status:</strong>
+                            <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Cliente:</strong>
+                            <span>${frete.cliente ? (frete.cliente.name || frete.cliente.email) : 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Rota</h3>
+                        <div class="route-info">
+                            <div class="route-point">
+                                <i class="fas fa-map-marker-alt route-icon origin"></i>
+                                <div class="route-details">
+                                    <strong>Origem:</strong> ${origem}
+                                    <small>${frete.origin_street || 'N/A'}, ${frete.origin_number || 'N/A'}</small>
+                                </div>
+                            </div>
+                            <div class="route-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <div class="route-point">
+                                <i class="fas fa-map-marker-alt route-icon destination"></i>
+                                <div class="route-details">
+                                    <strong>Destino:</strong> ${destino}
+                                    <small>${frete.destination_street || 'N/A'}, ${frete.destination_number || 'N/A'}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Carga</h3>
+                        <div class="detail-item">
+                            <strong>Tipo:</strong>
+                            <span>${frete.cargo_type || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Peso:</strong>
+                            <span>${frete.cargo_weight ? parseFloat(frete.cargo_weight).toLocaleString('pt-BR') + ' kg' : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Valor:</strong>
+                            <span>${valorCarga}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Dimensões:</strong>
+                            <span>${frete.cargo_dimensions || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Contatos</h3>
+                        <div class="detail-item">
+                            <strong>Remetente:</strong>
+                            <span>${frete.sender_name || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Telefone Remetente:</strong>
+                            <span>${frete.sender_phone || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Destinatário:</strong>
+                            <span>${frete.recipient_name || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Telefone Destinatário:</strong>
+                            <span>${frete.recipient_phone || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Datas</h3>
+                        <div class="detail-item">
+                            <strong>Data de Coleta:</strong>
+                            <span>${dataColeta}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Data de Entrega:</strong>
+                            <span>${dataEntrega}</span>
+                        </div>
+                    </div>
+
+                    ${frete.observacoes ? `
+                    <div class="detail-section">
+                        <h3>Observações</h3>
+                        <div class="detail-item">
+                            <span>${frete.observacoes}</span>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
         }
 
         async function updateFreteStatus(freteId, status) {
@@ -271,6 +416,34 @@
             } catch (error) {
                 showNotification(error.message || 'Erro ao atualizar status', 'error');
             }
+        }
+
+        // Funções de modal
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // Fechar modal ao clicar fora dele
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
         }
 
         // Função para mostrar notificações
@@ -299,5 +472,263 @@
             }
         });
     </script>
+
+    <!-- Modal para Detalhes do Frete -->
+    <div id="freteDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalhes do Frete</h2>
+                <span class="close" onclick="closeModal('freteDetailsModal')">&times;</span>
+            </div>
+            <div class="modal-body" id="freteDetailsContent">
+                <!-- Conteúdo será preenchido dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 0;
+            margin: 5% auto;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            background: #2d3748;
+            border-bottom: 2px solid #4a5568;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: #ffffff;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close {
+            color: #a0aec0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #ffffff;
+        }
+
+        .modal-body {
+            padding: 30px;
+            color: #e2e8f0;
+        }
+
+        .frete-details-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .detail-section {
+            background: #2d3748;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .detail-section h3 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #4a5568;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-item strong {
+            color: #a0aec0;
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        .detail-item span {
+            color: #e2e8f0;
+            text-align: right;
+            flex: 1;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-solicitado { background: #f6ad55; color: #744210; }
+        .status-cotado { background: #4299e1; color: #1a365d; }
+        .status-aceito { background: #48bb78; color: #1a202c; }
+        .status-em_transito { background: #ed8936; color: #1a202c; }
+        .status-entregue { background: #38a169; color: #1a202c; }
+        .status-cancelado { background: #e53e3e; color: #1a202c; }
+
+        .route-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .route-point {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .route-icon {
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .route-icon.origin { color: #48bb78; }
+        .route-icon.destination { color: #e53e3e; }
+
+        .route-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .route-details strong {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .route-details small {
+            color: #a0aec0;
+            font-size: 0.8rem;
+        }
+
+        .route-arrow {
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        /* Scroll personalizado */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #667eea;
+        }
+
+        /* Modo claro */
+        body.light-mode .modal-content {
+            background-color: #ffffff;
+        }
+
+        body.light-mode .modal-body {
+            color: #2d3748;
+        }
+
+        body.light-mode .detail-section {
+            background: #f7fafc;
+            border-left-color: #667eea;
+        }
+
+        body.light-mode .detail-section h3 {
+            color: #667eea;
+        }
+
+        body.light-mode .detail-item {
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.light-mode .detail-item strong {
+            color: #4a5568;
+        }
+
+        body.light-mode .detail-item span {
+            color: #2d3748;
+        }
+
+        body.light-mode .route-details strong {
+            color: #2d3748;
+        }
+
+        body.light-mode .route-details small {
+            color: #4a5568;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-track {
+            background: #f7fafc;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
+        }
+    </style>
 </body>
 </html>

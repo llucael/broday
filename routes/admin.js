@@ -4,6 +4,10 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const {
   getDashboard,
   getClientes,
+  createUser,
+  getUserById,
+  updateUser,
+  deleteUser,
   bloquearCliente,
   getFretesPorCliente,
   getMotoristas,
@@ -23,6 +27,13 @@ router.use(requireAdmin);
 
 // Dashboard do administrador
 router.get('/dashboard', getDashboard);
+
+// Gerenciamento de usuários
+router.get('/users', getClientes); // Rota para listar todos os usuários
+router.get('/users/:id', getUserById); // Rota para buscar usuário por ID
+router.post('/users', createUser); // Rota para criar usuários
+router.put('/users/:id', updateUser); // Rota para atualizar usuário
+router.delete('/users/:id', deleteUser); // Rota para excluir usuário
 
 // Gerenciamento de clientes
 router.get('/clientes', getClientes);

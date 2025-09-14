@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, sequelize } = require('../models');
 const { generateTokens, verifyRefreshToken } = require('../middleware/auth');
 
 // Registrar novo usuário
@@ -174,22 +174,46 @@ const logout = async (req, res) => {
 // Obter perfil do usuário logado
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.userId, {
-      include: [
-        { model: Motorista, as: 'motorista' },
-        { model: Cliente, as: 'cliente' },
-        { model: Admin, as: 'admin' }
-      ]
+    console.log('🔍 Buscando perfil para usuário ID:', req.user.id);
+    
+    // Usar query SQL direta para garantir que todos os campos sejam retornados
+    const results = await sequelize.query(
+      'SELECT id, nome, email, telefone, cpf, endereco, cnh, categoria, vencimento_cnh, empresa, cnpj, user_type, is_active, email_verified, created_at, updated_at FROM users WHERE id = ?',
+      {
+        replacements: [req.user.id],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
+    console.log('📊 Resultados da query:', results);
+
+    if (!results || results.length === 0) {
+      console.log('❌ Usuário não encontrado');
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    const userData = results[0];
+    console.log('✅ Dados do usuário:', userData);
+    
+    // Remover a senha dos dados retornados
+    if (userData && userData.password) {
+      delete userData.password;
+    }
+
+    console.log('📤 Enviando resposta:', {
+      success: true,
+      data: userData
     });
 
     res.json({
       success: true,
-      data: {
-        user: user.toSafeObject()
-      }
+      data: userData
     });
   } catch (error) {
-    console.error('Erro ao buscar perfil:', error);
+    console.error('❌ Erro ao buscar perfil:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
@@ -200,50 +224,80 @@ const getProfile = async (req, res) => {
 // Atualizar perfil do usuário
 const updateProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.userId, {
-      include: [
-        { model: Motorista, as: 'motorista' },
-        { model: Cliente, as: 'cliente' },
-        { model: Admin, as: 'admin' }
-      ]
-    });
+    // Buscar dados atuais do usuário para comparar email
+    const [currentUser] = await sequelize.query(
+      'SELECT email FROM users WHERE id = ?',
+      {
+        replacements: [req.user.id],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
 
-    // Atualizar dados do usuário
-    if (req.body.email && req.body.email !== user.email) {
-      const existingUser = await User.findOne({ where: { email: req.body.email } });
+    // Verificar se email já existe (apenas se está sendo alterado)
+    if (req.body.email && req.body.email !== currentUser.email) {
+      const [existingUser] = await sequelize.query(
+        'SELECT id FROM users WHERE email = ? AND id != ?',
+        {
+          replacements: [req.body.email, req.user.id],
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
       if (existingUser) {
         return res.status(400).json({
           success: false,
           message: 'E-mail já está em uso'
         });
       }
-      await user.update({ email: req.body.email });
     }
 
-    // Atualizar perfil específico
-    const profileType = user.user_type;
-    const profile = user[profileType];
+    // Campos permitidos para atualização
+    const allowedFields = ['nome', 'email', 'telefone', 'cpf', 'endereco', 'cnh', 'categoria', 'vencimento_cnh', 'empresa', 'cnpj'];
+    const updateFields = [];
+    const values = [];
     
-    if (profile) {
-      const { email, password, userType, ...profileData } = req.body;
-      await profile.update(profileData);
+    // Construir query de atualização
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateFields.push(`${field} = ?`);
+        values.push(req.body[field]);
+      }
     }
 
-    // Buscar usuário atualizado
-    const updatedUser = await User.findByPk(req.userId, {
-      include: [
-        { model: Motorista, as: 'motorista' },
-        { model: Cliente, as: 'cliente' },
-        { model: Admin, as: 'admin' }
-      ]
-    });
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nenhum campo válido para atualização'
+      });
+    }
+
+    // Adicionar updated_at e id
+    updateFields.push('updated_at = ?');
+    values.push(new Date());
+    values.push(req.user.id);
+
+    // Executar atualização
+    await sequelize.query(
+      `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+      {
+        replacements: values,
+        type: sequelize.QueryTypes.UPDATE
+      }
+    );
+
+    // Buscar dados atualizados
+    const [results] = await sequelize.query(
+      'SELECT id, nome, email, telefone, cpf, endereco, cnh, categoria, vencimento_cnh, empresa, cnpj, user_type, is_active, email_verified, created_at, updated_at FROM users WHERE id = ?',
+      {
+        replacements: [req.user.id],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
 
     res.json({
       success: true,
       message: 'Perfil atualizado com sucesso',
-      data: {
-        user: updatedUser.toSafeObject()
-      }
+      data: results[0]
     });
   } catch (error) {
     console.error('Erro ao atualizar perfil:', error);

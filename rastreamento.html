@@ -141,7 +141,7 @@
 
         // Obter ID do frete da URL
         const urlParams = new URLSearchParams(window.location.search);
-        const freteId = urlParams.get('frete');
+        const freteId = urlParams.get('id') || urlParams.get('frete');
 
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
@@ -178,7 +178,7 @@
             }
 
             try {
-                const response = await api.getFrete(freteId);
+                const response = await api.getFreteById(freteId);
                 if (response.success) {
                     const frete = response.data;
                     displayFreteInfo(frete);
@@ -192,12 +192,13 @@
         }
 
         function displayFreteInfo(frete) {
-            document.getElementById('frete-titulo').textContent = `Frete #${frete.id}`;
+            console.log('Dados do frete recebidos:', frete); // Debug log
+            document.getElementById('frete-titulo').textContent = `Frete #${frete.codigo || frete.id}`;
             document.getElementById('frete-status').textContent = getStatusText(frete.status);
-            document.getElementById('frete-origem').textContent = frete.origem;
-            document.getElementById('frete-destino').textContent = frete.destino;
-            document.getElementById('frete-motorista').textContent = frete.motorista_nome || 'Não atribuído';
-            document.getElementById('frete-data').textContent = new Date(frete.data_coleta).toLocaleDateString('pt-BR');
+            document.getElementById('frete-origem').textContent = `${frete.sender_name || 'N/A'} - ${frete.origin_cep || 'N/A'}`;
+            document.getElementById('frete-destino').textContent = `${frete.recipient_name || 'N/A'}`;
+            document.getElementById('frete-motorista').textContent = frete.motorista?.email || 'Não atribuído';
+            document.getElementById('frete-data').textContent = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A';
         }
 
         function getStatusText(status) {

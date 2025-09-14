@@ -194,52 +194,30 @@
             }
         }
 
-        function loadDashboardData() {
-            // Carregar estatísticas
-            loadStats();
-            // Carregar gráficos
+        async function loadDashboardData() {
+            // Carregar estatísticas primeiro
+            await loadStats();
+            // Depois carregar gráficos com os dados reais
             loadCharts();
         }
 
+        let dashboardData = null; // Armazenar dados do dashboard globalmente
+
         async function loadStats() {
             try {
-                // Usar dados simulados temporariamente para testar
-                document.getElementById('fretes-ativos').textContent = '3';
-                document.getElementById('fretes-concluidos-mes').textContent = '3';
-                document.getElementById('total-motoristas').textContent = '1';
-                document.getElementById('total-clientes').textContent = '1';
+                // Carregar dados do dashboard da API
+                const dashboardResponse = await api.request('/admin/dashboard');
                 
-                // Tentar carregar dados reais em background
-                try {
-                    const [fretesResponse, clientesResponse, motoristasResponse] = await Promise.all([
-                        api.getAllFretes(1, 1000),
-                        api.getClientes(1, 1000),
-                        api.getMotoristas(1, 1000)
-                    ]);
-
-                    if (fretesResponse.success) {
-                        const fretesAtivos = fretesResponse.data.fretes.filter(f => ['solicitado', 'aceito', 'em_transito'].includes(f.status)).length;
-                        const fretesConcluidos = fretesResponse.data.fretes.filter(f => {
-                            if (f.status !== 'entregue') return false;
-                            const dataEntrega = new Date(f.dataEntrega);
-                            const agora = new Date();
-                            return dataEntrega.getMonth() === agora.getMonth() && 
-                                   dataEntrega.getFullYear() === agora.getFullYear();
-                        }).length;
-
-                        document.getElementById('fretes-ativos').textContent = fretesAtivos;
-                        document.getElementById('fretes-concluidos-mes').textContent = fretesConcluidos;
-                    }
-
-                    if (clientesResponse.success) {
-                        document.getElementById('total-clientes').textContent = clientesResponse.data.pagination.total;
-                    }
-
-                    if (motoristasResponse.success) {
-                        document.getElementById('total-motoristas').textContent = motoristasResponse.data.pagination.total;
-                    }
-                } catch (apiError) {
-                    console.log('API não disponível, usando dados simulados');
+                if (dashboardResponse.success) {
+                    dashboardData = dashboardResponse.data.dashboard;
+                    
+                    // Atualizar contadores
+                    document.getElementById('fretes-ativos').textContent = dashboardData.fretesAtivos || 0;
+                    document.getElementById('fretes-concluidos-mes').textContent = dashboardData.fretesConcluidosMes || 0;
+                    document.getElementById('total-clientes').textContent = dashboardData.usuarios.totalClientes || 0;
+                    document.getElementById('total-motoristas').textContent = dashboardData.usuarios.totalMotoristas || 0;
+                } else {
+                    throw new Error(dashboardResponse.message || 'Erro ao carregar dashboard');
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
@@ -252,19 +230,34 @@
         }
 
         function loadCharts() {
-            // Dados simulados para os gráficos
-            const fretesPorStatus = {
-                'solicitado': 1,
-                'aceito': 1,
-                'em_transito': 1,
-                'entregue': 3,
+            // Usar dados reais do dashboard se disponível, senão usar dados padrão
+            let fretesPorStatus = {
+                'solicitado': 0,
+                'aceito': 0,
+                'em_transito': 0,
+                'entregue': 0,
                 'cancelado': 0
             };
 
-            const fretesPorMes = {
-                'Janeiro': 2,
-                'Fevereiro': 1,
-                'Março': 3,
+            if (dashboardData && dashboardData.fretesPorStatus) {
+                // Processar dados reais de fretes por status
+                dashboardData.fretesPorStatus.forEach(item => {
+                    const status = item.status;
+                    const count = parseInt(item.count);
+                    
+                    if (status === 'solicitado') fretesPorStatus.solicitado = count;
+                    else if (status === 'aceito') fretesPorStatus.aceito = count;
+                    else if (status === 'em_transito') fretesPorStatus.em_transito = count;
+                    else if (status === 'entregue') fretesPorStatus.entregue = count;
+                    else if (status === 'cancelado') fretesPorStatus.cancelado = count;
+                });
+            }
+
+            // Dados por mês - usar dados reais da API
+            let fretesPorMes = {
+                'Janeiro': 0,
+                'Fevereiro': 0,
+                'Março': 0,
                 'Abril': 0,
                 'Maio': 0,
                 'Junho': 0,
@@ -272,6 +265,31 @@
                 'Agosto': 0,
                 'Setembro': 0
             };
+
+            if (dashboardData && dashboardData.fretesPorMes) {
+                // Processar dados reais de fretes por mês
+                dashboardData.fretesPorMes.forEach(item => {
+                    const mes = item.mes; // Formato: YYYY-MM
+                    const count = parseInt(item.count);
+                    
+                    // Mapear para nomes dos meses
+                    const mesMap = {
+                        '2025-01': 'Janeiro',
+                        '2025-02': 'Fevereiro',
+                        '2025-03': 'Março',
+                        '2025-04': 'Abril',
+                        '2025-05': 'Maio',
+                        '2025-06': 'Junho',
+                        '2025-07': 'Julho',
+                        '2025-08': 'Agosto',
+                        '2025-09': 'Setembro'
+                    };
+                    
+                    if (mesMap[mes]) {
+                        fretesPorMes[mesMap[mes]] = count;
+                    }
+                });
+            }
 
             // Gráfico de fretes por status (pizza)
             const statusCtx = document.getElementById('fretes-status-chart').getContext('2d');
@@ -415,6 +433,14 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone
+            const icon = document.querySelector('.theme-toggle i');
+            if (isLightMode) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
         }
         
         // Carregar tema salvo
@@ -422,6 +448,8 @@
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                const icon = document.querySelector('.theme-toggle i');
+                if (icon) icon.className = 'fas fa-moon';
             }
         });
     </script>

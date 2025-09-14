@@ -148,6 +148,11 @@ class ApiService {
     return await this.request(`/fretes/meus-fretes?${params}`);
   }
 
+  // Dashboard do motorista
+  async getDashboard() {
+    return await this.request('/motorista/dashboard');
+  }
+
   // Listar fretes disponíveis (motorista)
   async getFretesDisponiveis(page = 1, limit = 10) {
     const params = new URLSearchParams({ page, limit });
@@ -159,12 +164,20 @@ class ApiService {
     const params = new URLSearchParams({ page, limit });
     if (status) params.append('status', status);
     
-    return await this.request(`/fretes/meus-fretes?${params}`);
+    return await this.request(`/fretes/motorista/meus-fretes?${params}`);
   }
 
   // Buscar frete por ID
   async getFreteById(id) {
     return await this.request(`/fretes/${id}`);
+  }
+
+  // Atualizar frete
+  async updateFrete(freteId, updateData) {
+    return await this.request(`/fretes/${freteId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData)
+    });
   }
 
   // Aceitar frete (motorista)
@@ -206,12 +219,12 @@ class ApiService {
 
   // Listar todos os motoristas
   async getMotoristas(page = 1, limit = 10, filters = {}) {
-    const params = new URLSearchParams({ page, limit, user_type: 'motorista' });
+    const params = new URLSearchParams({ page, limit });
     Object.keys(filters).forEach(key => {
       if (filters[key]) params.append(key, filters[key]);
     });
     
-    return await this.request(`/admin/users?${params}`);
+    return await this.request(`/admin/motoristas?${params}`);
   }
 
   // Criar novo cliente
@@ -224,10 +237,15 @@ class ApiService {
 
   // Criar novo motorista
   async createMotorista(motoristaData) {
-    return await this.request('/admin/users', {
+    return await this.request('/admin/motoristas/cadastrar', {
       method: 'POST',
-      body: JSON.stringify({ ...motoristaData, user_type: 'motorista' })
+      body: JSON.stringify(motoristaData)
     });
+  }
+
+  // Buscar usuário por ID
+  async getUserById(userId) {
+    return await this.request(`/admin/users/${userId}`);
   }
 
   // Atualizar usuário

@@ -42,15 +42,14 @@
                 <div class="section-header">
                     <h1>Gerenciamento de Clientes</h1>
                     <div class="filters">
-                        <select id="status-cliente-filter">
+                        <select id="status-cliente-filter" onchange="applyFilters()">
                             <option value="">Todos os Status</option>
                             <option value="ativo">Ativo</option>
                             <option value="inativo">Inativo</option>
-                            <option value="bloqueado">Bloqueado</option>
                         </select>
-                        <button class="btn btn-primary" onclick="loadClientes()">
-                            <i class="fas fa-sync"></i>
-                            Atualizar
+                        <button class="btn btn-primary" onclick="clearFilters()">
+                            <i class="fas fa-times"></i>
+                            Limpar Filtros
                         </button>
                         <button class="btn btn-success" onclick="showAddClienteModal()">
                             <i class="fas fa-plus"></i>
@@ -73,7 +72,7 @@
                 <h3>Cadastrar Novo Cliente</h3>
                 <button class="close-btn" onclick="closeClienteModal()">&times;</button>
             </div>
-            <form class="cliente-form" id="cliente-form">
+            <form class="usuario-form" id="cliente-form">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="cliente-nome">Nome Completo *</label>
@@ -112,6 +111,128 @@
                     <button type="submit" class="btn btn-primary">Cadastrar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+
+    <!-- Modal para Editar Usuário -->
+    <div class="modal" id="edit-usuario-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Usuário</h3>
+                <button class="close-btn" onclick="closeEditUsuarioModal()">&times;</button>
+            </div>
+            <form class="usuario-form" id="edit-usuario-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-usuario-nome">Nome Completo *</label>
+                        <input type="text" id="edit-usuario-nome" name="nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-usuario-email">E-mail *</label>
+                        <input type="email" id="edit-usuario-email" name="email" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-usuario-telefone">Telefone</label>
+                        <input type="tel" id="edit-usuario-telefone" name="telefone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-usuario-cpf">CPF</label>
+                        <input type="text" id="edit-usuario-cpf" name="cpf">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-usuario-empresa">Empresa</label>
+                        <input type="text" id="edit-usuario-empresa" name="empresa">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-usuario-cnpj">CNPJ</label>
+                        <input type="text" id="edit-usuario-cnpj" name="cnpj">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-usuario-tipo">Tipo de Usuário *</label>
+                        <select id="edit-usuario-tipo" name="user_type" required>
+                            <option value="cliente">Cliente</option>
+                            <option value="motorista">Motorista</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-usuario-status">Status</label>
+                        <select id="edit-usuario-status" name="is_active">
+                            <option value="true">Ativo</option>
+                            <option value="false">Inativo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-usuario-password">Nova Senha</label>
+                        <div class="password-input-container">
+                            <input type="password" id="edit-usuario-password" name="password" placeholder="Deixe em branco para manter a senha atual">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="generateRandomPassword()" title="Gerar senha aleatória">
+                                <i class="fas fa-random"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="togglePasswordVisibility('edit-usuario-password')" title="Mostrar/Ocultar senha">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="password-help">Deixe em branco para manter a senha atual, ou digite uma nova senha</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditUsuarioModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar senha gerada -->
+    <div class="modal" id="password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cliente Cadastrado com Sucesso!</h3>
+                <button class="close-btn" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <div class="password-content">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <p class="success-message">O cliente foi cadastrado com sucesso!</p>
+                <div class="password-info">
+                    <h4>Informações de Acesso:</h4>
+                    <div class="info-row">
+                        <strong>E-mail:</strong> <span id="password-email"></span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Senha gerada:</strong> 
+                        <div class="password-container">
+                            <input type="text" id="password-display" readonly>
+                            <button class="btn btn-sm btn-secondary" onclick="copyPassword()" title="Copiar senha">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Anote esta senha! Ela não será exibida novamente.</p>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" onclick="closePasswordModal()">Entendi</button>
+            </div>
         </div>
     </div>
 
@@ -186,54 +307,44 @@
 
         async function loadClientes() {
             try {
+                console.log('=== LOAD CLIENTES ===');
                 const container = document.getElementById('clientes-list');
-                container.innerHTML = '<p class="no-data">Carregando clientes...</p>';
+                container.innerHTML = '<p class="no-data">Carregando usuários...</p>';
                 
-                // Dados reais dos usuários do banco
-                const usuarios = [
-                    {
-                        id: 3,
-                        email: 'admin@broday.com',
-                        user_type: 'admin',
-                        is_active: true,
-                        created_at: new Date().toISOString().split('T')[0]
-                    },
-                    {
-                        id: 2,
-                        email: 'cliente@broday.com',
-                        user_type: 'cliente',
-                        is_active: true,
-                        created_at: '2024-01-15'
-                    },
-                    {
-                        id: 4,
-                        email: 'salam@gmail.com',
-                        user_type: 'cliente',
-                        is_active: true,
-                        created_at: '2024-01-20'
-                    },
-                    {
-                        id: 5,
-                        email: 'maria@logistica.com',
-                        user_type: 'cliente',
-                        is_active: true,
-                        created_at: '2024-01-25'
-                    },
-                    {
-                        id: 6,
-                        email: 'pedro@cargas.com',
-                        user_type: 'cliente',
-                        is_active: true,
-                        created_at: '2024-01-30'
+                // Obter filtro de status
+                const statusFilter = document.getElementById('status-cliente-filter').value;
+                
+                // Aplicar filtros
+                let usuarios = [];
+                const response = await api.getClientes(1, 1000); // Buscar mais usuários para filtrar
+                
+                console.log('Resposta da API:', response);
+                
+                if (response.success) {
+                    usuarios = response.data.usuarios || [];
+                    console.log('Usuários recebidos:', usuarios);
+                    
+                    // Filtrar por status
+                    if (statusFilter) {
+                        usuarios = usuarios.filter(usuario => {
+                            if (statusFilter === 'ativo') return usuario.is_active;
+                            if (statusFilter === 'inativo') return !usuario.is_active;
+                            return true;
+                        });
                     }
-                ];
-
-                setTimeout(() => {
+                    
+                    // Ordenar por data de criação (mais recente primeiro)
+                    usuarios.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
+                    console.log('Usuários após filtros e ordenação:', usuarios);
                     renderClientes(usuarios);
-                }, 1000);
+                } else {
+                    throw new Error(response.message || 'Erro ao carregar usuários');
+                }
             } catch (error) {
-                console.error('Erro ao carregar clientes:', error);
-                showNotification('Erro ao carregar clientes', 'error');
+                console.error('Erro ao carregar usuários:', error);
+                showNotification('Erro ao carregar usuários: ' + error.message, 'error');
+                document.getElementById('clientes-list').innerHTML = '<p class="no-data">Erro ao carregar usuários</p>';
             }
         }
 
@@ -254,17 +365,33 @@
                 return `
                 <div class="cliente-card">
                     <div class="cliente-info">
-                        <h3>${usuario.email.split('@')[0].charAt(0).toUpperCase() + usuario.email.split('@')[0].slice(1)}</h3>
-                        <p><i class="fas fa-envelope"></i> ${usuario.email}</p>
-                        <p><i class="fas ${iconeUsuario}"></i> ${tipoUsuario}</p>
-                        <p><i class="fas fa-calendar"></i> Cadastrado em: ${new Date(usuario.created_at).toLocaleDateString('pt-BR')}</p>
+                        <div class="usuario-header">
+                            <h3>${usuario.nome || 'Nome não informado'}</h3>
+                            <span class="status-badge ${usuario.is_active ? 'ativo' : 'inativo'}">${usuario.is_active ? 'Ativo' : 'Inativo'}</span>
+                        </div>
+                        
+                        <div class="usuario-dados">
+                            <div class="dados-row">
+                                <p><i class="fas fa-envelope"></i> <strong>E-mail:</strong> ${usuario.email}</p>
+                                <p><i class="fas ${iconeUsuario}"></i> <strong>Tipo:</strong> ${tipoUsuario}</p>
+                            </div>
+                            
+                            <div class="dados-row">
+                                <p><i class="fas fa-phone"></i> <strong>Telefone:</strong> ${usuario.telefone || 'Não informado'}</p>
+                                <p><i class="fas fa-id-card"></i> <strong>CPF:</strong> ${usuario.cpf || 'Não informado'}</p>
+                            </div>
+                            
+                            <div class="dados-row">
+                                <p><i class="fas fa-building"></i> <strong>Empresa:</strong> ${usuario.empresa || 'Não informado'}</p>
+                                <p><i class="fas fa-file-alt"></i> <strong>CNPJ:</strong> ${usuario.cnpj || 'Não informado'}</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="cliente-actions">
-                        <span class="status-badge ${usuario.is_active ? 'ativo' : 'inativo'}">${usuario.is_active ? 'Ativo' : 'Inativo'}</span>
-                        <button class="btn btn-sm btn-primary" onclick="editCliente(${usuario.id})">
+                        <button class="btn btn-sm btn-primary" onclick="editCliente(${usuario.id})" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCliente(${usuario.id})">
+                        <button class="btn btn-sm btn-danger" onclick="deleteCliente(${usuario.id})" title="Excluir">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -284,14 +411,394 @@
             document.getElementById('cliente-form').reset();
         }
 
-        function editCliente(id) {
-            showNotification('Funcionalidade de edição em desenvolvimento', 'info');
+        async function editCliente(id) {
+            try {
+                console.log('=== DEBUG EDIT CLIENTE ===');
+                console.log('ID do usuário:', id);
+                
+                // Buscar dados do usuário
+                const response = await api.getUserById(id);
+                console.log('Resposta da API getUserById:', response);
+                
+                if (response.success) {
+                    const usuario = response.data;
+                    console.log('Dados do usuário recebidos:', usuario);
+                    populateEditForm(usuario);
+                    document.getElementById('edit-usuario-modal').style.display = 'flex';
+                } else {
+                    showNotification('Erro ao carregar dados do usuário', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuário:', error);
+                showNotification('Erro ao carregar dados do usuário', 'error');
+            }
         }
 
-        function deleteCliente(id) {
-            if (confirm('Tem certeza que deseja excluir este cliente?')) {
-                showNotification('Cliente excluído com sucesso', 'success');
-                loadClientes();
+        async function deleteCliente(id) {
+            if (confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
+                try {
+                    const response = await api.deleteUser(id);
+                    if (response.success) {
+                        showNotification('Usuário excluído com sucesso', 'success');
+                        loadClientes();
+                    } else {
+                        showNotification('Erro ao excluir usuário: ' + response.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao excluir usuário:', error);
+                    showNotification('Erro ao excluir usuário: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function populateEditForm(usuario) {
+            console.log('=== DEBUG POPULATE EDIT FORM ===');
+            console.log('Dados do usuário recebidos:', usuario);
+            
+            // Verificar se os elementos existem
+            const nomeEl = document.getElementById('edit-usuario-nome');
+            const emailEl = document.getElementById('edit-usuario-email');
+            const telefoneEl = document.getElementById('edit-usuario-telefone');
+            const cpfEl = document.getElementById('edit-usuario-cpf');
+            const empresaEl = document.getElementById('edit-usuario-empresa');
+            const cnpjEl = document.getElementById('edit-usuario-cnpj');
+            const tipoEl = document.getElementById('edit-usuario-tipo');
+            const statusEl = document.getElementById('edit-usuario-status');
+            
+            console.log('Elementos encontrados:', {
+                nome: !!nomeEl,
+                email: !!emailEl,
+                telefone: !!telefoneEl,
+                cpf: !!cpfEl,
+                empresa: !!empresaEl,
+                cnpj: !!cnpjEl,
+                tipo: !!tipoEl,
+                status: !!statusEl
+            });
+            
+            if (nomeEl) nomeEl.value = usuario.nome || '';
+            if (emailEl) emailEl.value = usuario.email || '';
+            if (telefoneEl) telefoneEl.value = usuario.telefone || '';
+            if (cpfEl) cpfEl.value = usuario.cpf || '';
+            if (empresaEl) empresaEl.value = usuario.empresa || '';
+            if (cnpjEl) cnpjEl.value = usuario.cnpj || '';
+            if (tipoEl) tipoEl.value = usuario.user_type || 'cliente';
+            if (statusEl) statusEl.value = usuario.is_active ? 'true' : 'false';
+            
+            // Armazenar ID do usuário para edição
+            const formEl = document.getElementById('edit-usuario-form');
+            if (formEl) {
+                formEl.dataset.usuarioId = usuario.id;
+                console.log('ID do usuário armazenado:', formEl.dataset.usuarioId);
+            }
+            
+            console.log('Formulário preenchido com sucesso');
+        }
+
+        function closeEditUsuarioModal() {
+            document.getElementById('edit-usuario-modal').style.display = 'none';
+            document.getElementById('edit-usuario-form').reset();
+        }
+
+        function showPasswordModal(user, password) {
+            console.log('=== DEBUG SHOW PASSWORD MODAL ===');
+            console.log('User:', user);
+            console.log('Password:', password);
+            
+            const emailEl = document.getElementById('password-email');
+            const passwordEl = document.getElementById('password-display');
+            const modalEl = document.getElementById('password-modal');
+            
+            console.log('Elementos encontrados:', {
+                emailEl: !!emailEl,
+                passwordEl: !!passwordEl,
+                modalEl: !!modalEl
+            });
+            
+            if (emailEl) {
+                emailEl.textContent = user.email;
+                console.log('Email definido:', user.email);
+            } else {
+                console.log('❌ Elemento password-email não encontrado');
+            }
+            
+            if (passwordEl) {
+                passwordEl.value = password;
+                console.log('Senha definida:', password);
+            } else {
+                console.log('❌ Elemento password-display não encontrado');
+            }
+            
+            if (modalEl) {
+                modalEl.classList.add('show');
+                console.log('Modal exibido com classe show');
+            } else {
+                console.log('❌ Elemento password-modal não encontrado');
+            }
+        }
+
+        function closePasswordModal() {
+            console.log('Fechando modal de senha');
+            const modalEl = document.getElementById('password-modal');
+            if (modalEl) {
+                modalEl.classList.remove('show');
+            }
+        }
+
+        function copyPassword() {
+            const passwordInput = document.getElementById('password-display');
+            passwordInput.select();
+            passwordInput.setSelectionRange(0, 99999); // Para dispositivos móveis
+            
+            try {
+                document.execCommand('copy');
+                showNotification('Senha copiada para a área de transferência!', 'success');
+            } catch (err) {
+                // Fallback para navegadores modernos
+                navigator.clipboard.writeText(passwordInput.value).then(() => {
+                    showNotification('Senha copiada para a área de transferência!', 'success');
+                }).catch(() => {
+                    showNotification('Erro ao copiar senha', 'error');
+                });
+            }
+        }
+
+        function generateRandomPassword() {
+            const passwordInput = document.getElementById('edit-usuario-password');
+            const newPassword = generatePassword(10);
+            passwordInput.value = newPassword;
+            showNotification('Senha aleatória gerada!', 'success');
+        }
+
+        function generatePassword(length = 10) {
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let password = '';
+            
+            // Garantir pelo menos um caractere de cada tipo
+            const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+            const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const numbers = '0123456789';
+            const symbols = '!@#$%^&*';
+            
+            password += lowercase[Math.floor(Math.random() * lowercase.length)];
+            password += uppercase[Math.floor(Math.random() * uppercase.length)];
+            password += numbers[Math.floor(Math.random() * numbers.length)];
+            password += symbols[Math.floor(Math.random() * symbols.length)];
+            
+            // Preencher o resto com caracteres aleatórios
+            for (let i = password.length; i < length; i++) {
+                password += charset[Math.floor(Math.random() * charset.length)];
+            }
+            
+            // Embaralhar a senha
+            return password.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const container = input.parentElement;
+            const buttons = container.querySelectorAll('button');
+            // O botão de toggle é o que tem o ícone de olho (segundo botão)
+            const toggleButton = Array.from(buttons).find(btn => 
+                btn.querySelector('i.fa-eye') || btn.querySelector('i.fa-eye-slash')
+            );
+            const icon = toggleButton.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Funções de filtro
+        function applyFilters() {
+            loadClientes();
+        }
+
+        function clearFilters() {
+            document.getElementById('status-cliente-filter').value = '';
+            loadClientes();
+        }
+
+
+        // Adicionar eventos aos formulários
+        document.addEventListener('DOMContentLoaded', function() {
+            // Formulário de cadastro
+            const form = document.getElementById('cliente-form');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await cadastrarCliente();
+                });
+            }
+
+            // Formulário de edição
+            const editForm = document.getElementById('edit-usuario-form');
+            if (editForm) {
+                editForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await atualizarUsuario();
+                });
+            }
+        });
+
+        async function cadastrarCliente() {
+            try {
+                const form = document.getElementById('cliente-form');
+                const formData = new FormData(form);
+                
+                const clienteData = {
+                    email: formData.get('email'),
+                    // Não enviar senha - será gerada automaticamente no backend
+                    user_type: 'cliente',
+                    nome: formData.get('nome'),
+                    telefone: formData.get('telefone'),
+                    cpf: formData.get('cpf'),
+                    empresa: formData.get('empresa'),
+                    cnpj: formData.get('cnpj')
+                };
+
+                console.log('=== DEBUG CADASTRAR CLIENTE ===');
+                console.log('Dados do formulário:', clienteData);
+                console.log('FormData entries:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+
+                const response = await api.createCliente(clienteData);
+                
+                console.log('Resposta da API:', response);
+                
+                if (response.success) {
+                    console.log('=== DEBUG RESPOSTA SUCESSO ===');
+                    console.log('Response completa:', response);
+                    console.log('Generated password:', response.data.generatedPassword);
+                    console.log('User data:', response.data.user);
+                    
+                    const generatedPassword = response.data.generatedPassword;
+                    
+                    if (generatedPassword) {
+                        console.log('Senha encontrada, mostrando modal...');
+                        // Mostrar modal com a senha gerada
+                        showPasswordModal(response.data.user, generatedPassword);
+                    } else {
+                        console.log('❌ Senha não encontrada na resposta');
+                        showNotification('Cliente cadastrado, mas senha não foi gerada', 'warning');
+                    }
+                    
+                    closeClienteModal();
+                    loadClientes(); // Recarregar lista
+                } else {
+                    showNotification('Erro ao cadastrar cliente: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao cadastrar cliente:', error);
+                showNotification('Erro ao cadastrar cliente: ' + error.message, 'error');
+            }
+        }
+
+        async function atualizarUsuario() {
+            try {
+                const form = document.getElementById('edit-usuario-form');
+                const formData = new FormData(form);
+                const usuarioId = form.dataset.usuarioId;
+                
+                console.log('=== DEBUG ATUALIZAR USUÁRIO ===');
+                console.log('Formulário encontrado:', form);
+                console.log('Dataset usuarioId:', usuarioId);
+                
+                // Verificar todos os dados do formulário
+                console.log('Todos os dados do FormData:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+                
+                // Verificar especificamente o campo de senha
+                const passwordField = document.getElementById('edit-usuario-password');
+                console.log('Campo de senha encontrado:', passwordField);
+                console.log('Valor do campo de senha:', passwordField ? passwordField.value : 'Campo não encontrado');
+                
+                const password = formData.get('password');
+                console.log('Senha capturada do formulário:', password);
+                
+                const usuarioData = {
+                    nome: formData.get('nome'),
+                    email: formData.get('email'),
+                    telefone: formData.get('telefone'),
+                    cpf: formData.get('cpf'),
+                    empresa: formData.get('empresa'),
+                    cnpj: formData.get('cnpj'),
+                    user_type: formData.get('user_type'),
+                    is_active: formData.get('is_active') === 'true'
+                };
+
+                // Adicionar senha apenas se foi fornecida
+                if (password && password.trim() !== '') {
+                    usuarioData.password = password;
+                    console.log('Senha incluída nos dados de atualização');
+                } else {
+                    console.log('Senha não fornecida - mantendo senha atual');
+                }
+
+                console.log('Dados a serem enviados:', usuarioData);
+                console.log('ID do usuário:', usuarioId);
+
+                if (!usuarioId) {
+                    showNotification('ID do usuário não encontrado!', 'error');
+                    return;
+                }
+
+                const response = await api.updateUser(usuarioId, usuarioData);
+                
+                console.log('Resposta da API:', response);
+                
+                if (response.success) {
+                    showNotification('Usuário atualizado com sucesso!', 'success');
+                    closeEditUsuarioModal();
+                    // Aguardar um pouco antes de recarregar para garantir que o banco foi atualizado
+                    setTimeout(() => {
+                        loadClientes(); // Recarregar lista
+                    }, 500);
+                } else {
+                    showNotification('Erro ao atualizar usuário: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar usuário:', error);
+                showNotification('Erro ao atualizar usuário: ' + error.message, 'error');
+            }
+        }
+
+        // Função para formatar data
+        function formatDate(dateString) {
+            if (!dateString) return 'Data não disponível';
+            
+            console.log('Data recebida:', dateString, 'Tipo:', typeof dateString);
+            
+            try {
+                let date;
+                
+                // Se já é um objeto Date
+                if (dateString instanceof Date) {
+                    date = dateString;
+                } else {
+                    // Tentar diferentes formatos
+                    date = new Date(dateString);
+                }
+                
+                if (isNaN(date.getTime())) {
+                    console.log('Data inválida após parsing:', dateString);
+                    return 'Data inválida';
+                }
+                
+                const formatted = date.toLocaleDateString('pt-BR');
+                console.log('Data formatada:', formatted);
+                return formatted;
+            } catch (error) {
+                console.log('Erro ao formatar data:', error, 'Data original:', dateString);
+                return 'Data inválida';
             }
         }
 
@@ -311,6 +818,14 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone
+            const icon = document.querySelector('.theme-toggle i');
+            if (isLightMode) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
         }
         
         // Carregar tema salvo
@@ -318,8 +833,607 @@
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                const icon = document.querySelector('.theme-toggle i');
+                if (icon) icon.className = 'fas fa-moon';
             }
         });
     </script>
+
+    <style>
+        /* Estilos para os cards de usuário melhorados */
+        .cliente-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .cliente-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .cliente-info {
+            padding: 20px;
+        }
+
+        .usuario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .usuario-header h3 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .usuario-dados {
+            margin-top: 15px;
+        }
+
+        .dados-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .dados-row p {
+            margin: 0;
+            color: #e2e8f0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .dados-row i {
+            color: #667eea;
+            width: 16px;
+            text-align: center;
+        }
+
+        .dados-row strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.ativo {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.inativo {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .cliente-actions {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            justify-content: flex-end;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        /* Estilos específicos para os modais de cadastro e edição */
+        #cliente-modal .modal-content,
+        #edit-usuario-modal .modal-content {
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 0;
+        }
+
+        #cliente-modal .modal-content::-webkit-scrollbar,
+        #edit-usuario-modal .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #cliente-modal .modal-content::-webkit-scrollbar-track,
+        #edit-usuario-modal .modal-content::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+
+        #cliente-modal .modal-content::-webkit-scrollbar-thumb,
+        #edit-usuario-modal .modal-content::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+
+        #cliente-modal .modal-content::-webkit-scrollbar-thumb:hover,
+        #edit-usuario-modal .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #667eea;
+        }
+
+        #cliente-modal .modal-header,
+        #edit-usuario-modal .modal-header {
+            background: #2d3748;
+            border-bottom: 2px solid #4a5568;
+        }
+
+        #cliente-modal .modal-header h3,
+        #edit-usuario-modal .modal-header h3 {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        #cliente-modal .form-group label,
+        #edit-usuario-modal .form-group label {
+            color: #e2e8f0;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        #cliente-modal .form-group,
+        #edit-usuario-modal .form-group {
+            padding: 0 20px;
+        }
+
+        #cliente-modal .form-group input,
+        #cliente-modal .form-group select,
+        #edit-usuario-modal .form-group input,
+        #edit-usuario-modal .form-group select {
+            background: #2d3748;
+            color: #ffffff;
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        #cliente-modal .form-group input:focus,
+        #cliente-modal .form-group select:focus,
+        #edit-usuario-modal .form-group input:focus,
+        #edit-usuario-modal .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #cliente-modal .form-actions,
+        #edit-usuario-modal .form-actions {
+            background: #2d3748;
+            border-top: 2px solid #4a5568;
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin: 0;
+            border-radius: 0 0 12px 12px;
+        }
+
+        #cliente-modal .btn,
+        #edit-usuario-modal .btn {
+            padding: 12px 24px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        #cliente-modal .btn-secondary,
+        #edit-usuario-modal .btn-secondary {
+            background: transparent;
+            color: #e2e8f0;
+            border: 2px solid #4a5568;
+        }
+
+        #cliente-modal .btn-secondary:hover,
+        #edit-usuario-modal .btn-secondary:hover {
+            background: #4a5568;
+        }
+
+        #cliente-modal .btn-primary,
+        #edit-usuario-modal .btn-primary {
+            background: #667eea;
+            color: white;
+            border: 2px solid #667eea;
+        }
+
+        #cliente-modal .btn-primary:hover,
+        #edit-usuario-modal .btn-primary:hover {
+            background: #5a6fd8;
+            border-color: #5a6fd8;
+        }
+
+        /* Estilos para o campo de senha no modal de edição */
+        .password-input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .password-input-container input {
+            flex: 1;
+        }
+
+        .password-input-container .btn {
+            padding: 8px 12px;
+            min-width: auto;
+        }
+
+        .password-help {
+            color: #a0aec0;
+            font-size: 12px;
+            margin-top: 5px;
+            display: block;
+        }
+
+        body.light-mode .password-help {
+            color: #718096;
+        }
+
+        /* Modo claro */
+        body.light-mode .cliente-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        body.light-mode .usuario-header h3 {
+            color: #2d3748;
+        }
+
+        body.light-mode .dados-row p {
+            color: #4a5568;
+        }
+
+        body.light-mode .dados-row strong {
+            color: #2d3748;
+        }
+
+        body.light-mode #cliente-modal .modal-content,
+        body.light-mode #edit-usuario-modal .modal-content {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #cliente-modal .modal-header,
+        body.light-mode #edit-usuario-modal .modal-header {
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #cliente-modal .modal-header h3,
+        body.light-mode #edit-usuario-modal .modal-header h3 {
+            color: #2d3748;
+        }
+
+        body.light-mode #cliente-modal .form-group label,
+        body.light-mode #edit-usuario-modal .form-group label {
+            color: #4a5568;
+        }
+
+        body.light-mode #cliente-modal .form-group,
+        body.light-mode #edit-usuario-modal .form-group {
+            padding: 0 20px;
+        }
+
+        body.light-mode #cliente-modal .form-group input,
+        body.light-mode #cliente-modal .form-group select,
+        body.light-mode #edit-usuario-modal .form-group input,
+        body.light-mode #edit-usuario-modal .form-group select {
+            background: #ffffff;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        body.light-mode #cliente-modal .form-actions,
+        body.light-mode #edit-usuario-modal .form-actions {
+            background: #f7fafc;
+            border-top: 2px solid #e2e8f0;
+            margin: 0;
+            border-radius: 0 0 12px 12px;
+        }
+
+        body.light-mode #cliente-modal .btn-secondary,
+        body.light-mode #edit-usuario-modal .btn-secondary {
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #cliente-modal .btn-secondary:hover,
+        body.light-mode #edit-usuario-modal .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        /* Scroll personalizado para modo claro */
+        body.light-mode #cliente-modal .modal-content::-webkit-scrollbar-track,
+        body.light-mode #edit-usuario-modal .modal-content::-webkit-scrollbar-track {
+            background: #f7fafc;
+        }
+
+        body.light-mode #cliente-modal .modal-content::-webkit-scrollbar-thumb,
+        body.light-mode #edit-usuario-modal .modal-content::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+        }
+
+        body.light-mode #cliente-modal .modal-content::-webkit-scrollbar-thumb:hover,
+        body.light-mode #edit-usuario-modal .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
+        }
+
+        /* Estilos para o modal de senha */
+        #password-modal {
+            display: none !important;
+            position: fixed !important;
+            z-index: 1000 !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        #password-modal.show {
+            display: flex !important;
+        }
+
+        #password-modal .modal-content {
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            padding: 0;
+        }
+
+        #password-modal .modal-header {
+            background: #2d3748;
+            border-bottom: 2px solid #4a5568;
+            text-align: center;
+        }
+
+        #password-modal .modal-header h3 {
+            color: #ffffff;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .password-content {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            color: #48bb78;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            color: #e2e8f0;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .password-info {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .password-info h4 {
+            color: #ffffff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .info-row {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-row strong {
+            color: #e2e8f0;
+            min-width: 120px;
+        }
+
+        .password-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        #password-display {
+            background: #1a202c;
+            color: #ffffff;
+            border: 2px solid #4a5568;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .warning-message {
+            background: #744210;
+            border: 1px solid #d69e2e;
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-message i {
+            color: #f6e05e;
+            font-size: 20px;
+        }
+
+        .warning-message p {
+            color: #f6e05e;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        #password-modal .form-actions {
+            background: #2d3748;
+            border-top: 2px solid #4a5568;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            margin: 0;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Modo claro para o modal de senha */
+        body.light-mode #password-modal .modal-content {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #password-modal .modal-header {
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #password-modal .modal-header h3 {
+            color: #2d3748;
+        }
+
+        body.light-mode .success-message {
+            color: #4a5568;
+        }
+
+        body.light-mode .password-info {
+            background: #f7fafc;
+        }
+
+        body.light-mode .password-info h4 {
+            color: #2d3748;
+        }
+
+        body.light-mode .info-row strong {
+            color: #4a5568;
+        }
+
+        body.light-mode #password-display {
+            background: #ffffff;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+        }
+
+        body.light-mode .warning-message {
+            background: #fef5e7;
+            border: 1px solid #f6e05e;
+        }
+
+        body.light-mode .warning-message p {
+            color: #744210;
+        }
+
+        body.light-mode #password-modal .form-actions {
+            background: #f7fafc;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        /* Botão de copiar - modo claro */
+        body.light-mode .btn.btn-sm.btn-secondary {
+            background-color: #3182ce !important;
+            color: #ffffff !important;
+            border: 1px solid #3182ce !important;
+        }
+
+        body.light-mode .btn.btn-sm.btn-secondary:hover {
+            background-color: #2c5aa0 !important;
+            border-color: #2c5aa0 !important;
+        }
+
+        /* Botões de cancelar - modo claro */
+        body.light-mode .btn.btn-secondary {
+            background-color: #4a5568 !important;
+            color: #ffffff !important;
+            border: 1px solid #4a5568 !important;
+        }
+
+        body.light-mode .btn.btn-secondary:hover {
+            background-color: #2d3748 !important;
+            border-color: #2d3748 !important;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .usuario-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .dados-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .dados-row p {
+                min-width: auto;
+            }
+
+            .cliente-actions {
+                justify-content: center;
+            }
+
+            .password-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .info-row strong {
+                min-width: auto;
+            }
+        }
+    </style>
 </body>
 </html>

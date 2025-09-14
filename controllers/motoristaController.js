@@ -4,13 +4,13 @@ const { Op } = require('sequelize');
 // Dashboard do Motorista
 const getDashboard = async (req, res) => {
   try {
-    const motoristaId = req.userId;
+    const motoristaId = req.user.id;
     
     // Buscar fretes disponíveis
     const fretesDisponiveis = await Frete.findAll({
       where: {
-        status: 'disponivel',
-        motorista_id: null
+        status: 'solicitado',
+        motoristaId: null
       },
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
@@ -22,8 +22,8 @@ const getDashboard = async (req, res) => {
     // Buscar fretes ativos do motorista
     const fretesAtivos = await Frete.findAll({
       where: {
-        motorista_id: motoristaId,
-        status: ['aceito', 'em_transito']
+        motoristaId: motoristaId,
+        status: { [Op.in]: ['aceito', 'em_transito'] }
       },
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
@@ -34,8 +34,8 @@ const getDashboard = async (req, res) => {
     // Buscar fretes concluídos do motorista
     const fretesConcluidos = await Frete.findAll({
       where: {
-        motorista_id: motoristaId,
-        status: 'concluido'
+        motoristaId: motoristaId,
+        status: 'entregue'
       },
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
@@ -46,13 +46,13 @@ const getDashboard = async (req, res) => {
 
     // Estatísticas
     const totalFretes = await Frete.count({
-      where: { motorista_id: motoristaId }
+      where: { motoristaId: motoristaId }
     });
 
     const fretesConcluidosCount = await Frete.count({
       where: {
-        motorista_id: motoristaId,
-        status: 'concluido'
+        motoristaId: motoristaId,
+        status: 'entregue'
       }
     });
 
@@ -60,14 +60,12 @@ const getDashboard = async (req, res) => {
       success: true,
       data: {
         dashboard: {
-          fretesDisponiveis,
-          fretesAtivos,
-          fretesConcluidos,
-          estatisticas: {
-            totalFretes,
-            fretesConcluidos: fretesConcluidosCount,
-            fretesAtivos: fretesAtivos.length
-          }
+          fretesDisponiveis: fretesDisponiveis.length,
+          fretesAtivos: fretesAtivos.length,
+          fretesConcluidos: fretesConcluidosCount,
+          totalFretes,
+          fretesAtivosList: fretesAtivos,
+          fretesConcluidosList: fretesConcluidos
         }
       }
     });
@@ -87,8 +85,8 @@ const getFretesDisponiveis = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const whereClause = {
-      status: 'disponivel',
-      motorista_id: null
+        status: 'solicitado',
+      motoristaId: null
     };
 
     // Filtros
@@ -144,7 +142,7 @@ const getFretesDisponiveis = async (req, res) => {
 const aceitarFrete = async (req, res) => {
   try {
     const { id } = req.params;
-    const motoristaId = req.userId;
+    const motoristaId = req.user.id;
 
     const frete = await Frete.findByPk(id);
     
@@ -155,7 +153,7 @@ const aceitarFrete = async (req, res) => {
       });
     }
 
-    if (frete.status !== 'disponivel') {
+    if (frete.status !== 'solicitado') {
       return res.status(400).json({
         success: false,
         message: 'Frete não está disponível para aceitação'
@@ -195,7 +193,7 @@ const atualizarStatusFrete = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, observacoes } = req.body;
-    const motoristaId = req.userId;
+    const motoristaId = req.user.id;
 
     const frete = await Frete.findByPk(id);
     
@@ -214,7 +212,7 @@ const atualizarStatusFrete = async (req, res) => {
     }
 
     // Validar transição de status
-    const statusValidos = ['aceito', 'em_transito', 'concluido'];
+    const statusValidos = ['aceito', 'em_transito', 'entregue'];
     if (!statusValidos.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -228,7 +226,7 @@ const atualizarStatusFrete = async (req, res) => {
     
     if (status === 'em_transito') {
       updateData.data_inicio_transporte = new Date();
-    } else if (status === 'concluido') {
+    } else if (status === 'entregue') {
       updateData.data_entrega = new Date();
     }
 
@@ -253,7 +251,7 @@ const getMeusFretes = async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
-    const motoristaId = req.userId;
+    const motoristaId = req.user.id;
 
     const whereClause = { motorista_id: motoristaId };
     if (status) whereClause.status = status;
@@ -292,7 +290,7 @@ const getMeusFretes = async (req, res) => {
 // Atualizar perfil do motorista
 const atualizarPerfil = async (req, res) => {
   try {
-    const motoristaId = req.userId;
+    const motoristaId = req.user.id;
     const { nome, telefone, endereco, cidade, estado, cep } = req.body;
 
     const user = await User.findByPk(motoristaId);
@@ -305,21 +303,14 @@ const atualizarPerfil = async (req, res) => {
 
     // Atualizar dados do usuário
     await user.update({
-      email: req.body.email || user.email
+      email: req.body.email || user.email,
+      nome: nome || user.nome,
+      telefone: telefone || user.telefone,
+      endereco: endereco || user.endereco,
+      cidade: cidade || user.cidade,
+      estado: estado || user.estado,
+      cep: cep || user.cep
     });
-
-    // Atualizar dados do perfil do motorista
-    const motorista = await user.getMotorista();
-    if (motorista) {
-      await motorista.update({
-        nome: nome || motorista.nome,
-        telefone: telefone || motorista.telefone,
-        endereco: endereco || motorista.endereco,
-        cidade: cidade || motorista.cidade,
-        estado: estado || motorista.estado,
-        cep: cep || motorista.cep
-      });
-    }
 
     res.json({
       success: true,
@@ -337,7 +328,7 @@ const atualizarPerfil = async (req, res) => {
 // Relatórios pessoais do motorista
 const getRelatoriosPessoais = async (req, res) => {
   try {
-    const motoristaId = req.userId;
+    const motoristaId = req.user.id;
     const { periodo = '30' } = req.query;
     
     const dataInicio = new Date();
@@ -346,8 +337,8 @@ const getRelatoriosPessoais = async (req, res) => {
     // Fretes concluídos no período
     const fretesConcluidos = await Frete.count({
       where: {
-        motorista_id: motoristaId,
-        status: 'concluido',
+        motoristaId: motoristaId,
+        status: 'entregue',
         data_entrega: {
           [Op.gte]: dataInicio
         }

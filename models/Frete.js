@@ -12,7 +12,7 @@ const Frete = sequelize.define('Frete', {
     allowNull: false,
     unique: true
   },
-  clienteId: {
+  cliente_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -20,7 +20,7 @@ const Frete = sequelize.define('Frete', {
       key: 'id'
     }
   },
-  motoristaId: {
+  motorista_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
@@ -34,103 +34,103 @@ const Frete = sequelize.define('Frete', {
     defaultValue: 'solicitado'
   },
   // Informações do remetente
-  senderName: {
+  sender_name: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  senderDocument: {
+  sender_document: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  senderPhone: {
+  sender_phone: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  senderEmail: {
+  sender_email: {
     type: DataTypes.STRING,
     allowNull: false
   },
   // Informações do destinatário
-  recipientName: {
+  recipient_name: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  recipientDocument: {
+  recipient_document: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  recipientPhone: {
+  recipient_phone: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  recipientEmail: {
+  recipient_email: {
     type: DataTypes.STRING,
     allowNull: false
   },
   // Detalhes da carga
-  cargoType: {
+  cargo_type: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  cargoValue: {
+  cargo_value: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
-  cargoWeight: {
+  cargo_weight: {
     type: DataTypes.DECIMAL(8, 2),
     allowNull: false
   },
-  cargoDimensions: {
+  cargo_dimensions: {
     type: DataTypes.STRING,
     allowNull: false
   },
   // Endereço de origem
-  originCep: {
+  origin_cep: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  originStreet: {
+  origin_street: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  originNumber: {
+  origin_number: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  originComplement: {
+  origin_complement: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  originCity: {
+  origin_city: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  originState: {
+  origin_state: {
     type: DataTypes.STRING,
     allowNull: false
   },
   // Endereço de destino
-  destinationCep: {
+  destination_cep: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  destinationStreet: {
+  destination_street: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  destinationNumber: {
+  destination_number: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  destinationComplement: {
+  destination_complement: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  destinationCity: {
+  destination_city: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  destinationState: {
+  destination_state: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -139,18 +139,17 @@ const Frete = sequelize.define('Frete', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  dataColeta: {
+  data_coleta: {
     type: DataTypes.DATE,
     allowNull: true
   },
-  dataEntrega: {
+  data_entrega: {
     type: DataTypes.DATE,
     allowNull: true
   }
 }, {
   tableName: 'fretes',
-  timestamps: true,
-  underscored: true
+  timestamps: true
 });
 
 module.exports = Frete;

@@ -59,7 +59,7 @@ const getFretesByCliente = async (req, res) => {
         { model: User, as: 'cliente' },
         { model: User, as: 'motorista' }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -88,7 +88,8 @@ const getFretesByCliente = async (req, res) => {
 // Listar fretes disponíveis para motoristas
 const getFretesDisponiveis = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
     const { count, rows: fretes } = await Frete.findAndCountAll({
@@ -97,11 +98,11 @@ const getFretesDisponiveis = async (req, res) => {
         motoristaId: null
       },
       include: [
-        { model: Cliente, as: 'cliente', include: [{ model: User, as: 'user' }] }
+        { model: User, as: 'cliente' }
       ],
-      order: [['createdAt', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      order: [['created_at', 'DESC']],
+      limit: limit,
+      offset: offset
     });
 
     res.json({
@@ -110,8 +111,8 @@ const getFretesDisponiveis = async (req, res) => {
         fretes,
         pagination: {
           total: count,
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: page,
+          limit: limit,
           pages: Math.ceil(count / limit)
         }
       }
@@ -131,9 +132,13 @@ const getFretesByMotorista = async (req, res) => {
     const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = { motoristaId: req.user.motorista.id };
+    const whereClause = { motoristaId: req.user.id };
     if (status) {
-      whereClause.status = status;
+      if (status.includes(',')) {
+        whereClause.status = { [Op.in]: status.split(',') };
+      } else {
+        whereClause.status = status;
+      }
     }
 
     const { count, rows: fretes } = await Frete.findAndCountAll({
@@ -142,7 +147,7 @@ const getFretesByMotorista = async (req, res) => {
         { model: User, as: 'cliente' },
         { model: User, as: 'motorista' }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -189,23 +194,47 @@ const getFreteById = async (req, res) => {
 
     // Verificar se o usuário tem acesso ao frete
     const userType = req.userType;
-    if (userType === 'cliente' && frete.clienteId !== req.user.cliente.id) {
+    console.log('Verificando acesso:', {
+      userType,
+      userId: req.user.id,
+      freteId: frete.id,
+      freteMotoristaId: frete.motoristaId,
+      freteClienteId: frete.clienteId
+    });
+    
+    if (userType === 'cliente' && frete.clienteId !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Acesso negado'
       });
     }
 
-    if (userType === 'motorista' && frete.motoristaId !== req.user.motorista.id) {
+    if (userType === 'motorista' && frete.motoristaId !== null && frete.motoristaId !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Acesso negado'
       });
     }
+
+    // Log para debug
+    console.log('Frete encontrado:', {
+      id: frete.id,
+      codigo: frete.codigo,
+      status: frete.status,
+      sender_name: frete.sender_name,
+      recipient_name: frete.recipient_name,
+      cargo_type: frete.cargo_type,
+      cargo_value: frete.cargo_value,
+      cargo_weight: frete.cargo_weight,
+      data_coleta: frete.data_coleta,
+      data_entrega: frete.data_entrega,
+      cliente: frete.cliente?.email,
+      motorista: frete.motorista?.email
+    });
 
     res.json({
       success: true,
-      data: { frete }
+      data: frete
     });
   } catch (error) {
     console.error('Erro ao buscar frete:', error);
@@ -245,7 +274,7 @@ const acceptFrete = async (req, res) => {
 
     // Aceitar frete
     await frete.update({
-      motoristaId: req.user.motorista.id,
+      motoristaId: req.user.id,
       status: 'aceito'
     });
 
@@ -302,7 +331,7 @@ const updateFreteStatus = async (req, res) => {
       });
     }
 
-    if (userType === 'motorista' && frete.motoristaId !== req.user.motorista.id) {
+    if (userType === 'motorista' && frete.motoristaId !== null && frete.motoristaId !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Acesso negado'
@@ -313,11 +342,11 @@ const updateFreteStatus = async (req, res) => {
     const updateData = { status };
     
     if (status === 'em_transito') {
-      updateData.dataColetaReal = new Date();
+      updateData.data_coleta = new Date();
     }
     
     if (status === 'entregue') {
-      updateData.dataEntregaReal = new Date();
+      updateData.data_entrega = new Date();
     }
 
     await frete.update(updateData);
@@ -373,7 +402,7 @@ const getAllFretes = async (req, res) => {
         { model: User, as: 'cliente' },
         { model: User, as: 'motorista' }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -399,6 +428,55 @@ const getAllFretes = async (req, res) => {
   }
 };
 
+// Atualizar frete (admin)
+const updateFrete = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, motorista_id, data_coleta, data_entrega } = req.body;
+
+    console.log('Dados recebidos para atualização:', {
+      id,
+      status,
+      motorista_id,
+      data_coleta,
+      data_entrega
+    });
+
+    const frete = await Frete.findByPk(id);
+    if (!frete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Frete não encontrado'
+      });
+    }
+
+    // Atualizar campos permitidos
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (motorista_id !== undefined) updateData.motorista_id = motorista_id;
+    if (data_coleta) updateData.data_coleta = data_coleta;
+    if (data_entrega) updateData.data_entrega = data_entrega;
+
+    console.log('Dados para atualização:', updateData);
+
+    await frete.update(updateData);
+
+    console.log('Frete atualizado com sucesso:', frete.toJSON());
+
+    res.json({
+      success: true,
+      message: 'Frete atualizado com sucesso',
+      data: frete
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar frete:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 module.exports = {
   createFrete,
   getFretesByCliente,
@@ -407,5 +485,6 @@ module.exports = {
   getFreteById,
   acceptFrete,
   updateFreteStatus,
-  getAllFretes
+  getAllFretes,
+  updateFrete
 };

@@ -47,7 +47,6 @@
                 <div class="config-tabs">
                     <button class="tab-btn active" data-tab="operacionais">Operacionais</button>
                     <button class="tab-btn" data-tab="seguranca">Segurança</button>
-                    <button class="tab-btn" data-tab="notificacoes">Notificações</button>
                     <button class="tab-btn" data-tab="integracao">Integrações</button>
                 </div>
 
@@ -116,63 +115,6 @@
                                 <input type="checkbox" name="cors_habilitado" checked>
                                 <span class="checkmark"></span>
                                 CORS Habilitado
-                            </label>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i>
-                            Salvar Configurações
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Configurações de Notificações Tab -->
-                <div class="config-tab-content" id="notificacoes">
-                    <form class="config-form" id="notificacoes-form">
-                        <h3>Configurações de Notificações</h3>
-                        
-                        <div class="form-group">
-                            <label for="smtp-servidor">Servidor SMTP</label>
-                            <input type="text" id="smtp-servidor" name="smtp_servidor" placeholder="smtp.exemplo.com">
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="smtp-porta">Porta SMTP</label>
-                                <input type="number" id="smtp-porta" name="smtp_porta" value="587">
-                            </div>
-                            <div class="form-group">
-                                <label for="smtp-usuario">Usuário SMTP</label>
-                                <input type="text" id="smtp-usuario" name="smtp_usuario">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="smtp-senha">Senha SMTP</label>
-                            <input type="password" id="smtp-senha" name="smtp_senha">
-                        </div>
-
-                        <h4>Tipos de Notificação</h4>
-                        <div class="checkbox-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" name="notif_novo_frete" checked>
-                                <span class="checkmark"></span>
-                                Novo Frete Disponível
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" name="notif_status_frete" checked>
-                                <span class="checkmark"></span>
-                                Atualização de Status
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" name="notif_documentos_vencidos" checked>
-                                <span class="checkmark"></span>
-                                Documentos Vencidos
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" name="notif_problemas_sistema" checked>
-                                <span class="checkmark"></span>
-                                Problemas no Sistema
                             </label>
                         </div>
 
@@ -290,6 +232,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
             setupEventListeners();
+            loadConfigs();
         });
 
         function loadUserData() {
@@ -306,6 +249,24 @@
                     const target = this.getAttribute('data-tab');
                     showConfigTab(target);
                 });
+            });
+
+            // Formulário de configurações operacionais
+            document.getElementById('operacionais-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveOperacionaisConfig();
+            });
+
+            // Formulário de configurações de segurança
+            document.getElementById('seguranca-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveSegurancaConfig();
+            });
+
+            // Formulário de configurações de integração
+            document.getElementById('integracao-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveIntegracaoConfig();
             });
         }
 
@@ -334,6 +295,82 @@
             showNotification('Nova chave API gerada!', 'success');
         }
 
+        // Função para salvar configurações operacionais
+        function saveOperacionaisConfig() {
+            const form = document.getElementById('operacionais-form');
+            const formData = new FormData(form);
+            
+            const configData = {
+                empresa_cnpj: formData.get('empresa_cnpj'),
+                empresa_telefone: formData.get('empresa_telefone'),
+                frete_valor_minimo: formData.get('frete_valor_minimo')
+            };
+
+            // Salvar no localStorage por enquanto
+            localStorage.setItem('config_operacionais', JSON.stringify(configData));
+            showNotification('Configurações operacionais salvas com sucesso!', 'success');
+        }
+
+        // Função para salvar configurações de segurança
+        function saveSegurancaConfig() {
+            const form = document.getElementById('seguranca-form');
+            const formData = new FormData(form);
+            
+            const configData = {
+                senha_minima: formData.get('senha_minima'),
+                sessao_tempo: formData.get('sessao_tempo'),
+                tentativas_login: formData.get('tentativas_login')
+            };
+
+            // Salvar no localStorage por enquanto
+            localStorage.setItem('config_seguranca', JSON.stringify(configData));
+            showNotification('Configurações de segurança salvas com sucesso!', 'success');
+        }
+
+        // Função para salvar configurações de integração
+        function saveIntegracaoConfig() {
+            const form = document.getElementById('integracao-form');
+            const formData = new FormData(form);
+            
+            const configData = {
+                api_key: formData.get('api_key'),
+                webhook_url: formData.get('webhook_url')
+            };
+
+            // Salvar no localStorage por enquanto
+            localStorage.setItem('config_integracao', JSON.stringify(configData));
+            showNotification('Configurações de integração salvas com sucesso!', 'success');
+        }
+
+        // Função para carregar configurações salvas
+        function loadConfigs() {
+            // Carregar configurações operacionais
+            const operacionais = localStorage.getItem('config_operacionais');
+            if (operacionais) {
+                const config = JSON.parse(operacionais);
+                document.getElementById('empresa-cnpj').value = config.empresa_cnpj || '';
+                document.getElementById('empresa-telefone').value = config.empresa_telefone || '';
+                document.getElementById('frete-valor-minimo').value = config.frete_valor_minimo || '';
+            }
+
+            // Carregar configurações de segurança
+            const seguranca = localStorage.getItem('config_seguranca');
+            if (seguranca) {
+                const config = JSON.parse(seguranca);
+                document.getElementById('senha-minima').value = config.senha_minima || '6';
+                document.getElementById('sessao-tempo').value = config.sessao_tempo || '60';
+                document.getElementById('tentativas-login').value = config.tentativas_login || '5';
+            }
+
+            // Carregar configurações de integração
+            const integracao = localStorage.getItem('config_integracao');
+            if (integracao) {
+                const config = JSON.parse(integracao);
+                document.getElementById('api-key').value = config.api_key || '';
+                document.getElementById('webhook-url').value = config.webhook_url || '';
+            }
+        }
+
         // Função para mostrar notificações
         function showNotification(message, type) {
             const notification = document.createElement('div');
@@ -350,6 +387,14 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone
+            const icon = document.querySelector('.theme-toggle i');
+            if (isLightMode) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
         }
         
         // Carregar tema salvo
@@ -357,6 +402,8 @@
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                const icon = document.querySelector('.theme-toggle i');
+                if (icon) icon.className = 'fas fa-moon';
             }
         });
     </script>

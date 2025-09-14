@@ -60,10 +60,6 @@
                             <option value="recent">Mais Recente</option>
                             <option value="oldest">Mais Antigo</option>
                         </select>
-                        <button class="btn btn-primary" onclick="loadFretes()">
-                            <i class="fas fa-sync"></i>
-                            Atualizar
-                        </button>
                         <button class="btn btn-primary" onclick="clearFilters()">
                             <i class="fas fa-times"></i>
                             Limpar Filtros
@@ -139,6 +135,12 @@
             loadUserData();
             loadFilters();
             loadFretes();
+            
+            // Adicionar event listeners para os filtros
+            document.getElementById('status-filter').addEventListener('change', loadFretes);
+            document.getElementById('cliente-filter').addEventListener('change', loadFretes);
+            document.getElementById('motorista-filter').addEventListener('change', loadFretes);
+            document.getElementById('order-filter').addEventListener('change', loadFretes);
         });
 
         function loadUserData() {
@@ -150,61 +152,55 @@
 
         async function loadFilters() {
             try {
-                // Dados simulados para filtros
-                const clientesSimulados = [
-                    { id: 1, email: 'cliente1@email.com' },
-                    { id: 2, email: 'cliente2@email.com' },
-                    { id: 3, email: 'cliente3@email.com' }
-                ];
-                
-                const motoristasSimulados = [
-                    { id: 1, email: 'motorista1@email.com' },
-                    { id: 2, email: 'motorista2@email.com' }
-                ];
-                
-                // Carregar clientes
+                // Carregar dados reais da API
                 const clienteSelect = document.getElementById('cliente-filter');
-                clientesSimulados.forEach(cliente => {
-                    const option = document.createElement('option');
-                    option.value = cliente.id;
-                    option.textContent = cliente.email;
-                    clienteSelect.appendChild(option);
-                });
-
-                // Carregar motoristas
                 const motoristaSelect = document.getElementById('motorista-filter');
-                motoristasSimulados.forEach(motorista => {
-                    const option = document.createElement('option');
-                    option.value = motorista.id;
-                    option.textContent = motorista.email;
-                    motoristaSelect.appendChild(option);
-                });
                 
-                // Tentar carregar dados reais em background
+                // Limpar selects
+                clienteSelect.innerHTML = '<option value="">Todos os Clientes</option>';
+                motoristaSelect.innerHTML = '<option value="">Todos os Motoristas</option>';
+                
                 try {
+                    // Carregar clientes reais
+                    console.log('Carregando clientes...');
                     const clientesResponse = await api.getClientes(1, 1000);
-                    if (clientesResponse.success) {
-                        clienteSelect.innerHTML = '<option value="">Todos os Clientes</option>';
-                        clientesResponse.data.clientes.forEach(cliente => {
+                    console.log('Resposta clientes:', clientesResponse);
+                    
+                    if (clientesResponse && clientesResponse.success && clientesResponse.data && clientesResponse.data.usuarios) {
+                        clientesResponse.data.usuarios.forEach(cliente => {
                             const option = document.createElement('option');
                             option.value = cliente.id;
-                            option.textContent = cliente.name || cliente.email;
+                            option.textContent = cliente.nome || cliente.email;
                             clienteSelect.appendChild(option);
                         });
+                        console.log('Clientes carregados:', clientesResponse.data.usuarios.length);
+                    } else {
+                        console.error('Resposta inválida de clientes:', clientesResponse);
+                        clienteSelect.innerHTML = '<option value="">Erro ao carregar clientes</option>';
                     }
 
+                    // Carregar motoristas reais
+                    console.log('Carregando motoristas...');
                     const motoristasResponse = await api.getMotoristas(1, 1000);
-                    if (motoristasResponse.success) {
-                        motoristaSelect.innerHTML = '<option value="">Todos os Motoristas</option>';
+                    console.log('Resposta motoristas:', motoristasResponse);
+                    
+                    if (motoristasResponse && motoristasResponse.success && motoristasResponse.data && motoristasResponse.data.motoristas) {
                         motoristasResponse.data.motoristas.forEach(motorista => {
                             const option = document.createElement('option');
                             option.value = motorista.id;
-                            option.textContent = motorista.name || motorista.email;
+                            option.textContent = motorista.nome || motorista.email;
                             motoristaSelect.appendChild(option);
                         });
+                        console.log('Motoristas carregados:', motoristasResponse.data.motoristas.length);
+                    } else {
+                        console.error('Resposta inválida de motoristas:', motoristasResponse);
+                        motoristaSelect.innerHTML = '<option value="">Erro ao carregar motoristas</option>';
                     }
                 } catch (apiError) {
-                    console.log('API não disponível, usando dados simulados para filtros');
+                    console.error('Erro ao carregar filtros:', apiError);
+                    // Adicionar opção de erro
+                    clienteSelect.innerHTML = '<option value="">Erro ao carregar clientes</option>';
+                    motoristaSelect.innerHTML = '<option value="">Erro ao carregar motoristas</option>';
                 }
             } catch (error) {
                 console.error('Erro ao carregar filtros:', error);
@@ -216,185 +212,53 @@
                 const container = document.getElementById('fretes-list');
                 container.innerHTML = '<p class="no-data">Carregando fretes...</p>';
                 
-                // Dados simulados para teste
-                const fretesSimulados = [
-                    {
-                        id: 1,
-                        codigo: 'FR123456789',
-                        status: 'aceito',
-                        cargoType: 'Eletrônicos',
-                        cargoWeight: '15.5',
-                        cargoValue: '2500.00',
-                        originCity: 'Ponta Grossa',
-                        originState: 'PR',
-                        originStreet: 'Rua Cambara',
-                        originNumber: '268',
-                        destinationCity: 'Rio de Janeiro',
-                        destinationState: 'RJ',
-                        destinationStreet: 'Rua da Carioca',
-                        destinationNumber: '200',
-                        dataColeta: new Date(),
-                        cliente: { email: 'cliente1@email.com' },
-                        motorista: { email: 'motorista1@email.com' }
-                    },
-                    {
-                        id: 2,
-                        codigo: 'FR987654321',
-                        status: 'em_transito',
-                        cargoType: 'Roupas',
-                        cargoWeight: '8.2',
-                        cargoValue: '800.00',
-                        originCity: 'Ponta Grossa',
-                        originState: 'PR',
-                        originStreet: 'Rua Cambara',
-                        originNumber: '268',
-                        destinationCity: 'Belo Horizonte',
-                        destinationState: 'MG',
-                        destinationStreet: 'Rua da Bahia',
-                        destinationNumber: '1500',
-                        dataColeta: new Date(),
-                        cliente: { email: 'cliente2@email.com' },
-                        motorista: { email: 'motorista2@email.com' }
-                    },
-                    {
-                        id: 3,
-                        codigo: 'FR456789123',
-                        status: 'solicitado',
-                        cargoType: 'Documentos',
-                        cargoWeight: '0.5',
-                        cargoValue: '50.00',
-                        originCity: 'Ponta Grossa',
-                        originState: 'PR',
-                        originStreet: 'Rua Cambara',
-                        originNumber: '268',
-                        destinationCity: 'Florianópolis',
-                        destinationState: 'SC',
-                        destinationStreet: 'Rua Felipe Schmidt',
-                        destinationNumber: '456',
-                        dataColeta: new Date(),
-                        cliente: { email: 'cliente3@email.com' },
-                        motorista: null
-                    },
-                    {
-                        id: 4,
-                        codigo: 'FR111222333',
-                        status: 'entregue',
-                        cargoType: 'Livros',
-                        cargoWeight: '12.0',
-                        cargoValue: '300.00',
-                        originCity: 'Ponta Grossa',
-                        originState: 'PR',
-                        originStreet: 'Rua Cambara',
-                        originNumber: '268',
-                        destinationCity: 'Fortaleza',
-                        destinationState: 'CE',
-                        destinationStreet: 'Rua Barão do Rio Branco',
-                        destinationNumber: '100',
-                        dataColeta: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-                        dataEntrega: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-                        cliente: { email: 'cliente4@email.com' },
-                        motorista: { email: 'motorista1@email.com' }
-                    },
-                    {
-                        id: 5,
-                        codigo: 'FR444555666',
-                        status: 'entregue',
-                        cargoType: 'Equipamentos',
-                        cargoWeight: '25.0',
-                        cargoValue: '5000.00',
-                        originCity: 'Ponta Grossa',
-                        originState: 'PR',
-                        originStreet: 'Rua Cambara',
-                        originNumber: '268',
-                        destinationCity: 'Porto Alegre',
-                        destinationState: 'RS',
-                        destinationStreet: 'Rua dos Andradas',
-                        destinationNumber: '500',
-                        dataColeta: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-                        dataEntrega: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-                        cliente: { email: 'cliente5@email.com' },
-                        motorista: { email: 'motorista2@email.com' }
-                    },
-                    {
-                        id: 6,
-                        codigo: 'FR777888999',
-                        status: 'entregue',
-                        cargoType: 'Móveis',
-                        cargoWeight: '35.0',
-                        cargoValue: '1200.00',
-                        originCity: 'Ponta Grossa',
-                        originState: 'PR',
-                        originStreet: 'Rua Cambara',
-                        originNumber: '268',
-                        destinationCity: 'Goiânia',
-                        destinationState: 'GO',
-                        destinationStreet: 'Rua 3',
-                        destinationNumber: '800',
-                        dataColeta: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-                        dataEntrega: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-                        cliente: { email: 'cliente6@email.com' },
-                        motorista: { email: 'motorista1@email.com' }
-                    }
-                ];
-                
-                // Aplicar filtros nos dados simulados
-                let fretesFiltrados = [...fretesSimulados];
-                
+                // Obter filtros
                 const statusFilter = document.getElementById('status-filter').value;
-                if (statusFilter) {
-                    fretesFiltrados = fretesFiltrados.filter(f => f.status === statusFilter);
-                }
-                
-                // Aplicar ordenação
+                const clienteFilter = document.getElementById('cliente-filter').value;
+                const motoristaFilter = document.getElementById('motorista-filter').value;
                 const orderFilter = document.getElementById('order-filter').value;
-                if (orderFilter === 'oldest') {
-                    fretesFiltrados.sort((a, b) => new Date(a.dataColeta) - new Date(b.dataColeta));
-                } else {
-                    fretesFiltrados.sort((a, b) => new Date(b.dataColeta) - new Date(a.dataColeta));
-                }
                 
-                container.innerHTML = '';
+                const filters = {};
+                if (statusFilter) filters.status = statusFilter;
+                if (clienteFilter) filters.clienteId = clienteFilter;
+                if (motoristaFilter) filters.motoristaId = motoristaFilter;
                 
-                if (fretesFiltrados.length === 0) {
-                    container.innerHTML = '<p class="no-data">Nenhum frete encontrado</p>';
-                    return;
-                }
+                console.log('Filtros aplicados:', filters);
                 
-                fretesFiltrados.forEach(frete => {
-                    const freteCard = createFreteCard(frete);
-                    container.appendChild(freteCard);
-                });
+                // Carregar dados reais da API
+                const response = await api.getAllFretes(1, 100, filters);
                 
-                // Tentar carregar dados reais em background
-                try {
-                    const statusFilter = document.getElementById('status-filter').value;
-                    const clienteFilter = document.getElementById('cliente-filter').value;
-                    const motoristaFilter = document.getElementById('motorista-filter').value;
-                    const dataFilter = document.getElementById('data-filter').value;
+                if (response && response.success && response.data && response.data.fretes) {
+                    let fretes = response.data.fretes;
                     
-                    const filters = {};
-                    if (statusFilter) filters.status = statusFilter;
-                    if (clienteFilter) filters.clienteId = clienteFilter;
-                    if (motoristaFilter) filters.motoristaId = motoristaFilter;
-                    if (dataFilter) filters.data = dataFilter;
-                    
-                    const response = await api.getAllFretes(1, 10, filters);
-                    
-                    if (response.success && response.data.fretes.length > 0) {
-                        container.innerHTML = '';
-                        response.data.fretes.forEach(frete => {
-                            const freteCard = createFreteCard(frete);
-                            container.appendChild(freteCard);
-                        });
+                    // Aplicar ordenação
+                    if (orderFilter === 'oldest') {
+                        fretes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    } else {
+                        fretes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     }
-                } catch (apiError) {
-                    console.log('API não disponível, usando dados simulados');
+                    
+                    // Limpar container
+                    container.innerHTML = '';
+                    
+                    if (fretes.length === 0) {
+                        container.innerHTML = '<p class="no-data">Nenhum frete encontrado</p>';
+                        return;
+                    }
+                    
+                    fretes.forEach(frete => {
+                        const freteCard = createFreteCard(frete);
+                        container.appendChild(freteCard);
+                    });
+                } else {
+                    console.error('Resposta inválida da API:', response);
+                    container.innerHTML = '<p class="no-data">Erro ao carregar fretes</p>';
                 }
                 
             } catch (error) {
                 console.error('Erro ao carregar fretes:', error);
                 const container = document.getElementById('fretes-list');
-                container.innerHTML = '<p class="no-data">Erro ao carregar fretes</p>';
+                container.innerHTML = '<p class="no-data">Erro ao carregar fretes: ' + error.message + '</p>';
             }
         }
 
@@ -403,18 +267,18 @@
             card.className = 'frete-card';
             
             // Formatar origem e destino
-            const origem = `${frete.originCity}/${frete.originState}`;
-            const destino = `${frete.destinationCity}/${frete.destinationState}`;
+            const origem = `${frete.origin_city}/${frete.origin_state}`;
+            const destino = `${frete.destination_city}/${frete.destination_state}`;
             
             // Formatar data de coleta
-            const dataColeta = frete.dataColeta ? new Date(frete.dataColeta).toLocaleDateString('pt-BR') : 'Não definida';
+            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'Não definida';
             
             // Obter nomes do cliente e motorista
             const clienteNome = frete.cliente ? (frete.cliente.name || frete.cliente.email) : 'N/A';
             const motoristaNome = frete.motorista ? (frete.motorista.name || frete.motorista.email) : 'Não atribuído';
             
             // Formatar valor da carga
-            const valorCarga = frete.cargoValue ? `R$ ${parseFloat(frete.cargoValue).toFixed(2).replace('.', ',')}` : 'N/A';
+            const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toFixed(2).replace('.', ',')}` : 'N/A';
             
             card.innerHTML = `
                 <div class="frete-header">
@@ -427,7 +291,7 @@
                             <i class="fas fa-map-marker-alt route-icon origin"></i>
                             <div class="route-details">
                                 <strong>Origem:</strong> ${origem}
-                                <small>${frete.originStreet}, ${frete.originNumber}</small>
+                                <small>${frete.origin_street}, ${frete.origin_number}</small>
                             </div>
                         </div>
                         <div class="route-arrow">
@@ -437,14 +301,14 @@
                             <i class="fas fa-map-marker-alt route-icon destination"></i>
                             <div class="route-details">
                                 <strong>Destino:</strong> ${destino}
-                                <small>${frete.destinationStreet}, ${frete.destinationNumber}</small>
+                                <small>${frete.destination_street}, ${frete.destination_number}</small>
                             </div>
                         </div>
                     </div>
                     <div class="frete-details">
                         <div class="detail-item">
                             <i class="fas fa-box"></i>
-                            <span>${frete.cargoType} (${frete.cargoWeight}kg)</span>
+                            <span>${frete.cargo_type} (${frete.cargo_weight}kg)</span>
                         </div>
                         <div class="detail-item">
                             <i class="fas fa-dollar-sign"></i>
@@ -465,7 +329,7 @@
                     </div>
                 </div>
                 <div class="frete-actions">
-                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
+                    <button class="btn btn-sm btn-primary" onclick="verDetalhes(${frete.id})">
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
@@ -473,7 +337,7 @@
                         <i class="fas fa-map-marker-alt"></i>
                         Rastrear
                     </button>
-                    <button class="btn btn-sm btn-warning" onclick="editFrete(${frete.id})">
+                    <button class="btn btn-sm btn-warning" onclick="editarFrete(${frete.id})">
                         <i class="fas fa-edit"></i>
                         Editar
                     </button>
@@ -532,6 +396,14 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone
+            const icon = document.querySelector('.theme-toggle i');
+            if (isLightMode) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
         }
         
         // Carregar tema salvo
@@ -539,8 +411,536 @@
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                const icon = document.querySelector('.theme-toggle i');
+                if (icon) icon.className = 'fas fa-moon';
             }
         });
+
+        // Funções dos modais
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Fechar modal ao clicar fora dele
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Função para ver detalhes do frete
+        async function verDetalhes(freteId) {
+            try {
+                const response = await api.getFreteById(freteId);
+                if (response.success) {
+                    const frete = response.data;
+                    displayDetalhesFrete(frete);
+                    openModal('detalhesModal');
+                } else {
+                    showNotification('Erro ao carregar detalhes do frete', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar detalhes:', error);
+                showNotification('Erro ao carregar detalhes do frete', 'error');
+            }
+        }
+
+        // Função para exibir detalhes do frete
+        function displayDetalhesFrete(frete) {
+            console.log('Dados do frete para detalhes:', frete); // Debug log
+            const content = document.getElementById('detalhesContent');
+            content.innerHTML = `
+                <div class="frete-detalhes">
+                    <div class="detalhe-item">
+                        <strong>Código:</strong>
+                        <span>${frete.codigo || 'N/A'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Status:</strong>
+                        <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Cliente:</strong>
+                        <span>${frete.cliente?.email || 'N/A'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Motorista:</strong>
+                        <span>${frete.motorista?.email || 'Não atribuído'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Remetente:</strong>
+                        <span>${frete.sender_name || 'N/A'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Destinatário:</strong>
+                        <span>${frete.recipient_name || 'N/A'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Tipo de Carga:</strong>
+                        <span>${frete.cargo_type || 'N/A'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Valor:</strong>
+                        <span>R$ ${parseFloat(frete.cargo_value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Peso:</strong>
+                        <span>${parseFloat(frete.cargo_weight || 0).toLocaleString('pt-BR')} kg</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Data de Coleta:</strong>
+                        <span>${frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                    </div>
+                    <div class="detalhe-item">
+                        <strong>Data de Entrega:</strong>
+                        <span>${frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Função para editar frete
+        async function editarFrete(freteId) {
+            try {
+                const response = await api.getFreteById(freteId);
+                if (response.success) {
+                    const frete = response.data;
+                    await loadMotoristasForEdit(); // Carregar motoristas
+                    populateEditForm(frete);
+                    openModal('editarModal');
+                    // Adicionar event listener após abrir o modal
+                    setTimeout(() => {
+                        addEditFormListener();
+                    }, 100);
+                } else {
+                    showNotification('Erro ao carregar dados do frete', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar frete:', error);
+                showNotification('Erro ao carregar dados do frete', 'error');
+            }
+        }
+
+        // Função para carregar motoristas no select de edição
+        async function loadMotoristasForEdit() {
+            try {
+                const response = await api.getMotoristas(1, 1000);
+                const motoristaSelect = document.getElementById('editMotorista');
+                motoristaSelect.innerHTML = '<option value="">Selecionar motorista</option>';
+                
+                if (response.success && response.data.motoristas) {
+                    response.data.motoristas.forEach(motorista => {
+                        const option = document.createElement('option');
+                        option.value = motorista.id;
+                        option.textContent = motorista.nome || motorista.email;
+                        motoristaSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar motoristas:', error);
+            }
+        }
+
+        // Função para preencher formulário de edição
+        function populateEditForm(frete) {
+            document.getElementById('editStatus').value = frete.status || 'solicitado';
+            document.getElementById('editMotorista').value = frete.motorista_id || '';
+            
+            if (frete.data_coleta) {
+                const dataColeta = new Date(frete.data_coleta);
+                // Converter para formato YYYY-MM-DDTHH:MM para input datetime-local
+                const year = dataColeta.getFullYear();
+                const month = String(dataColeta.getMonth() + 1).padStart(2, '0');
+                const day = String(dataColeta.getDate()).padStart(2, '0');
+                const hours = String(dataColeta.getHours()).padStart(2, '0');
+                const minutes = String(dataColeta.getMinutes()).padStart(2, '0');
+                document.getElementById('editDataColeta').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+            
+            if (frete.data_entrega) {
+                const dataEntrega = new Date(frete.data_entrega);
+                // Converter para formato YYYY-MM-DDTHH:MM para input datetime-local
+                const year = dataEntrega.getFullYear();
+                const month = String(dataEntrega.getMonth() + 1).padStart(2, '0');
+                const day = String(dataEntrega.getDate()).padStart(2, '0');
+                const hours = String(dataEntrega.getHours()).padStart(2, '0');
+                const minutes = String(dataEntrega.getMinutes()).padStart(2, '0');
+                document.getElementById('editDataEntrega').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+
+            // Armazenar ID do frete para edição
+            document.getElementById('editarFreteForm').dataset.freteId = frete.id;
+        }
+
+        // Função para adicionar event listener ao formulário de edição
+        function addEditFormListener() {
+            const editarForm = document.getElementById('editarFreteForm');
+            
+            if (editarForm) {
+                // Event listener para formulário de edição
+                editarForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const freteId = this.dataset.freteId;
+                    const formData = new FormData(this);
+                    
+                    const updateData = {
+                        status: formData.get('status'),
+                        motorista_id: formData.get('motorista_id') || null,
+                        data_coleta: formData.get('data_coleta'),
+                        data_entrega: formData.get('data_entrega') || null
+                    };
+
+                    try {
+                        const response = await api.updateFrete(freteId, updateData);
+                        
+                        if (response.success) {
+                            showNotification('Frete atualizado com sucesso!', 'success');
+                            closeModal('editarModal');
+                            loadFretes(); // Recarregar lista
+                        } else {
+                            showNotification('Erro ao atualizar frete: ' + (response.message || 'Erro desconhecido'), 'error');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao atualizar frete:', error);
+                        showNotification('Erro ao atualizar frete: ' + error.message, 'error');
+                    }
+                });
+            }
+        }
+
+        // Função para rastrear frete
+        function rastrearFrete(freteId) {
+            window.location.href = `rastreamento.html?id=${freteId}`;
+        }
+
     </script>
+
+    <style>
+        /* CSS geral para modais */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+        }
+
+        .modal-header .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-header .close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Modo claro */
+        body.light-mode .modal-content {
+            background: #ffffff;
+            border-color: #e5e7eb;
+        }
+
+        body.light-mode .modal-header {
+            background: #f9fafb;
+        }
+
+        body.light-mode .modal-header h2 {
+            color: #1f2937;
+        }
+
+        body.light-mode .modal-header .close {
+            color: #6b7280;
+        }
+
+        body.light-mode .modal-header .close:hover {
+            color: #1f2937;
+        }
+
+        /* Estilos específicos para o modal de edição de fretes */
+        #editarModal .modal-content {
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 0;
+        }
+
+        #editarModal .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #editarModal .modal-content::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+
+        #editarModal .modal-content::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+
+        #editarModal .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #667eea;
+        }
+
+        #editarModal .modal-header {
+            background: #2d3748;
+            border-bottom: 2px solid #4a5568;
+            padding: 20px;
+        }
+
+        #editarModal .modal-header h2 {
+            color: #ffffff;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        #editarModal .modal-body {
+            padding: 20px;
+        }
+
+        #editarModal .form-group {
+            padding: 0 0 20px 0;
+        }
+
+        #editarModal .form-group label {
+            color: #e2e8f0;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        #editarModal .form-group input,
+        #editarModal .form-group select {
+            background: #2d3748;
+            color: #ffffff;
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        #editarModal .form-group input:focus,
+        #editarModal .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #editarModal .form-actions {
+            background: #2d3748;
+            border-top: 2px solid #4a5568;
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin: 0;
+            border-radius: 0 0 12px 12px;
+        }
+
+        #editarModal .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #editarModal .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        #editarModal .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        #editarModal .btn-secondary {
+            background: #4a5568;
+            color: white;
+        }
+
+        #editarModal .btn-secondary:hover {
+            background: #2d3748;
+        }
+
+        /* Modo claro */
+        body.light-mode #editarModal .modal-content {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #editarModal .modal-header {
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #editarModal .modal-header h2 {
+            color: #2d3748;
+        }
+
+        body.light-mode #editarModal .form-group label {
+            color: #4a5568;
+        }
+
+        body.light-mode #editarModal .form-group input,
+        body.light-mode #editarModal .form-group select {
+            background: #ffffff;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+        }
+
+        body.light-mode #editarModal .form-actions {
+            background: #f7fafc;
+            border-top: 2px solid #e2e8f0;
+            margin: 0;
+            border-radius: 0 0 12px 12px;
+        }
+
+        body.light-mode #editarModal .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+
+        body.light-mode #editarModal .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* Scroll personalizado para modo claro */
+        body.light-mode #editarModal .modal-content::-webkit-scrollbar-track {
+            background: #f7fafc;
+        }
+
+        body.light-mode #editarModal .modal-content::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+        }
+
+        body.light-mode #editarModal .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
+        }
+    </style>
+
+    <!-- Modal para Ver Detalhes -->
+    <div id="detalhesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalhes do Frete</h2>
+                <span class="close" onclick="closeModal('detalhesModal')">&times;</span>
+            </div>
+            <div class="modal-body" id="detalhesContent">
+                <!-- Conteúdo será preenchido dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Frete -->
+    <div id="editarModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Frete</h2>
+                <span class="close" onclick="closeModal('editarModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editarFreteForm">
+                    <div class="form-group">
+                        <label for="editStatus">Status:</label>
+                        <select id="editStatus" name="status" required>
+                            <option value="solicitado">Solicitado</option>
+                            <option value="aceito">Aceito</option>
+                            <option value="em_transito">Em Trânsito</option>
+                            <option value="entregue">Entregue</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMotorista">Motorista:</label>
+                        <select id="editMotorista" name="motorista_id">
+                            <option value="">Selecionar motorista</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDataColeta">Data de Coleta:</label>
+                        <input type="datetime-local" id="editDataColeta" name="data_coleta" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDataEntrega">Data de Entrega:</label>
+                        <input type="datetime-local" id="editDataEntrega" name="data_entrega">
+                    </div>
+                </form>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editarModal')">Cancelar</button>
+                <button type="submit" class="btn btn-primary" form="editarFreteForm">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
