@@ -73,12 +73,6 @@
                             </div>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="endereco">Endereço</label>
-                                <input type="text" id="endereco" name="endereco">
-                            </div>
-                        </div>
 
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i>
@@ -89,28 +83,68 @@
 
                 <!-- Documentos Tab -->
                 <div class="profile-tab-content" id="documentos">
+                    <div class="documentos-header">
+                        <h3>Documentos</h3>
+                        <p>Informe os dados dos seus documentos para validação</p>
+                    </div>
+                    
                     <form class="profile-form" id="documentos-form">
-                        <div class="documentos-header">
-                            <h3>Documentos</h3>
-                            <p>Informe os dados dos seus documentos para validação</p>
-                        </div>
-                        
                         <div class="documentos-list" id="documentos-list">
                             <div class="documento-item">
-                                <div class="documento-info">
-                                    <h4>CNH (Carteira Nacional de Habilitação) *</h4>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="cnh-numero">Número da CNH *</label>
-                                            <input type="text" id="cnh-numero" name="cnh_numero" placeholder="Digite o número da CNH" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="cnh-validade">Data de Validade *</label>
-                                            <input type="date" id="cnh-validade" name="cnh_validade" required>
-                                        </div>
+                            <div class="documento-info">
+                                <h4>CNH (Carteira Nacional de Habilitação)</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="cnh">Número da CNH *</label>
+                                        <input type="text" id="cnh" name="cnh" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="cnh-categoria">Categorias da CNH *</label>
+                                        <label for="cnh_validade">Data de Validade</label>
+                                        <input type="date" id="cnh_validade" name="cnh_validade">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="cnh_emissao">Data de Emissão</label>
+                                        <input type="date" id="cnh_emissao" name="cnh_emissao">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cnh_uf">UF de Emissão</label>
+                                        <select id="cnh_uf" name="cnh_uf">
+                                            <option value="">Selecione a UF</option>
+                                            <option value="AC">AC</option>
+                                            <option value="AL">AL</option>
+                                            <option value="AP">AP</option>
+                                            <option value="AM">AM</option>
+                                            <option value="BA">BA</option>
+                                            <option value="CE">CE</option>
+                                            <option value="DF">DF</option>
+                                            <option value="ES">ES</option>
+                                            <option value="GO">GO</option>
+                                            <option value="MA">MA</option>
+                                            <option value="MT">MT</option>
+                                            <option value="MS">MS</option>
+                                            <option value="MG">MG</option>
+                                            <option value="PA">PA</option>
+                                            <option value="PB">PB</option>
+                                            <option value="PR">PR</option>
+                                            <option value="PE">PE</option>
+                                            <option value="PI">PI</option>
+                                            <option value="RJ">RJ</option>
+                                            <option value="RN">RN</option>
+                                            <option value="RS">RS</option>
+                                            <option value="RO">RO</option>
+                                            <option value="RR">RR</option>
+                                            <option value="SC">SC</option>
+                                            <option value="SP">SP</option>
+                                            <option value="SE">SE</option>
+                                            <option value="TO">TO</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="categoria-cnh">Categorias da CNH *</label>
                                         <div class="checkbox-group">
                                             <label class="checkbox-label">
                                                 <input type="checkbox" name="categoria_cnh[]" value="A">
@@ -140,6 +174,67 @@
                                         </div>
                                     </div>
                                 </div>
+                                    <div class="form-group">
+                                        <label for="cnh_observacoes">Observações</label>
+                                        <textarea id="cnh_observacoes" name="cnh_observacoes" rows="3" placeholder="Observações sobre a CNH"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Salvar Documentos
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Preferências Tab -->
+                <div class="profile-tab-content" id="preferencias">
+                    <form class="preferences-form" id="preferences-form">
+                        <h3>Preferências de Trabalho</h3>
+
+                        <div class="form-group">
+                            <label for="tipos-carga">Tipos de Carga Preferidos</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="tipos_carga[]" value="geral" checked>
+                                    <span class="checkmark"></span>
+                                    Carga Geral
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="tipos_carga[]" value="fragil">
+                                    <span class="checkmark"></span>
+                                    Carga Frágil
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="tipos_carga[]" value="refrigerada">
+                                    <span class="checkmark"></span>
+                                    Carga Refrigerada
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notificacoes">Notificações</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notificacoes[]" value="email" checked>
+                                    <span class="checkmark"></span>
+                                    E-mail
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notificacoes[]" value="sms">
+                                    <span class="checkmark"></span>
+                                    SMS
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="notificacoes[]" value="push">
+                                    <span class="checkmark"></span>
+                                    Notificações Push
+                                </label>
                             </div>
                         </div>
 
@@ -213,7 +308,7 @@
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
-            loadProfile();
+            loadProfileData();
             setupEventListeners();
         });
 
@@ -224,76 +319,82 @@
             }
         }
 
-        async function loadProfile() {
+        async function loadProfileData() {
             try {
-                const response = await api.getProfile();
-                
+                const user = getCurrentUser();
+                if (!user) return;
+
+                // Carregar dados do perfil do usuário
+                const response = await api.getUserProfile(user.id);
                 if (response.success) {
-                    const user = response.data;
-                    console.log('Dados do usuário carregados:', user); // Debug
+                    const profileData = response.data;
                     
-                    // Preencher dados pessoais
-                    if (document.getElementById('nome')) document.getElementById('nome').value = user.nome || '';
-                    if (document.getElementById('email')) document.getElementById('email').value = user.email || '';
-                    if (document.getElementById('telefone')) document.getElementById('telefone').value = user.telefone || '';
-                    if (document.getElementById('cpf')) document.getElementById('cpf').value = user.cpf || '';
-                    if (document.getElementById('endereco')) document.getElementById('endereco').value = user.endereco || '';
+                    // Limpar e preencher dados pessoais
+                    document.getElementById('nome').value = profileData.nome || '';
+                    document.getElementById('email').value = profileData.email || '';
+                    document.getElementById('telefone').value = profileData.telefone || '';
+                    document.getElementById('cpf').value = profileData.cpf || '';
                     
-                    // Preencher documentos
-                    if (document.getElementById('cnh-numero')) document.getElementById('cnh-numero').value = user.cnh || '';
-                    if (document.getElementById('cnh-validade')) document.getElementById('cnh-validade').value = user.vencimento_cnh || '';
+                    // Limpar e preencher dados de documentos
+                    const cnhField = document.getElementById('cnh');
+                    const cnhValidadeField = document.getElementById('cnh_validade');
+                    const cnhEmissaoField = document.getElementById('cnh_emissao');
+                    const cnhUfField = document.getElementById('cnh_uf');
+                    const cnhObservacoesField = document.getElementById('cnh_observacoes');
                     
-                    // Preencher categorias
-                    if (user.categoria) {
-                        const categorias = user.categoria.split(',');
-                        document.querySelectorAll('input[name="categoria_cnh[]"]').forEach(checkbox => {
-                            checkbox.checked = categorias.includes(checkbox.value);
+                    if (cnhField) cnhField.value = profileData.cnh || '';
+                    if (cnhValidadeField) cnhValidadeField.value = profileData.cnh_validade || '';
+                    if (cnhEmissaoField) cnhEmissaoField.value = profileData.cnh_emissao || '';
+                    if (cnhUfField) cnhUfField.value = profileData.cnh_uf || '';
+                    if (cnhObservacoesField) cnhObservacoesField.value = profileData.cnh_observacoes || '';
+                    
+                    // Limpar e preencher categorias da CNH
+                    document.querySelectorAll('input[name="categoria_cnh[]"]').forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    
+                    if (profileData.categoria) {
+                        const categorias = profileData.categoria.split(',');
+                        categorias.forEach(cat => {
+                            const checkbox = document.querySelector(`input[name="categoria_cnh[]"][value="${cat.trim()}"]`);
+                            if (checkbox) {
+                                checkbox.checked = true;
+                                checkbox.dispatchEvent(new Event('change'));
+                            }
                         });
                     }
                     
-                    console.log('Campos preenchidos:', {
-                        nome: document.getElementById('nome').value,
-                        email: document.getElementById('email').value,
-                        telefone: document.getElementById('telefone').value,
-                        cpf: document.getElementById('cpf').value,
-                        endereco: document.getElementById('endereco').value,
-                        cnh: document.getElementById('cnh-numero') ? document.getElementById('cnh-numero').value : 'N/A',
-                        vencimento_cnh: document.getElementById('cnh-validade') ? document.getElementById('cnh-validade').value : 'N/A'
-                    }); // Debug
+                    // Limpar e preencher endereço (se os campos existirem)
+                    const enderecoField = document.getElementById('endereco');
+                    const cidadeField = document.getElementById('cidade');
+                    const estadoField = document.getElementById('estado');
+                    const cepField = document.getElementById('cep');
+                    
+                    if (enderecoField) enderecoField.value = profileData.endereco || '';
+                    if (cidadeField) cidadeField.value = profileData.cidade || '';
+                    if (estadoField) estadoField.value = profileData.estado || '';
+                    if (cepField) cepField.value = profileData.cep || '';
+                    
+                    console.log('Dados do perfil carregados:', profileData);
+                    
+                    // Forçar atualização visual dos campos
+                    document.getElementById('nome').dispatchEvent(new Event('input'));
+                    document.getElementById('email').dispatchEvent(new Event('input'));
+                    document.getElementById('telefone').dispatchEvent(new Event('input'));
+                    document.getElementById('cpf').dispatchEvent(new Event('input'));
+                    
+                    if (cnhField) cnhField.dispatchEvent(new Event('input'));
+                    if (cnhValidadeField) cnhValidadeField.dispatchEvent(new Event('input'));
+                    if (cnhEmissaoField) cnhEmissaoField.dispatchEvent(new Event('input'));
+                    if (cnhUfField) cnhUfField.dispatchEvent(new Event('input'));
+                    if (cnhObservacoesField) cnhObservacoesField.dispatchEvent(new Event('input'));
+                    
+                    // Mostrar notificação de atualização
+                    showNotification('Dados atualizados na tela!', 'success');
                 }
             } catch (error) {
-                console.error('Erro ao carregar perfil:', error);
+                console.error('Erro ao carregar dados do perfil:', error);
                 showNotification('Erro ao carregar dados do perfil', 'error');
-            }
-        }
-
-        async function saveProfile() {
-            try {
-                const formData = {
-                    nome: document.getElementById('nome').value,
-                    email: document.getElementById('email').value,
-                    telefone: document.getElementById('telefone').value,
-                    cpf: document.getElementById('cpf').value,
-                    endereco: document.getElementById('endereco').value
-                };
-
-                console.log('Dados sendo enviados:', formData); // Debug
-
-                const response = await api.updateProfile(formData);
-                console.log('Resposta da API:', response); // Debug
-                console.log('Dados retornados:', response.data); // Debug
-                
-                if (response.success) {
-                    showNotification('Perfil atualizado com sucesso!', 'success');
-                    // Recarregar dados do perfil após salvar
-                    console.log('Recarregando perfil...'); // Debug
-                    await loadProfile();
-                } else {
-                    showNotification('Erro ao atualizar perfil', 'error');
-                }
-            } catch (error) {
-                console.error('Erro ao salvar perfil:', error);
-                showNotification('Erro ao salvar perfil', 'error');
             }
         }
 
@@ -307,91 +408,16 @@
             });
 
             // Formulário de dados pessoais
-            const dadosForm = document.getElementById('dados-form');
-            if (dadosForm) {
-                dadosForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    saveProfile();
-                });
-            }
+            document.getElementById('dados-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveProfileData();
+            });
 
             // Formulário de documentos
-            const documentosForm = document.getElementById('documentos-form');
-            if (documentosForm) {
-                documentosForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    saveDocumentos();
-                });
-            }
-
-            // Formulário de preferências
-            const preferencesForm = document.getElementById('preferences-form');
-            if (preferencesForm) {
-                preferencesForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    savePreferences();
-                });
-            }
-        }
-
-        async function saveDocumentos() {
-            try {
-                // Coletar categorias selecionadas
-                const categorias = [];
-                document.querySelectorAll('input[name="categoria_cnh[]"]:checked').forEach(checkbox => {
-                    categorias.push(checkbox.value);
-                });
-
-                const formData = {
-                    cnh: document.getElementById('cnh-numero').value,
-                    vencimento_cnh: document.getElementById('cnh-validade').value,
-                    categoria: categorias.join(',')
-                };
-
-                console.log('Dados dos documentos sendo enviados:', formData);
-
-                const response = await api.updateProfile(formData);
-                
-                if (response.success) {
-                    showNotification('Documentos atualizados com sucesso!', 'success');
-                    console.log('Recarregando perfil...');
-                    await loadProfile();
-                } else {
-                    showNotification(response.message || 'Erro ao salvar documentos', 'error');
-                }
-            } catch (error) {
-                console.error('Erro ao salvar documentos:', error);
-                showNotification('Erro ao salvar documentos', 'error');
-            }
-        }
-
-        async function savePreferences() {
-            try {
-                // Coletar tipos de carga selecionados
-                const tiposCarga = [];
-                document.querySelectorAll('input[name="tipos_carga[]"]:checked').forEach(checkbox => {
-                    tiposCarga.push(checkbox.value);
-                });
-
-                // Coletar notificações selecionadas
-                const notificacoes = [];
-                document.querySelectorAll('input[name="notificacoes[]"]:checked').forEach(checkbox => {
-                    notificacoes.push(checkbox.value);
-                });
-
-                // Por enquanto, vamos apenas mostrar uma mensagem de sucesso
-                // pois esses campos não existem no banco ainda
-                console.log('Preferências selecionadas:', {
-                    tipos_carga: tiposCarga,
-                    notificacoes: notificacoes
-                });
-
-                showNotification('Preferências salvas localmente! (Funcionalidade em desenvolvimento)', 'success');
-                
-            } catch (error) {
-                console.error('Erro ao salvar preferências:', error);
-                showNotification('Erro ao salvar preferências', 'error');
-            }
+            document.getElementById('documentos-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveDocuments();
+            });
         }
 
         function showProfileTab(tabId) {
@@ -413,6 +439,102 @@
             document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
         }
 
+        function getSelectedCategories() {
+            const categorias = [];
+            document.querySelectorAll('input[name="categoria_cnh[]"]:checked').forEach(checkbox => {
+                categorias.push(checkbox.value);
+            });
+            return categorias.join(',');
+        }
+
+        async function saveProfileData() {
+            try {
+                const user = getCurrentUser();
+                if (!user) return;
+
+                // Coletar dados do formulário
+                const formData = {
+                    nome: document.getElementById('nome').value,
+                    email: document.getElementById('email').value,
+                    telefone: document.getElementById('telefone').value,
+                    cpf: document.getElementById('cpf').value,
+                    cnh: document.getElementById('cnh').value,
+                    categoria: getSelectedCategories()
+                };
+
+                // Adicionar campos de endereço se existirem
+                const enderecoField = document.getElementById('endereco');
+                const cidadeField = document.getElementById('cidade');
+                const estadoField = document.getElementById('estado');
+                const cepField = document.getElementById('cep');
+                
+                if (enderecoField) formData.endereco = enderecoField.value;
+                if (cidadeField) formData.cidade = cidadeField.value;
+                if (estadoField) formData.estado = estadoField.value;
+                if (cepField) formData.cep = cepField.value;
+
+                // Coletar categorias da CNH
+                const categorias = [];
+                document.querySelectorAll('input[name="categoria_cnh[]"]:checked').forEach(checkbox => {
+                    categorias.push(checkbox.value);
+                });
+                formData.categoria = categorias.join(',');
+
+                // Salvar dados
+                const response = await api.updateUserProfile(user.id, formData);
+                if (response.success) {
+                    showNotification('Dados salvos com sucesso!', 'success');
+                    // Atualizar dados do usuário no localStorage
+                    const updatedUser = { ...user, ...formData };
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                    // Aguardar um pouco e recarregar dados do perfil
+                    setTimeout(async () => {
+                        await loadProfileData();
+                    }, 500);
+                } else {
+                    showNotification('Erro ao salvar dados: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar dados do perfil:', error);
+                showNotification('Erro ao salvar dados do perfil', 'error');
+            }
+        }
+
+        async function saveDocuments() {
+            try {
+                const user = getCurrentUser();
+                if (!user) return;
+
+                // Coletar dados do formulário de documentos
+                const formData = {
+                    cnh: document.getElementById('cnh').value,
+                    categoria: getSelectedCategories(),
+                    cnh_validade: document.getElementById('cnh_validade').value,
+                    cnh_emissao: document.getElementById('cnh_emissao').value,
+                    cnh_uf: document.getElementById('cnh_uf').value,
+                    cnh_observacoes: document.getElementById('cnh_observacoes').value
+                };
+
+                // Salvar todos os campos de documentos
+                const response = await api.updateUserProfile(user.id, formData);
+                if (response.success) {
+                    showNotification('Todos os documentos salvos com sucesso!', 'success');
+                    // Atualizar dados do usuário no localStorage
+                    const updatedUser = { ...user, ...formData };
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                    // Aguardar um pouco e recarregar dados do perfil
+                    setTimeout(async () => {
+                        await loadProfileData();
+                    }, 500);
+                } else {
+                    showNotification('Erro ao salvar documentos: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar documentos:', error);
+                showNotification('Erro ao salvar documentos', 'error');
+            }
+        }
+
         // Função para mostrar notificações
         function showNotification(message, type) {
             const notification = document.createElement('div');
@@ -429,13 +551,36 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone do toggle
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            if (toggleIcon) {
+                if (isLightMode) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                } else {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
         }
         
         // Carregar tema salvo
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme');
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                }
+            } else {
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
             }
         });
     </script>

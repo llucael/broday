@@ -10,7 +10,7 @@ const getDashboard = async (req, res) => {
     const fretesDisponiveis = await Frete.findAll({
       where: {
         status: 'solicitado',
-        motoristaId: null
+        motorista_id: null
       },
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
@@ -22,7 +22,7 @@ const getDashboard = async (req, res) => {
     // Buscar fretes ativos do motorista
     const fretesAtivos = await Frete.findAll({
       where: {
-        motoristaId: motoristaId,
+        motorista_id: motoristaId,
         status: { [Op.in]: ['aceito', 'em_transito'] }
       },
       include: [
@@ -34,7 +34,7 @@ const getDashboard = async (req, res) => {
     // Buscar fretes concluídos do motorista
     const fretesConcluidos = await Frete.findAll({
       where: {
-        motoristaId: motoristaId,
+        motorista_id: motoristaId,
         status: 'entregue'
       },
       include: [
@@ -46,12 +46,12 @@ const getDashboard = async (req, res) => {
 
     // Estatísticas
     const totalFretes = await Frete.count({
-      where: { motoristaId: motoristaId }
+      where: { motorista_id: motoristaId }
     });
 
     const fretesConcluidosCount = await Frete.count({
       where: {
-        motoristaId: motoristaId,
+        motorista_id: motoristaId,
         status: 'entregue'
       }
     });
@@ -86,7 +86,7 @@ const getFretesDisponiveis = async (req, res) => {
 
     const whereClause = {
         status: 'solicitado',
-      motoristaId: null
+      motorista_id: null
     };
 
     // Filtros
@@ -287,11 +287,56 @@ const getMeusFretes = async (req, res) => {
   }
 };
 
+// Buscar perfil do motorista
+const getPerfil = async (req, res) => {
+  try {
+    const motoristaId = req.user.id;
+
+    const user = await User.findByPk(motoristaId, {
+      attributes: ['id', 'nome', 'email', 'telefone', 'cpf', 'cnh', 'categoria', 'cnh_validade', 'cnh_emissao', 'cnh_uf', 'cnh_observacoes', 'created_at', 'updated_at']
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Erro ao buscar perfil do motorista:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 // Atualizar perfil do motorista
 const atualizarPerfil = async (req, res) => {
   try {
     const motoristaId = req.user.id;
-    const { nome, telefone, endereco, cidade, estado, cep } = req.body;
+    const { 
+      nome, 
+      email, 
+      telefone, 
+      cpf, 
+      cnh, 
+      categoria,
+      cnh_validade,
+      cnh_emissao,
+      cnh_uf,
+      cnh_observacoes
+    } = req.body;
+
+    console.log('Dados recebidos para atualização:', {
+      nome, email, telefone, cpf, cnh, categoria,
+      cnh_validade, cnh_emissao, cnh_uf, cnh_observacoes
+    });
 
     const user = await User.findByPk(motoristaId);
     if (!user) {
@@ -302,19 +347,41 @@ const atualizarPerfil = async (req, res) => {
     }
 
     // Atualizar dados do usuário
-    await user.update({
-      email: req.body.email || user.email,
+    const updateData = {
+      email: email || user.email,
       nome: nome || user.nome,
       telefone: telefone || user.telefone,
-      endereco: endereco || user.endereco,
-      cidade: cidade || user.cidade,
-      estado: estado || user.estado,
-      cep: cep || user.cep
-    });
+      cpf: cpf || user.cpf,
+      cnh: cnh || user.cnh,
+      categoria: categoria || user.categoria
+    };
+
+    // Adicionar campos de documentos se fornecidos (incluindo strings vazias)
+    if (cnh_validade !== undefined) updateData.cnh_validade = cnh_validade || null;
+    if (cnh_emissao !== undefined) updateData.cnh_emissao = cnh_emissao || null;
+    if (cnh_uf !== undefined) updateData.cnh_uf = cnh_uf || null;
+    if (cnh_observacoes !== undefined) updateData.cnh_observacoes = cnh_observacoes || null;
+
+    await user.update(updateData);
+
+    console.log('Dados atualizados no banco:', updateData);
 
     res.json({
       success: true,
-      message: 'Perfil atualizado com sucesso'
+      message: 'Perfil atualizado com sucesso',
+      data: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        telefone: user.telefone,
+        cpf: user.cpf,
+        cnh: user.cnh,
+        categoria: user.categoria,
+        cnh_validade: user.cnh_validade,
+        cnh_emissao: user.cnh_emissao,
+        cnh_uf: user.cnh_uf,
+        cnh_observacoes: user.cnh_observacoes
+      }
     });
   } catch (error) {
     console.error('Erro ao atualizar perfil do motorista:', error);
@@ -337,7 +404,7 @@ const getRelatoriosPessoais = async (req, res) => {
     // Fretes concluídos no período
     const fretesConcluidos = await Frete.count({
       where: {
-        motoristaId: motoristaId,
+        motorista_id: motoristaId,
         status: 'entregue',
         data_entrega: {
           [Op.gte]: dataInicio
@@ -386,6 +453,7 @@ module.exports = {
   aceitarFrete,
   atualizarStatusFrete,
   getMeusFretes,
+  getPerfil,
   atualizarPerfil,
   getRelatoriosPessoais
 };

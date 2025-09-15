@@ -13,7 +13,7 @@ const createFrete = async (req, res) => {
   try {
     const freteData = {
       ...req.body,
-      clienteId: req.user.id,
+      cliente_id: req.user.id,
       codigo: generateFreteCode(),
       status: 'solicitado'
     };
@@ -48,7 +48,7 @@ const getFretesByCliente = async (req, res) => {
     const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = { clienteId: req.user.id };
+    const whereClause = { cliente_id: req.user.id };
     if (status) {
       whereClause.status = status;
     }
@@ -95,7 +95,7 @@ const getFretesDisponiveis = async (req, res) => {
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: {
         status: 'solicitado',
-        motoristaId: null
+        motorista_id: null
       },
       include: [
         { model: User, as: 'cliente' }
@@ -132,7 +132,7 @@ const getFretesByMotorista = async (req, res) => {
     const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = { motoristaId: req.user.id };
+    const whereClause = { motorista_id: req.user.id };
     if (status) {
       if (status.includes(',')) {
         whereClause.status = { [Op.in]: status.split(',') };
@@ -198,18 +198,18 @@ const getFreteById = async (req, res) => {
       userType,
       userId: req.user.id,
       freteId: frete.id,
-      freteMotoristaId: frete.motoristaId,
-      freteClienteId: frete.clienteId
+      freteMotoristaId: frete.motorista_id,
+      freteClienteId: frete.cliente_id
     });
     
-    if (userType === 'cliente' && frete.clienteId !== req.user.id) {
+    if (userType === 'cliente' && frete.cliente_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Acesso negado'
       });
     }
 
-    if (userType === 'motorista' && frete.motoristaId !== null && frete.motoristaId !== req.user.id) {
+    if (userType === 'motorista' && frete.motorista_id !== null && frete.motorista_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Acesso negado'
@@ -265,7 +265,7 @@ const acceptFrete = async (req, res) => {
       });
     }
 
-    if (frete.motoristaId) {
+    if (frete.motorista_id) {
       return res.status(400).json({
         success: false,
         message: 'Frete já foi aceito por outro motorista'
@@ -274,7 +274,7 @@ const acceptFrete = async (req, res) => {
 
     // Aceitar frete
     await frete.update({
-      motoristaId: req.user.id,
+      motorista_id: req.user.id,
       status: 'aceito'
     });
 
@@ -331,7 +331,7 @@ const updateFreteStatus = async (req, res) => {
       });
     }
 
-    if (userType === 'motorista' && frete.motoristaId !== null && frete.motoristaId !== req.user.id) {
+    if (userType === 'motorista' && frete.motorista_id !== null && frete.motorista_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Acesso negado'
@@ -381,8 +381,8 @@ const getAllFretes = async (req, res) => {
 
     const whereClause = {};
     if (status) whereClause.status = status;
-    if (clienteId) whereClause.clienteId = clienteId;
-    if (motoristaId) whereClause.motoristaId = motoristaId;
+    if (clienteId) whereClause.cliente_id = clienteId;
+    if (motoristaId) whereClause.motorista_id = motoristaId;
     
     // Filtro por data
     if (data) {

@@ -1082,6 +1082,21 @@
 
         .password-input-container input {
             flex: 1;
+            /* Remover ícone de olho automático do navegador */
+            background-image: none !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Remover ícone de olho automático do Edge/IE */
+        .password-input-container input::-ms-reveal {
+            display: none !important;
+        }
+        
+        /* Remover ícone de olho automático do Chrome/Safari */
+        .password-input-container input::-webkit-credentials-auto-fill-button {
+            display: none !important;
         }
 
         .password-input-container .btn {

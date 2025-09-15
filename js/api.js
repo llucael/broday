@@ -111,15 +111,35 @@ class ApiService {
 
   // Obter perfil do usuário
   async getProfile() {
-    return await this.request('/auth/profile');
+    const userType = getUserType();
+    if (userType === 'cliente') {
+      return await this.request('/cliente/perfil');
+    } else if (userType === 'motorista') {
+      return await this.request('/motorista/perfil');
+    } else {
+      return await this.request('/auth/profile');
+    }
   }
 
   // Atualizar perfil
   async updateProfile(userData) {
-    return await this.request('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(userData)
-    });
+    const userType = getUserType();
+    if (userType === 'cliente') {
+      return await this.request('/cliente/perfil', {
+        method: 'PUT',
+        body: JSON.stringify(userData)
+      });
+    } else if (userType === 'motorista') {
+      return await this.request('/motorista/perfil', {
+        method: 'PUT',
+        body: JSON.stringify(userData)
+      });
+    } else {
+      return await this.request('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(userData)
+      });
+    }
   }
 
   // Alterar senha
@@ -128,6 +148,26 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword })
     });
+  }
+
+  // Endereços (apenas para clientes)
+  async getEnderecos() {
+    const userType = getUserType();
+    if (userType === 'cliente') {
+      return await this.request('/cliente/enderecos');
+    }
+    throw new Error('Funcionalidade não disponível para este tipo de usuário');
+  }
+
+  async createEndereco(enderecoData) {
+    const userType = getUserType();
+    if (userType === 'cliente') {
+      return await this.request('/cliente/enderecos', {
+        method: 'POST',
+        body: JSON.stringify(enderecoData)
+      });
+    }
+    throw new Error('Funcionalidade não disponível para este tipo de usuário');
   }
 
   // ===== MÉTODOS DE FRETE =====
@@ -145,7 +185,7 @@ class ApiService {
     const params = new URLSearchParams({ page, limit });
     if (status) params.append('status', status);
     
-    return await this.request(`/fretes/meus-fretes?${params}`);
+    return await this.request(`/fretes/cliente/meus-fretes?${params}`);
   }
 
   // Dashboard do motorista
@@ -156,7 +196,7 @@ class ApiService {
   // Listar fretes disponíveis (motorista)
   async getFretesDisponiveis(page = 1, limit = 10) {
     const params = new URLSearchParams({ page, limit });
-    return await this.request(`/fretes/disponiveis?${params}`);
+    return await this.request(`/motorista/fretes/disponiveis?${params}`);
   }
 
   // Listar fretes do motorista
@@ -164,7 +204,7 @@ class ApiService {
     const params = new URLSearchParams({ page, limit });
     if (status) params.append('status', status);
     
-    return await this.request(`/fretes/motorista/meus-fretes?${params}`);
+    return await this.request(`/motorista/fretes/meus?${params}`);
   }
 
   // Buscar frete por ID
@@ -192,6 +232,36 @@ class ApiService {
     return await this.request(`/fretes/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status })
+    });
+  }
+
+  // Cancelar frete (cliente)
+  async cancelarFrete(id) {
+    return await this.request(`/cliente/fretes/${id}/cancelar`, {
+      method: 'PUT'
+    });
+  }
+
+  // ===== MÉTODOS DE PERFIL =====
+
+  // Buscar perfil do usuário
+  async getUserProfile(userId) {
+    return await this.request(`/motorista/perfil`);
+  }
+
+  // Atualizar perfil do usuário
+  async updateUserProfile(userId, profileData) {
+    return await this.request(`/motorista/perfil`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    });
+  }
+
+  // Atualizar documentos do usuário
+  async updateUserDocuments(userId, documentsData) {
+    return await this.request(`/users/${userId}/documents`, {
+      method: 'PUT',
+      body: JSON.stringify(documentsData)
     });
   }
 

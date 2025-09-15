@@ -98,16 +98,36 @@
                         <label for="motorista-cnh">CNH *</label>
                         <input type="text" id="motorista-cnh" name="cnh" required>
                     </div>
+                </div>
+
                     <div class="form-group">
-                        <label for="motorista-categoria">Categoria da CNH *</label>
-                        <select id="motorista-categoria" name="categoria" required>
-                            <option value="">Selecione</option>
-                            <option value="A">A - Motocicleta</option>
-                            <option value="B">B - Carro</option>
-                            <option value="C">C - Caminhão</option>
-                            <option value="D">D - Ônibus</option>
-                            <option value="E">E - Carreta</option>
-                        </select>
+                    <label>Categoria da CNH *</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="A">
+                            <span class="checkmark"></span>
+                            A - Motocicleta
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="B">
+                            <span class="checkmark"></span>
+                            B - Carro
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="C">
+                            <span class="checkmark"></span>
+                            C - Caminhão
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="D">
+                            <span class="checkmark"></span>
+                            D - Ônibus
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="E">
+                            <span class="checkmark"></span>
+                            E - Carreta
+                        </label>
                     </div>
                 </div>
 
@@ -155,16 +175,36 @@
                         <label for="edit-motorista-cnh">CNH *</label>
                         <input type="text" id="edit-motorista-cnh" name="cnh" required>
                     </div>
-                    <div class="form-group">
-                        <label for="edit-motorista-categoria">Categoria da CNH *</label>
-                        <select id="edit-motorista-categoria" name="categoria" required>
-                            <option value="">Selecione</option>
-                            <option value="A">A - Motocicleta</option>
-                            <option value="B">B - Carro</option>
-                            <option value="C">C - Caminhão</option>
-                            <option value="D">D - Ônibus</option>
-                            <option value="E">E - Carreta</option>
-                        </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Categoria da CNH *</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="A">
+                            <span class="checkmark"></span>
+                            A - Motocicleta
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="B">
+                            <span class="checkmark"></span>
+                            B - Carro
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="C">
+                            <span class="checkmark"></span>
+                            C - Caminhão
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="D">
+                            <span class="checkmark"></span>
+                            D - Ônibus
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="categoria" value="E">
+                            <span class="checkmark"></span>
+                            E - Carreta
+                        </label>
                     </div>
                 </div>
 
@@ -180,7 +220,7 @@
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                        <small class="password-help">Deixe em branco para manter a senha atual</small>
+                        <small class="password-help">Deixe em branco para manter a senha atual, ou digite uma nova senha</small>
                     </div>
                     <div class="form-group">
                         <label for="edit-motorista-status">Status</label>
@@ -436,7 +476,7 @@
                         <p><i class="fas fa-envelope"></i> ${motorista.email}</p>
                         <p><i class="fas fa-phone"></i> ${motorista.telefone || 'Não informado'}</p>
                         <p><i class="fas fa-id-card"></i> CPF: ${motorista.cpf || 'Não informado'}</p>
-                        <p><i class="fas fa-car"></i> CNH: ${motorista.cnh || 'Não informado'} ${motorista.categoria ? `- ${motorista.categoria}` : ''}</p>
+                        <p><i class="fas fa-car"></i> CNH: ${motorista.cnh || 'Não informado'} ${motorista.categoria ? `- ${motorista.categoria.split(',').join(', ')}` : ''}</p>
                         <p><i class="fas fa-calendar"></i> Cadastrado em: ${new Date(motorista.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div class="motorista-actions">
@@ -488,7 +528,22 @@
             document.getElementById('edit-motorista-telefone').value = motorista.telefone || '';
             document.getElementById('edit-motorista-cpf').value = motorista.cpf || '';
             document.getElementById('edit-motorista-cnh').value = motorista.cnh || '';
-            document.getElementById('edit-motorista-categoria').value = motorista.categoria || '';
+            
+            // Preencher categorias selecionadas
+            const categoriaCheckboxes = document.querySelectorAll('#edit-motorista-form input[name="categoria"]');
+            categoriaCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            if (motorista.categoria) {
+                const categorias = motorista.categoria.split(',');
+                categorias.forEach(cat => {
+                    const checkbox = document.querySelector(`#edit-motorista-form input[name="categoria"][value="${cat.trim()}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
             // Mapear status do banco para as opções do select
             console.log('=== POPULATE EDIT FORM ===');
             console.log('Motorista recebido:', motorista);
@@ -554,13 +609,20 @@
                 const form = document.getElementById('motorista-form');
                 const formData = new FormData(form);
                 
+                // Coletar categorias selecionadas
+                const categorias = [];
+                const categoriaCheckboxes = form.querySelectorAll('input[name="categoria"]:checked');
+                categoriaCheckboxes.forEach(checkbox => {
+                    categorias.push(checkbox.value);
+                });
+
                 const motoristaData = {
                     nome: formData.get('nome'),
                     email: formData.get('email'),
                     telefone: formData.get('telefone'),
                     cpf: formData.get('cpf'),
                     cnh: formData.get('cnh'),
-                    categoria: formData.get('categoria'),
+                    categoria: categorias.join(','),
                     user_type: 'motorista',
                     is_active: true
                 };
@@ -620,13 +682,20 @@
                 const statusValue = formData.get('status');
                 console.log('Status capturado do formulário:', statusValue);
                 
+                // Coletar categorias selecionadas
+                const categorias = [];
+                const categoriaCheckboxes = form.querySelectorAll('input[name="categoria"]:checked');
+                categoriaCheckboxes.forEach(checkbox => {
+                    categorias.push(checkbox.value);
+                });
+
                 const motoristaData = {
                     nome: formData.get('nome'),
                     email: formData.get('email'),
                     telefone: formData.get('telefone'),
                     cpf: formData.get('cpf'),
                     cnh: formData.get('cnh'),
-                    categoria: formData.get('categoria'),
+                    categoria: categorias.join(','),
                     user_type: 'motorista',
                     is_active: statusValue === 'ativo' || statusValue === 'disponivel' || statusValue === 'em_viagem',
                     status: statusValue
@@ -674,12 +743,26 @@
             showNotification('Senha aleatória gerada!', 'success');
         }
 
-        function generatePassword(length) {
+        function generatePassword(length = 10) {
             const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
             let password = '';
-            for (let i = 0; i < length; i++) {
+            
+            // Garantir pelo menos um caractere de cada tipo
+            const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+            const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const numbers = '0123456789';
+            const symbols = '!@#$%^&*';
+            
+            password += lowercase[Math.floor(Math.random() * lowercase.length)];
+            password += uppercase[Math.floor(Math.random() * uppercase.length)];
+            password += numbers[Math.floor(Math.random() * numbers.length)];
+            password += symbols[Math.floor(Math.random() * symbols.length)];
+            
+            // Preencher o resto com caracteres aleatórios
+            for (let i = password.length; i < length; i++) {
                 password += charset.charAt(Math.floor(Math.random() * charset.length));
             }
+            
             // Embaralhar a senha
             return password.split('').sort(() => Math.random() - 0.5).join('');
         }
@@ -841,6 +924,12 @@
             flex: 1;
         }
 
+        /* Garantir que o form-group com checkbox-group tenha espaço suficiente */
+        .form-group:has(.checkbox-group) {
+            flex: 2;
+            min-width: 300px;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -880,35 +969,35 @@
             border-top: 2px solid #4a5568;
         }
 
-        /* CSS para campo de senha */
+        /* Estilos para o campo de senha no modal de edição */
         .password-input-container {
-            position: relative;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .password-input-container input {
             flex: 1;
-            padding-right: 80px;
+            /* Remover ícone de olho automático do navegador */
+            background-image: none !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Remover ícone de olho automático do Edge/IE */
+        .password-input-container input::-ms-reveal {
+            display: none !important;
+        }
+        
+        /* Remover ícone de olho automático do Chrome/Safari */
+        .password-input-container input::-webkit-credentials-auto-fill-button {
+            display: none !important;
         }
 
-        .password-input-container button {
-            position: absolute;
-            right: 5px;
-            padding: 5px 8px;
-            border: none;
-            background: #4a5568;
-            color: #a0aec0;
-            cursor: pointer;
-            border-radius: 3px;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-
-        .password-input-container button:hover {
-            background: #667eea;
-            color: #ffffff;
+        .password-input-container .btn {
+            padding: 8px 12px;
+            min-width: auto;
         }
 
         .password-help {
@@ -1283,16 +1372,6 @@
             border-top: 2px solid #e2e8f0;
         }
 
-        body.light-mode .password-input-container button {
-            background: #e2e8f0;
-            color: #718096;
-        }
-
-        body.light-mode .password-input-container button:hover {
-            background: #667eea;
-            color: #ffffff;
-        }
-
         body.light-mode .password-help {
             color: #718096;
         }
@@ -1326,6 +1405,93 @@
             background-color: #3182ce;
             color: white;
         }
+
+        /* Estilos para checkbox group - Admin Motoristas */
+        .checkbox-group {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 1rem !important;
+            margin-top: 0.5rem !important;
+            padding: 15px !important;
+            border: 2px solid #4A5568 !important;
+            border-radius: 8px !important;
+            background: #2d3748 !important;
+            min-height: 80px !important;
+        }
+
+        .checkbox-label {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            cursor: pointer !important;
+            color: #E2E8F0 !important;
+            font-size: 0.9rem !important;
+            margin-bottom: 0.5rem !important;
+            padding: 8px !important;
+            border-radius: 4px !important;
+            transition: background-color 0.2s ease !important;
+            min-width: 120px !important;
+        }
+
+        .checkbox-label:hover {
+            background-color: rgba(102, 126, 234, 0.1) !important;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            display: none !important;
+        }
+
+        .checkmark {
+            width: 20px !important;
+            height: 20px !important;
+            border: 2px solid #4A5568 !important;
+            border-radius: 4px !important;
+            position: relative !important;
+            transition: all 0.3s ease !important;
+            flex-shrink: 0 !important;
+            background-color: transparent !important;
+            display: inline-block !important;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark {
+            background-color: #468ADC !important;
+            border-color: #468ADC !important;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓' !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            color: white !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        /* Modo claro para checkboxes */
+        body.light-mode .checkbox-group {
+            background: #ffffff !important;
+            border-color: #E2E8F0 !important;
+        }
+
+        body.light-mode .checkbox-label {
+            color: #2D3748 !important;
+        }
+
+        body.light-mode .checkbox-label:hover {
+            background-color: rgba(102, 126, 234, 0.1) !important;
+        }
+
+        body.light-mode .checkmark {
+            border-color: #E2E8F0 !important;
+        }
+
+        body.light-mode .checkbox-label input[type="checkbox"]:checked + .checkmark {
+            background-color: #468ADC !important;
+            border-color: #468ADC !important;
+        }
+
     </style>
 </body>
 </html>

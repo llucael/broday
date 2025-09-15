@@ -54,51 +54,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Mostrar loading
                 const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'Enviando...';
-                submitBtn.disabled = true;
+                const originalText = submitBtn ? submitBtn.textContent : 'Enviar Solicitação';
+                if (submitBtn) {
+                    submitBtn.textContent = 'Enviando...';
+                    submitBtn.disabled = true;
+                }
                 
                 // Coletar dados do formulário
                 const formData = {
                     // Informações do remetente
-                    senderName: document.getElementById('sender-name').value.trim(),
-                    senderDocument: document.getElementById('sender-document').value.trim(),
-                    senderPhone: document.getElementById('sender-phone').value.trim(),
-                    senderEmail: document.getElementById('sender-email').value.trim(),
+                    sender_name: document.getElementById('sender-name').value.trim(),
+                    sender_document: document.getElementById('sender-document').value.trim(),
+                    sender_phone: document.getElementById('sender-phone').value.trim(),
+                    sender_email: document.getElementById('sender-email').value.trim(),
                     // Informações do destinatário
-                    recipientName: document.getElementById('recipient-name').value.trim(),
-                    recipientDocument: document.getElementById('recipient-document').value.trim(),
-                    recipientPhone: document.getElementById('recipient-phone').value.trim(),
-                    recipientEmail: document.getElementById('recipient-email').value.trim(),
-                    // Detalhes da carga
-                    cargoType: document.getElementById('cargo-type').value.trim(),
-                    cargoValue: parseFloat(document.getElementById('cargo-value').getAttribute('data-numeric-value') || 
+                    recipient_name: document.getElementById('recipient-name').value.trim(),
+                    recipient_document: document.getElementById('recipient-document').value.trim(),
+                    recipient_phone: document.getElementById('recipient-phone').value.trim(),
+                    recipient_email: document.getElementById('recipient-email').value.trim(),
+                    // Detalhes da carga (usando nomes do modelo)
+                    cargo_type: document.getElementById('cargo-type').value.trim(),
+                    cargo_value: parseFloat(document.getElementById('cargo-value').getAttribute('data-numeric-value') || 
                                 document.getElementById('cargo-value').value.replace(/\./g, '').replace(',', '.')),
-                    cargoWeight: parseFloat(document.getElementById('cargo-weight').value),
-                    cargoDimensions: document.getElementById('cargo-dimensions').value.trim(),
-                    // Endereço de origem
-                    originCep: document.getElementById('origin-cep').value.trim(),
-                    originStreet: document.getElementById('origin-street').value.trim(),
-                    originNumber: document.getElementById('origin-number').value.trim(),
-                    originComplement: document.getElementById('origin-complement').value.trim(),
-                    originCity: document.getElementById('origin-city').value.trim(),
-                    originState: document.getElementById('origin-state').value.trim(),
-                    // Endereço de destino
-                    destinationCep: document.getElementById('destination-cep').value.trim(),
-                    destinationStreet: document.getElementById('destination-street').value.trim(),
-                    destinationNumber: document.getElementById('destination-number').value.trim(),
-                    destinationComplement: document.getElementById('destination-complement').value.trim(),
-                    destinationCity: document.getElementById('destination-city').value.trim(),
-                    destinationState: document.getElementById('destination-state').value.trim()
+                    cargo_weight: parseFloat(document.getElementById('cargo-weight').value),
+                    cargo_dimensions: document.getElementById('cargo-dimensions').value.trim(),
+                    // Endereço de origem (usando nomes do modelo)
+                    origin_cep: document.getElementById('origin-cep').value.trim(),
+                    origin_street: document.getElementById('origin-street').value.trim(),
+                    origin_number: document.getElementById('origin-number').value.trim(),
+                    origin_complement: document.getElementById('origin-complement').value.trim(),
+                    origin_city: document.getElementById('origin-city').value.trim(),
+                    origin_state: document.getElementById('origin-state').value.trim(),
+                    // Endereço de destino (usando nomes do modelo)
+                    destination_cep: document.getElementById('destination-cep').value.trim(),
+                    destination_street: document.getElementById('destination-street').value.trim(),
+                    destination_number: document.getElementById('destination-number').value.trim(),
+                    destination_complement: document.getElementById('destination-complement').value.trim(),
+                    destination_city: document.getElementById('destination-city').value.trim(),
+                    destination_state: document.getElementById('destination-state').value.trim()
                 };
                 
                 // Verificar se tem token válido
                 const token = localStorage.getItem('accessToken');
+                console.log('Token atual:', token);
                 
                 if (!token) {
+                    console.log('Token não encontrado, fazendo login automático...');
                     // Fazer login automático
                     try {
                         const loginResponse = await api.login('cliente@broday.com', 'cliente123');
+                        console.log('Resposta do login:', loginResponse);
                         if (!loginResponse.success) {
                             throw new Error('Não foi possível fazer login');
                         }
@@ -108,8 +113,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
+                // Validações adicionais no frontend
+                const errors = [];
+                
+                // Validar CEP (formato 00000-000 ou 00000000)
+                const cepRegex = /^\d{5}-?\d{3}$/;
+                if (!cepRegex.test(formData.origin_cep)) {
+                    errors.push('CEP de origem deve estar no formato 00000-000 ou 00000000');
+                }
+                if (!cepRegex.test(formData.destination_cep)) {
+                    errors.push('CEP de destino deve estar no formato 00000-000 ou 00000000');
+                }
+                
+                // Se houver erros, mostrar e parar
+                if (errors.length > 0) {
+                    alert('Erros de validação:\n' + errors.join('\n'));
+                    return;
+                }
+                
+                // Debug: mostrar dados que serão enviados
+                console.log('Dados do formulário:', formData);
+                console.log('Campos obrigatórios verificados:');
+                console.log('- cargo_type:', formData.cargo_type);
+                console.log('- cargo_value:', formData.cargo_value);
+                console.log('- cargo_weight:', formData.cargo_weight);
+                console.log('- origin_street:', formData.origin_street);
+                console.log('- origin_city:', formData.origin_city);
+                console.log('- origin_state:', formData.origin_state);
+                console.log('- origin_cep:', formData.origin_cep);
+                console.log('- destination_street:', formData.destination_street);
+                console.log('- destination_city:', formData.destination_city);
+                console.log('- destination_state:', formData.destination_state);
+                console.log('- destination_cep:', formData.destination_cep);
+                
                 // Enviar para a API
                 const response = await api.createFrete(formData);
+                
+                console.log('Resposta da API:', response);
                 
                 if (response.success) {
                     alert('Solicitação de frete enviada com sucesso! Você pode acompanhar o status em "Meus Fretes".');
@@ -128,8 +168,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Erro de conexão. Verifique se o servidor está rodando.');
             } finally {
                 // Restaurar botão
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
             }
         });
     }

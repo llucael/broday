@@ -56,10 +56,6 @@
                         <select id="motorista-filter">
                             <option value="">Todos os Motoristas</option>
                         </select>
-                        <select id="order-filter">
-                            <option value="recent">Mais Recente</option>
-                            <option value="oldest">Mais Antigo</option>
-                        </select>
                         <button class="btn btn-primary" onclick="clearFilters()">
                             <i class="fas fa-times"></i>
                             Limpar Filtros
@@ -140,7 +136,6 @@
             document.getElementById('status-filter').addEventListener('change', loadFretes);
             document.getElementById('cliente-filter').addEventListener('change', loadFretes);
             document.getElementById('motorista-filter').addEventListener('change', loadFretes);
-            document.getElementById('order-filter').addEventListener('change', loadFretes);
         });
 
         function loadUserData() {
@@ -216,7 +211,6 @@
                 const statusFilter = document.getElementById('status-filter').value;
                 const clienteFilter = document.getElementById('cliente-filter').value;
                 const motoristaFilter = document.getElementById('motorista-filter').value;
-                const orderFilter = document.getElementById('order-filter').value;
                 
                 const filters = {};
                 if (statusFilter) filters.status = statusFilter;
@@ -230,13 +224,6 @@
                 
                 if (response && response.success && response.data && response.data.fretes) {
                     let fretes = response.data.fretes;
-                    
-                    // Aplicar ordenação
-                    if (orderFilter === 'oldest') {
-                        fretes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                    } else {
-                        fretes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                    }
                     
                     // Limpar container
                     container.innerHTML = '';
@@ -333,10 +320,12 @@
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
+                    ${(frete.status === 'em_transito' || frete.status === 'entregue') ? `
                     <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
                         <i class="fas fa-map-marker-alt"></i>
                         Rastrear
                     </button>
+                    ` : ''}
                     <button class="btn btn-sm btn-warning" onclick="editarFrete(${frete.id})">
                         <i class="fas fa-edit"></i>
                         Editar
@@ -376,7 +365,6 @@
             document.getElementById('status-filter').value = '';
             document.getElementById('cliente-filter').value = '';
             document.getElementById('motorista-filter').value = '';
-            document.getElementById('order-filter').value = 'recent';
             loadFretes();
         }
 
@@ -456,52 +444,118 @@
         function displayDetalhesFrete(frete) {
             console.log('Dados do frete para detalhes:', frete); // Debug log
             const content = document.getElementById('detalhesContent');
+            
+            const origem = `${frete.origin_city || 'N/A'}, ${frete.origin_state || 'N/A'}`;
+            const destino = `${frete.destination_city || 'N/A'}, ${frete.destination_state || 'N/A'}`;
+            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A';
+            const dataEntrega = frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A';
+            const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'A negociar';
+            
             content.innerHTML = `
-                <div class="frete-detalhes">
-                    <div class="detalhe-item">
-                        <strong>Código:</strong>
-                        <span>${frete.codigo || 'N/A'}</span>
+                <div class="frete-details-container">
+                    <div class="detail-section">
+                        <h3>Informações do Frete</h3>
+                        <div class="detail-item">
+                            <strong>Código:</strong>
+                            <span>${frete.codigo || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Status:</strong>
+                            <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Cliente:</strong>
+                            <span>${frete.cliente?.email || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Motorista:</strong>
+                            <span>${frete.motorista?.email || 'Não atribuído'}</span>
+                        </div>
                     </div>
-                    <div class="detalhe-item">
-                        <strong>Status:</strong>
-                        <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+
+                    <div class="detail-section">
+                        <h3>Rota</h3>
+                        <div class="route-info">
+                            <div class="route-point">
+                                <i class="fas fa-map-marker-alt route-icon origin"></i>
+                                <div class="route-details">
+                                    <strong>Origem:</strong> ${origem}
+                                    <small>${frete.origin_street || 'N/A'}, ${frete.origin_number || 'N/A'}</small>
+                                </div>
+                            </div>
+                            <div class="route-arrow">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="route-point">
+                                <i class="fas fa-map-marker-alt route-icon destination"></i>
+                                <div class="route-details">
+                                    <strong>Destino:</strong> ${destino}
+                                    <small>${frete.destination_street || 'N/A'}, ${frete.destination_number || 'N/A'}</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="detalhe-item">
-                        <strong>Cliente:</strong>
-                        <span>${frete.cliente?.email || 'N/A'}</span>
+
+                    <div class="detail-section">
+                        <h3>Carga</h3>
+                        <div class="detail-item">
+                            <strong>Tipo:</strong>
+                            <span>${frete.cargo_type || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Peso:</strong>
+                            <span>${frete.cargo_weight ? parseFloat(frete.cargo_weight).toLocaleString('pt-BR') + ' kg' : 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Valor:</strong>
+                            <span>${valorCarga}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Dimensões:</strong>
+                            <span>${frete.cargo_dimensions || 'N/A'}</span>
+                        </div>
                     </div>
-                    <div class="detalhe-item">
-                        <strong>Motorista:</strong>
-                        <span>${frete.motorista?.email || 'Não atribuído'}</span>
+
+                    <div class="detail-section">
+                        <h3>Contatos</h3>
+                        <div class="detail-item">
+                            <strong>Remetente:</strong>
+                            <span>${frete.sender_name || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Telefone Remetente:</strong>
+                            <span>${frete.sender_phone || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Destinatário:</strong>
+                            <span>${frete.recipient_name || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Telefone Destinatário:</strong>
+                            <span>${frete.recipient_phone || 'N/A'}</span>
+                        </div>
                     </div>
-                    <div class="detalhe-item">
-                        <strong>Remetente:</strong>
-                        <span>${frete.sender_name || 'N/A'}</span>
+
+                    <div class="detail-section">
+                        <h3>Datas</h3>
+                        <div class="detail-item">
+                            <strong>Data de Coleta:</strong>
+                            <span>${dataColeta}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Data de Entrega:</strong>
+                            <span>${dataEntrega}</span>
+                        </div>
                     </div>
-                    <div class="detalhe-item">
-                        <strong>Destinatário:</strong>
-                        <span>${frete.recipient_name || 'N/A'}</span>
+
+                    ${frete.observacoes ? `
+                    <div class="detail-section">
+                        <h3>Observações</h3>
+                        <div class="detail-item" style="justify-content: flex-start;">
+                            <span style="text-align: left;">${frete.observacoes}</span>
+                        </div>
                     </div>
-                    <div class="detalhe-item">
-                        <strong>Tipo de Carga:</strong>
-                        <span>${frete.cargo_type || 'N/A'}</span>
-                    </div>
-                    <div class="detalhe-item">
-                        <strong>Valor:</strong>
-                        <span>R$ ${parseFloat(frete.cargo_value || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                    </div>
-                    <div class="detalhe-item">
-                        <strong>Peso:</strong>
-                        <span>${parseFloat(frete.cargo_weight || 0).toLocaleString('pt-BR')} kg</span>
-                    </div>
-                    <div class="detalhe-item">
-                        <strong>Data de Coleta:</strong>
-                        <span>${frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A'}</span>
-                    </div>
-                    <div class="detalhe-item">
-                        <strong>Data de Entrega:</strong>
-                        <span>${frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A'}</span>
-                    </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -639,8 +693,8 @@
         }
 
         .modal-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            background: #1a202c;
+            border: 1px solid #4a5568;
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             max-width: 500px;
@@ -654,13 +708,13 @@
             justify-content: space-between;
             align-items: center;
             padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--bg-primary);
+            border-bottom: 1px solid #4a5568;
+            background: #2d3748;
         }
 
         .modal-header h2 {
             margin: 0;
-            color: var(--text-primary);
+            color: #ffffff;
             font-size: 1.5rem;
         }
 
@@ -668,7 +722,7 @@
             background: none;
             border: none;
             font-size: 1.5rem;
-            color: var(--text-secondary);
+            color: #a0aec0;
             cursor: pointer;
             padding: 0;
             width: 30px;
@@ -679,7 +733,7 @@
         }
 
         .modal-header .close:hover {
-            color: var(--text-primary);
+            color: #ffffff;
         }
 
         .modal-body {
@@ -885,6 +939,194 @@
 
         body.light-mode #editarModal .modal-content::-webkit-scrollbar-thumb:hover {
             background: #cbd5e0;
+        }
+
+        /* CSS para modal de detalhes do frete */
+        .frete-details-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .detail-section {
+            background: #2d3748;
+            padding: 25px 30px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+        }
+
+        .detail-section h3 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #4a5568;
+            margin: 0 10px;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-item strong {
+            color: #a0aec0;
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        .detail-item span {
+            color: #e2e8f0;
+            text-align: right;
+            flex: 1;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            white-space: nowrap;
+            max-width: fit-content;
+        }
+
+        /* Estilos específicos para status badges no modo escuro */
+        .status-solicitado {
+            background-color: #FED7D7;
+            color: #C53030;
+        }
+
+        .status-aceito {
+            background-color: #BEE3F8;
+            color: #2B6CB0;
+        }
+
+        .status-em_transito {
+            background-color: #FEF5E7;
+            color: #DD6B20;
+        }
+
+        .status-entregue {
+            background-color: #C6F6D5;
+            color: #2F855A;
+        }
+
+        .status-cancelado {
+            background-color: #FED7D7;
+            color: #E53E3E;
+        }
+
+        /* Modo escuro - manter cores de fundo mas forçar texto preto */
+        body:not(.light-mode) .status-solicitado {
+            background-color: #FED7D7;
+            color: #000000 !important;
+        }
+
+        body:not(.light-mode) .status-aceito {
+            background-color: #BEE3F8;
+            color: #000000 !important;
+        }
+
+        body:not(.light-mode) .status-em_transito {
+            background-color: #FEF5E7;
+            color: #000000 !important;
+        }
+
+        body:not(.light-mode) .status-entregue {
+            background-color: #C6F6D5;
+            color: #000000 !important;
+        }
+
+        body:not(.light-mode) .status-cancelado {
+            background-color: #FED7D7;
+            color: #000000 !important;
+        }
+
+        .route-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .route-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .route-icon {
+            font-size: 1.2rem;
+            margin-top: 2px;
+        }
+
+        .route-icon.origin {
+            color: #48bb78;
+        }
+
+        .route-icon.destination {
+            color: #e53e3e;
+        }
+
+        .route-details {
+            flex: 1;
+        }
+
+        .route-details strong {
+            color: #e2e8f0;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .route-details small {
+            color: #a0aec0;
+            font-size: 0.85rem;
+        }
+
+        .route-arrow {
+            display: flex;
+            justify-content: center;
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 5px 0;
+        }
+
+        /* Modo claro para modal de detalhes */
+        body.light-mode .detail-section {
+            background: #f7fafc;
+            border-left-color: #667eea;
+        }
+
+        body.light-mode .detail-section h3 {
+            color: #667eea;
+        }
+
+        body.light-mode .detail-item {
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.light-mode .detail-item strong {
+            color: #4a5568;
+        }
+
+        body.light-mode .detail-item span {
+            color: #2d3748;
+        }
+
+        body.light-mode .route-details strong {
+            color: #2d3748;
+        }
+
+        body.light-mode .route-details small {
+            color: #4a5568;
         }
     </style>
 

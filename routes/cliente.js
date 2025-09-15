@@ -9,6 +9,9 @@ const {
   cancelarFrete,
   alterarFrete,
   reagendarEntrega,
+  getPerfil,
+  getEnderecos,
+  createEndereco,
   atualizarPerfil,
   getHistoricoCompleto
 } = require('../controllers/clienteController');
@@ -38,8 +41,15 @@ router.put('/fretes/:id/alterar', alterarFrete);
 // Reagendar entrega
 router.put('/fretes/:id/reagendar', reagendarEntrega);
 
+// Obter perfil
+router.get('/perfil', getPerfil);
+
 // Atualizar perfil
 router.put('/perfil', atualizarPerfil);
+
+// Endereços
+router.get('/enderecos', getEnderecos);
+router.post('/enderecos', createEndereco);
 
 // Histórico completo
 router.get('/historico', getHistoricoCompleto);

@@ -25,7 +25,7 @@ const register = async (req, res) => {
     });
 
     // Gerar tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = await generateTokens(user.id);
 
     res.status(201).json({
       success: true,
@@ -85,7 +85,7 @@ const login = async (req, res) => {
     await user.update({ last_login: new Date() });
 
     // Gerar tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    const { accessToken, refreshToken } = await generateTokens(user.id);
 
     res.json({
       success: true,

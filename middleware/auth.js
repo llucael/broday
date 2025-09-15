@@ -30,7 +30,7 @@ const authenticateToken = async (req, res, next) => {
     // Adicionar dados do usuário à requisição
     req.user = user;
     req.userId = user.id;
-    req.userType = user.user_type;
+    req.userType = decoded.userType || user.user_type;
     
     next();
   } catch (error) {
@@ -85,15 +85,21 @@ const requireMotoristaOrAdmin = requireUserType(['motorista', 'admin']);
 const requireClienteOrAdmin = requireUserType(['cliente', 'admin']);
 
 // Função para gerar tokens
-const generateTokens = (userId) => {
+const generateTokens = async (userId) => {
+  // Buscar usuário para obter o user_type
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new Error('Usuário não encontrado');
+  }
+
   const accessToken = jwt.sign(
-    { userId },
+    { userId, userType: user.user_type },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
 
   const refreshToken = jwt.sign(
-    { userId, type: 'refresh' },
+    { userId, userType: user.user_type, type: 'refresh' },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );

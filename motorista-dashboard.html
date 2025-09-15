@@ -170,8 +170,8 @@
             } catch (error) {
                 console.error('Erro ao carregar dashboard:', error);
                 // Fallback para carregar dados individualmente
-                loadStats();
-                loadFretesAtivos();
+            loadStats();
+            loadFretesAtivos();
             }
         }
 
@@ -185,25 +185,67 @@
                     
                     document.getElementById('fretes-ativos').textContent = ativos;
                     document.getElementById('fretes-concluidos').textContent = concluidos;
+                    
+                    // Atualizar status de disponibilidade
+                    updateDisponibilidadeStatus(fretes);
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
             }
         }
 
-        function loadFretesAtivosFromDashboard(fretes) {
+        function updateDisponibilidadeStatus(fretes) {
+            const statusElement = document.getElementById('status-disponibilidade');
+            const isEmViagem = fretes.some(f => f.status === 'em_transito');
+            
+            console.log('Atualizando status de disponibilidade:', {
+                fretes: fretes.length,
+                isEmViagem: isEmViagem,
+                fretesEmTransito: fretes.filter(f => f.status === 'em_transito')
+            });
+            
+            if (isEmViagem) {
+                statusElement.textContent = 'Indisponível';
+                statusElement.style.color = '#e53e3e';
+            } else {
+                statusElement.textContent = 'Disponível';
+                statusElement.style.color = '#48bb78';
+            }
+        }
+
+        async function checkMotoristaEmViagem() {
+            try {
+                // Buscar todos os fretes do motorista para verificar se há algum em trânsito
+                const response = await api.getFretesByMotorista(1, 100);
+                if (response.success) {
+                    const fretes = response.data.fretes;
+                    return fretes.some(f => f.status === 'em_transito');
+                }
+                return false;
+            } catch (error) {
+                console.error('Erro ao verificar status do motorista:', error);
+                return false;
+            }
+        }
+
+        async function loadFretesAtivosFromDashboard(fretes) {
             const container = document.getElementById('fretes-ativos-list');
             container.innerHTML = '';
             
             if (!fretes || fretes.length === 0) {
                 container.innerHTML = '<p class="no-data">Nenhum frete ativo</p>';
+                // Atualizar status de disponibilidade mesmo quando não há fretes
+                updateDisponibilidadeStatus(fretes);
                 return;
             }
             
-            fretes.forEach(frete => {
-                const freteCard = createFreteCard(frete);
+            for (const frete of fretes) {
+                const freteCard = await createFreteCard(frete);
                 container.appendChild(freteCard);
-            });
+            }
+            
+            // Atualizar status de disponibilidade após carregar fretes
+            updateDisponibilidadeStatus(fretes);
         }
 
         async function loadFretesAtivos() {
@@ -217,22 +259,31 @@
                     
                     if (fretes.length === 0) {
                         container.innerHTML = '<p class="no-data">Nenhum frete ativo</p>';
+                        // Atualizar status de disponibilidade mesmo quando não há fretes
+                        updateDisponibilidadeStatus(fretes);
                         return;
                     }
                     
-                    fretes.forEach(frete => {
-                        const freteCard = createFreteCard(frete);
+                    for (const frete of fretes) {
+                        const freteCard = await createFreteCard(frete);
                         container.appendChild(freteCard);
-                    });
+                    }
+                    
+                    // Atualizar status de disponibilidade após carregar fretes
+                    updateDisponibilidadeStatus(fretes);
                 }
             } catch (error) {
                 console.error('Erro ao carregar fretes ativos:', error);
             }
         }
 
-        function createFreteCard(frete) {
+        async function createFreteCard(frete) {
             const card = document.createElement('div');
             card.className = 'frete-card';
+            
+            // Verificar se motorista já está em viagem
+            const isMotoristaEmViagem = await checkMotoristaEmViagem();
+            
             card.innerHTML = `
                 <div class="frete-header">
                     <h3>Frete #${frete.id}</h3>
@@ -249,10 +300,18 @@
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
+                    ${(frete.status === 'em_transito' || frete.status === 'entregue') ? `
+                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Rastrear
+                    </button>
+                    ` : ''}
                     ${frete.status === 'aceito' ? `
-                        <button class="btn btn-sm btn-success" onclick="updateFreteStatus(${frete.id}, 'em_transito')">
+                        <button class="btn btn-sm ${isMotoristaEmViagem ? 'btn-disabled' : 'btn-success'}" 
+                                onclick="${isMotoristaEmViagem ? 'showNotification("Você já está em viagem!", "error")' : `updateFreteStatus(${frete.id}, 'em_transito')`}"
+                                ${isMotoristaEmViagem ? 'disabled' : ''}>
                             <i class="fas fa-truck"></i>
-                            Iniciar Viagem
+                            ${isMotoristaEmViagem ? 'Indisponível' : 'Iniciar Viagem'}
                         </button>
                     ` : ''}
                     ${frete.status === 'em_transito' ? `
@@ -397,8 +456,8 @@
                     ${frete.observacoes ? `
                     <div class="detail-section">
                         <h3>Observações</h3>
-                        <div class="detail-item">
-                            <span>${frete.observacoes}</span>
+                        <div class="detail-item" style="justify-content: flex-start;">
+                            <span style="text-align: left;">${frete.observacoes}</span>
                         </div>
                     </div>
                     ` : ''}
@@ -411,11 +470,31 @@
                 const response = await api.updateFreteStatus(freteId, status);
                 if (response.success) {
                     showNotification('Status atualizado com sucesso!', 'success');
-                    loadDashboardData();
+                    
+                    // Recarregar dados do dashboard
+                    await loadDashboardData();
+                    
+                    // Atualizar status de disponibilidade especificamente
+                    const statsResponse = await api.getFretesByMotorista(1, 100);
+                    if (statsResponse.success) {
+                        updateDisponibilidadeStatus(statsResponse.data.fretes);
+                    }
+                    
+                    // Se iniciou viagem, mostrar notificação de indisponibilidade
+                    if (status === 'em_transito') {
+                        setTimeout(() => {
+                            showNotification('Você está agora indisponível para novos fretes!', 'info');
+                        }, 1000);
+                    }
                 }
             } catch (error) {
                 showNotification(error.message || 'Erro ao atualizar status', 'error');
             }
+        }
+
+        function rastrearFrete(freteId) {
+            // Redirecionar para página de rastreamento
+            window.location.href = `rastreamento.html?frete=${freteId}`;
         }
 
         // Funções de modal
@@ -462,13 +541,36 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone do toggle
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            if (toggleIcon) {
+                if (isLightMode) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                } else {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
         }
         
         // Carregar tema salvo
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme');
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                }
+            } else {
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
             }
         });
     </script>
@@ -567,9 +669,10 @@
 
         .detail-section {
             background: #2d3748;
-            padding: 20px;
+            padding: 25px 30px;
             border-radius: 8px;
             border-left: 4px solid #667eea;
+            margin-bottom: 20px;
         }
 
         .detail-section h3 {
@@ -583,8 +686,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 12px 20px;
             border-bottom: 1px solid #4a5568;
+            margin: 0 10px;
         }
 
         .detail-item:last-child {
@@ -604,11 +708,14 @@
         }
 
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
             text-transform: uppercase;
+            white-space: nowrap;
+            max-width: fit-content;
         }
 
         .status-solicitado { background: #f6ad55; color: #744210; }
@@ -617,6 +724,18 @@
         .status-em_transito { background: #ed8936; color: #1a202c; }
         .status-entregue { background: #38a169; color: #1a202c; }
         .status-cancelado { background: #e53e3e; color: #1a202c; }
+
+        .btn-disabled {
+            background-color: #718096 !important;
+            color: #a0aec0 !important;
+            cursor: not-allowed !important;
+            opacity: 0.6 !important;
+        }
+
+        .btn-disabled:hover {
+            background-color: #718096 !important;
+            transform: none !important;
+        }
 
         .route-info {
             display: flex;
@@ -716,6 +835,11 @@
 
         body.light-mode .route-details small {
             color: #4a5568;
+        }
+
+        /* Modal header no modo claro */
+        body.light-mode .modal-header h2 {
+            color: #ffffff;
         }
 
         body.light-mode .modal-content::-webkit-scrollbar-track {

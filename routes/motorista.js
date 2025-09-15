@@ -7,6 +7,7 @@ const {
   aceitarFrete,
   atualizarStatusFrete,
   getMeusFretes,
+  getPerfil,
   atualizarPerfil,
   getRelatoriosPessoais
 } = require('../controllers/motoristaController');
@@ -30,7 +31,8 @@ router.put('/fretes/:id/status', atualizarStatusFrete);
 // Meus fretes
 router.get('/fretes/meus', getMeusFretes);
 
-// Atualizar perfil
+// Perfil
+router.get('/perfil', getPerfil);
 router.put('/perfil', atualizarPerfil);
 
 // Relatórios pessoais

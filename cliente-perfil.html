@@ -178,26 +178,6 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="notificacoes">Notificações</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="notificacoes[]" value="email" checked>
-                                    <span class="checkmark"></span>
-                                    E-mail
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="notificacoes[]" value="sms">
-                                    <span class="checkmark"></span>
-                                    SMS
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="notificacoes[]" value="push">
-                                    <span class="checkmark"></span>
-                                    Notificações Push
-                                </label>
-                            </div>
-                        </div>
 
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i>
@@ -365,6 +345,45 @@
                     showProfileTab(target);
                 });
             });
+
+            // Formulário de dados pessoais
+            const dadosForm = document.getElementById('dados-form');
+            if (dadosForm) {
+                dadosForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveProfile();
+                });
+            }
+
+            // Formulário de endereço
+            const enderecoForm = document.getElementById('endereco-form');
+            if (enderecoForm) {
+                enderecoForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveEndereco();
+                });
+            }
+
+            // Formulário de documentos
+            const documentosForm = document.getElementById('documentos-form');
+            if (documentosForm) {
+                documentosForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveDocumentos();
+                });
+            }
+
+            // Formulário de preferências
+            const preferencesForm = document.getElementById('preferences-form');
+            if (preferencesForm) {
+                preferencesForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    savePreferencias();
+                });
+            }
+
+            // Carregar dados iniciais
+            loadProfile();
         }
 
         function showProfileTab(tabId) {
@@ -437,6 +456,448 @@
                 document.body.classList.add('light-mode');
             }
         });
+
+        // Funções de carregamento e salvamento
+        async function loadProfile() {
+            try {
+                console.log('Carregando perfil...');
+                const response = await api.getProfile();
+                console.log('Resposta da API:', response);
+                
+                if (response.success) {
+                    const user = response.data;
+                    console.log('Dados do usuário carregados:', user);
+                    console.log('Nome:', user.nome);
+                    console.log('Telefone:', user.telefone);
+                    console.log('CPF:', user.cpf);
+                    console.log('Todos os campos do usuário:', Object.keys(user));
+                    console.log('Valores dos campos:', Object.values(user));
+                    console.log('Objeto completo do usuário:', JSON.stringify(user, null, 2));
+                    
+                    // Preencher dados pessoais
+                    if (document.getElementById('nome')) {
+                        document.getElementById('nome').value = user.nome || '';
+                    }
+                    if (document.getElementById('email')) {
+                        document.getElementById('email').value = user.email || '';
+                    }
+                    if (document.getElementById('telefone')) {
+                        document.getElementById('telefone').value = user.telefone || '';
+                    }
+                    if (document.getElementById('cpf')) {
+                        document.getElementById('cpf').value = user.cpf || '';
+                    }
+                    if (document.getElementById('empresa')) {
+                        document.getElementById('empresa').value = user.empresa || '';
+                    }
+                    
+                    // Preencher documentos
+                    if (document.getElementById('tipo-pessoa')) {
+                        document.getElementById('tipo-pessoa').value = user.tipo_pessoa || 'fisica';
+                        toggleDocumentFields();
+                    }
+                    
+                    if (user.tipo_pessoa === 'fisica') {
+                        if (document.getElementById('cpf-documento')) {
+                            document.getElementById('cpf-documento').value = user.cpf || '';
+                        }
+                        if (document.getElementById('nome-completo')) {
+                            document.getElementById('nome-completo').value = user.nome || '';
+                        }
+                        if (document.getElementById('data-nascimento')) {
+                            document.getElementById('data-nascimento').value = user.data_nascimento || '';
+                        }
+                    } else {
+                        if (document.getElementById('cnpj-documento')) {
+                            document.getElementById('cnpj-documento').value = user.cnpj || '';
+                        }
+                        if (document.getElementById('razao-social')) {
+                            document.getElementById('razao-social').value = user.razao_social || '';
+                        }
+                    }
+                    
+                    // Carregar endereços
+                    loadEnderecos();
+                } else {
+                    console.error('Erro ao carregar perfil:', response.message);
+                    showNotification('Erro ao carregar dados do perfil', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar perfil:', error);
+                showNotification('Erro ao carregar dados do perfil', 'error');
+            }
+        }
+
+        async function saveProfile() {
+            try {
+                const formData = {
+                    nome: document.getElementById('nome')?.value || '',
+                    email: document.getElementById('email')?.value || '',
+                    telefone: document.getElementById('telefone')?.value || '',
+                    cpf: document.getElementById('cpf')?.value || '',
+                    endereco: document.getElementById('endereco')?.value || '',
+                    cidade: document.getElementById('cidade')?.value || '',
+                    estado: document.getElementById('estado')?.value || '',
+                    cep: document.getElementById('cep')?.value || '',
+                    empresa: document.getElementById('empresa')?.value || ''
+                };
+
+                console.log('Dados sendo enviados:', formData);
+
+                const response = await api.updateProfile(formData);
+                console.log('Resposta da API:', response);
+                
+                if (response.success) {
+                    showNotification('Perfil atualizado com sucesso!', 'success');
+                    // Recarregar dados após salvar
+                    console.log('Recarregando perfil após salvar...');
+                    await loadProfile();
+                } else {
+                    console.error('Erro ao salvar perfil:', response.message);
+                    showNotification('Erro ao salvar perfil: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar perfil:', error);
+                showNotification('Erro ao salvar perfil', 'error');
+            }
+        }
+
+        async function loadEnderecos() {
+            try {
+                const response = await api.getEnderecos();
+                if (response.success) {
+                    const enderecos = response.data;
+                    const container = document.getElementById('enderecos-list');
+                    container.innerHTML = '';
+                    
+                    if (enderecos.length === 0) {
+                        container.innerHTML = '<p class="no-data">Nenhum endereço cadastrado</p>';
+                        return;
+                    }
+                    
+                    enderecos.forEach(endereco => {
+                        const enderecoCard = createEnderecoCard(endereco);
+                        container.appendChild(enderecoCard);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar endereços:', error);
+            }
+        }
+
+        function createEnderecoCard(endereco) {
+            const card = document.createElement('div');
+            card.className = 'endereco-card';
+            card.innerHTML = `
+                <div class="endereco-info">
+                    <h4>${endereco.nome}</h4>
+                    <p>${endereco.rua}, ${endereco.numero}${endereco.complemento ? ', ' + endereco.complemento : ''}</p>
+                    <p>${endereco.cidade} - ${endereco.estado}, ${endereco.cep}</p>
+                </div>
+                <div class="endereco-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="editEndereco(${endereco.id})">
+                        <i class="fas fa-edit"></i>
+                        Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteEndereco(${endereco.id})">
+                        <i class="fas fa-trash"></i>
+                        Excluir
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+
+        async function saveEndereco(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData.entries());
+                
+                const response = await api.createEndereco(data);
+                if (response.success) {
+                    showNotification('Endereço adicionado com sucesso!', 'success');
+                    closeEnderecoModal();
+                    loadEnderecos();
+                    event.target.reset();
+                } else {
+                    console.error('Erro ao salvar endereço:', response.message);
+                    showNotification('Erro ao salvar endereço: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar endereço:', error);
+                showNotification('Erro ao salvar endereço', 'error');
+            }
+        }
+
+        async function saveDocumentos() {
+            try {
+                const formData = {
+                    tipo_pessoa: document.getElementById('tipo-pessoa').value,
+                    cpf: document.getElementById('cpf-documento').value,
+                    cnpj: document.getElementById('cnpj-documento').value,
+                    nome_completo: document.getElementById('nome-completo').value,
+                    data_nascimento: document.getElementById('data-nascimento').value,
+                    razao_social: document.getElementById('razao-social').value
+                };
+
+                console.log('Dados dos documentos sendo enviados:', formData);
+
+                const response = await api.updateProfile(formData);
+                console.log('Resposta da API documentos:', response);
+                
+                if (response.success) {
+                    showNotification('Documentos atualizados com sucesso!', 'success');
+                    // Recarregar dados após salvar
+                    await loadProfile();
+                } else {
+                    console.error('Erro ao salvar documentos:', response.message);
+                    showNotification('Erro ao salvar documentos: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar documentos:', error);
+                showNotification('Erro ao salvar documentos', 'error');
+            }
+        }
+
+        async function savePreferencias() {
+            try {
+                const formData = {
+                    // Adicionar campos de preferências quando necessário
+                };
+
+                console.log('Dados das preferências sendo enviados:', formData);
+
+                const response = await api.updateProfile(formData);
+                console.log('Resposta da API preferências:', response);
+                
+                if (response.success) {
+                    showNotification('Preferências atualizadas com sucesso!', 'success');
+                    // Recarregar dados após salvar
+                    await loadProfile();
+                } else {
+                    console.error('Erro ao salvar preferências:', response.message);
+                    showNotification('Erro ao salvar preferências: ' + response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar preferências:', error);
+                showNotification('Erro ao salvar preferências', 'error');
+            }
+        }
+
+        function editEndereco(id) {
+            showNotification('Funcionalidade em desenvolvimento', 'info');
+        }
+
+        function deleteEndereco(id) {
+            if (confirm('Tem certeza que deseja excluir este endereço?')) {
+                showNotification('Funcionalidade em desenvolvimento', 'info');
+            }
+        }
     </script>
+
+    <style>
+        /* Estilos para o modal de endereço */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #1a202c;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #4a5568;
+            background: #2d3748;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 1.25rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .endereco-form {
+            padding: 30px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #4a5568;
+            border-radius: 6px;
+            background: #2d3748;
+            color: #e2e8f0;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #374151;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #4a5568;
+        }
+
+        /* Modo claro */
+        body.light-mode .modal-content {
+            background: #ffffff;
+        }
+
+        body.light-mode .modal-header {
+            background: #f7fafc;
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.light-mode .modal-header h3 {
+            color: #2d3748;
+        }
+
+        body.light-mode .close-btn {
+            color: #4a5568;
+        }
+
+        body.light-mode .close-btn:hover {
+            color: #2d3748;
+            background-color: rgba(45, 55, 72, 0.1);
+        }
+
+        body.light-mode .form-group label {
+            color: #4a5568;
+        }
+
+        body.light-mode .form-group input,
+        body.light-mode .form-group select {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        body.light-mode .form-group input:focus,
+        body.light-mode .form-group select:focus {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        body.light-mode .form-actions {
+            border-top-color: #e2e8f0;
+        }
+
+        /* Cards de endereço */
+        .endereco-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #2d3748;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #4a5568;
+        }
+
+        .endereco-info h4 {
+            margin: 0 0 8px 0;
+            color: #e2e8f0;
+            font-size: 1.1rem;
+        }
+
+        .endereco-info p {
+            margin: 4px 0;
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+        .endereco-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        body.light-mode .endereco-card {
+            background: #ffffff;
+            border-color: #e2e8f0;
+        }
+
+        body.light-mode .endereco-info h4 {
+            color: #2d3748;
+        }
+
+        body.light-mode .endereco-info p {
+            color: #4a5568;
+        }
+    </style>
 </body>
 </html>

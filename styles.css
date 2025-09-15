@@ -1172,7 +1172,7 @@ h2 {
 
 .frete-card {
     background-color: #2D3748;
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
     border-radius: 12px;
     border: 1px solid #4A5568;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -1299,11 +1299,13 @@ h2 {
 
 .frete-info {
     margin-bottom: 1rem;
+    padding: 0 0.5rem;
 }
 
 .frete-info p {
     color: #A0AEC0;
     margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
 }
 
 .frete-actions {
@@ -1328,11 +1330,14 @@ h2 {
 
 /* Status Badges */
 .status {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
     text-transform: uppercase;
+    white-space: nowrap;
+    max-width: fit-content;
 }
 
 .status-pendente {
@@ -1498,14 +1503,7 @@ body.light-mode .enderecos-header h3 {
     gap: 1rem;
 }
 
-/* Checkbox Groups */
-.checkbox-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-    margin-bottom: 2rem;
-}
+/* Checkbox Groups - Removido para evitar conflitos com admin-motoristas */
 
 /* Checkbox específico para páginas de perfil */
 .profile-form .checkbox-label,
@@ -3222,4 +3220,14 @@ body.light-mode .form-actions {
     .form-actions {
         flex-direction: column;
     }
+}
+
+/* Toggle theme button in light mode */
+body.light-mode .theme-toggle {
+    color: #4A5568;
+}
+
+body.light-mode .theme-toggle:hover {
+    color: #2D3748;
+    background-color: rgba(45, 55, 72, 0.1);
 }

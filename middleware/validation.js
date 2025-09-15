@@ -125,44 +125,60 @@ const validateAdmin = [
 
 // Validações para frete
 const validateFrete = [
-  body('tipoCarga')
+  body('cargo_type')
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Tipo de carga deve ter entre 2 e 100 caracteres'),
-  body('peso')
+  body('cargo_weight')
     .isFloat({ min: 0.001 })
     .withMessage('Peso deve ser maior que zero'),
-  body('valor')
+  body('cargo_value')
     .isFloat({ min: 0.01 })
     .withMessage('Valor deve ser maior que zero'),
-  body('origemEndereco')
+  body('cargo_dimensions')
     .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Endereço de origem deve ter entre 10 e 500 caracteres'),
-  body('origemCidade')
+    .isLength({ min: 1, max: 200 })
+    .withMessage('Dimensões da carga são obrigatórias'),
+  body('origin_street')
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Rua de origem deve ter entre 5 e 200 caracteres'),
+  body('origin_number')
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('Número de origem é obrigatório'),
+  body('origin_city')
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Cidade de origem deve ter entre 2 e 100 caracteres'),
-  body('origemEstado')
+  body('origin_state')
     .isLength({ min: 2, max: 2 })
     .withMessage('Estado de origem deve ter 2 caracteres'),
-  body('origemCep')
-    .matches(/^\d{5}-\d{3}$/)
-    .withMessage('CEP de origem deve estar no formato 00000-000'),
-  body('destinoEndereco')
+  body('origin_cep')
+    .matches(/^\d{5}-?\d{3}$/)
+    .withMessage('CEP de origem deve estar no formato 00000-000 ou 00000000'),
+  body('destination_street')
     .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Endereço de destino deve ter entre 10 e 500 caracteres'),
-  body('destinoCidade')
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Rua de destino deve ter entre 5 e 200 caracteres'),
+  body('destination_number')
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('Número de destino é obrigatório'),
+  body('destination_city')
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Cidade de destino deve ter entre 2 e 100 caracteres'),
-  body('destinoEstado')
+  body('destination_state')
     .isLength({ min: 2, max: 2 })
     .withMessage('Estado de destino deve ter 2 caracteres'),
-  body('destinoCep')
-    .matches(/^\d{5}-\d{3}$/)
-    .withMessage('CEP de destino deve estar no formato 00000-000'),
+  body('destination_cep')
+    .matches(/^\d{5}-?\d{3}$/)
+    .withMessage('CEP de destino deve estar no formato 00000-000 ou 00000000'),
+  (req, res, next) => {
+    console.log('Dados recebidos para validação:', req.body);
+    next();
+  },
   handleValidationErrors
 ];
 

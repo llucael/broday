@@ -40,20 +40,6 @@
             <section id="fretes-disponiveis" class="fretes-disponiveis-section active">
                 <div class="section-header">
                     <h1>Fretes Disponíveis</h1>
-                    <div class="filters">
-                        <select id="order-filter" onchange="loadFretesDisponiveis()">
-                            <option value="recent">Mais Recente</option>
-                            <option value="oldest">Mais Antigo</option>
-                        </select>
-                        <select id="weight-filter" onchange="loadFretesDisponiveis()">
-                            <option value="maior">Maior Peso</option>
-                            <option value="menor">Menor Peso</option>
-                        </select>
-                        <button class="btn btn-secondary" onclick="clearFilters()">
-                            <i class="fas fa-times"></i>
-                            Limpar Filtros
-                        </button>
-                    </div>
                 </div>
 
                 <div class="fretes-list" id="fretes-disponiveis-list">
@@ -145,28 +131,12 @@
                         return;
                     }
                     
-                    // Aplicar filtros
-                    const orderFilter = document.getElementById('order-filter').value;
-                    const weightFilter = document.getElementById('weight-filter').value;
+                    // Os fretes já vêm ordenados do backend
                     
-                    // Ordenação por data
-                    if (orderFilter === 'oldest') {
-                        fretes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                    } else {
-                        fretes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                    }
-                    
-                    // Filtro por peso
-                    if (weightFilter === 'maior') {
-                        fretes.sort((a, b) => parseFloat(b.cargo_weight || 0) - parseFloat(a.cargo_weight || 0));
-                    } else if (weightFilter === 'menor') {
-                        fretes.sort((a, b) => parseFloat(a.cargo_weight || 0) - parseFloat(b.cargo_weight || 0));
-                    }
-                    
-                    fretes.forEach(frete => {
-                        const freteCard = createFreteDisponivelCard(frete);
+                    for (const frete of fretes) {
+                        const freteCard = await createFreteDisponivelCard(frete);
                         container.appendChild(freteCard);
-                    });
+                    }
                 }
             } catch (error) {
                 console.error('Erro ao carregar fretes disponíveis:', error);
@@ -174,9 +144,12 @@
             }
         }
 
-        function createFreteDisponivelCard(frete) {
+        async function createFreteDisponivelCard(frete) {
             const card = document.createElement('div');
             card.className = 'frete-card';
+            
+            // Verificar se motorista já está em viagem
+            const isMotoristaEmViagem = await checkMotoristaEmViagem();
             
             // Formatar origem e destino
             const origem = `${frete.origin_city}/${frete.origin_state}`;
@@ -191,7 +164,7 @@
             card.innerHTML = `
                 <div class="frete-header">
                     <h3>${frete.codigo}</h3>
-                    <span class="status status-solicitado">Disponível</span>
+                    <span class="status status-${frete.status}">${getStatusText(frete.status)}</span>
                 </div>
                 <div class="frete-info">
                     <div class="frete-route">
@@ -237,9 +210,11 @@
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
-                    <button class="btn btn-sm btn-success" onclick="acceptFrete(${frete.id})">
+                    <button class="btn btn-sm ${isMotoristaEmViagem ? 'btn-disabled' : 'btn-success'}" 
+                            onclick="${isMotoristaEmViagem ? 'showNotification("Você já está em viagem!", "error")' : `acceptFrete(${frete.id})`}"
+                            ${isMotoristaEmViagem ? 'disabled' : ''}>
                         <i class="fas fa-check"></i>
-                        Aceitar Frete
+                        ${isMotoristaEmViagem ? 'Indisponível' : 'Aceitar Frete'}
                     </button>
                 </div>
             `;
@@ -366,8 +341,8 @@
                     ${frete.observacoes ? `
                     <div class="detail-section">
                         <h3>Observações</h3>
-                        <div class="detail-item">
-                            <span>${frete.observacoes}</span>
+                        <div class="detail-item" style="justify-content: flex-start;">
+                            <span style="text-align: left;">${frete.observacoes}</span>
                         </div>
                     </div>
                     ` : ''}
@@ -387,6 +362,21 @@
             return statusMap[status] || status;
         }
 
+        async function checkMotoristaEmViagem() {
+            try {
+                // Buscar todos os fretes do motorista para verificar se há algum em trânsito
+                const response = await api.getFretesByMotorista(1, 100);
+                if (response.success) {
+                    const fretes = response.data.fretes;
+                    return fretes.some(f => f.status === 'em_transito');
+                }
+                return false;
+            } catch (error) {
+                console.error('Erro ao verificar status do motorista:', error);
+                return false;
+            }
+        }
+
         async function acceptFrete(freteId) {
             try {
                 const response = await api.acceptFrete(freteId);
@@ -399,11 +389,6 @@
             }
         }
 
-        function clearFilters() {
-            document.getElementById('order-filter').value = 'recent';
-            document.getElementById('weight-filter').value = 'maior';
-            loadFretesDisponiveis();
-        }
 
         // Funções de modal
         function openModal(modalId) {
@@ -449,13 +434,36 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone do toggle
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            if (toggleIcon) {
+                if (isLightMode) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                } else {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
         }
         
         // Carregar tema salvo
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme');
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                }
+            } else {
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
             }
         });
     </script>
@@ -554,9 +562,10 @@
 
         .detail-section {
             background: #2d3748;
-            padding: 20px;
+            padding: 25px 30px;
             border-radius: 8px;
             border-left: 4px solid #667eea;
+            margin-bottom: 20px;
         }
 
         .detail-section h3 {
@@ -570,8 +579,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 12px 20px;
             border-bottom: 1px solid #4a5568;
+            margin: 0 10px;
         }
 
         .detail-item:last-child {
@@ -591,11 +601,14 @@
         }
 
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
             text-transform: uppercase;
+            white-space: nowrap;
+            max-width: fit-content;
         }
 
         .status-solicitado { background: #f6ad55; color: #744210; }
@@ -604,6 +617,18 @@
         .status-em_transito { background: #ed8936; color: #1a202c; }
         .status-entregue { background: #38a169; color: #1a202c; }
         .status-cancelado { background: #e53e3e; color: #1a202c; }
+
+        .btn-disabled {
+            background-color: #718096 !important;
+            color: #a0aec0 !important;
+            cursor: not-allowed !important;
+            opacity: 0.6 !important;
+        }
+
+        .btn-disabled:hover {
+            background-color: #718096 !important;
+            transform: none !important;
+        }
 
         .route-info {
             display: flex;
@@ -703,6 +728,11 @@
 
         body.light-mode .route-details small {
             color: #4a5568;
+        }
+
+        /* Modal header no modo claro */
+        body.light-mode .modal-header h2 {
+            color: #ffffff;
         }
 
         body.light-mode .modal-content::-webkit-scrollbar-track {
