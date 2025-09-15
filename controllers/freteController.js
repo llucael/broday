@@ -272,6 +272,19 @@ const acceptFrete = async (req, res) => {
       });
     }
 
+    // Verificar se o motorista tem caminhão cadastrado
+    const Caminhao = require('../models/Caminhao');
+    const caminhao = await Caminhao.findOne({
+      where: { motorista_id: req.user.id }
+    });
+
+    if (!caminhao) {
+      return res.status(400).json({
+        success: false,
+        message: 'Você precisa ter um caminhão cadastrado para aceitar fretes. Cadastre um caminhão primeiro.'
+      });
+    }
+
     // Aceitar frete
     await frete.update({
       motorista_id: req.user.id,

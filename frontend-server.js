@@ -20,3 +20,4 @@ app.listen(PORT, () => {
   console.log(`📄 Admin Fretes: http://localhost:${PORT}/admin-fretes.html`);
 });
 
+

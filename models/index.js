@@ -6,6 +6,7 @@ const sequelize = require('../config/database').sequelize;
 const User = require('./User')(sequelize, Sequelize.DataTypes);
 const Frete = require('./Frete');
 const Caminhao = require('./Caminhao');
+const Localizacao = require('./Localizacao');
 
 // Definir associações
 User.hasMany(Frete, { foreignKey: 'cliente_id', as: 'fretesCliente' });
@@ -17,10 +18,17 @@ Frete.belongsTo(User, { foreignKey: 'motorista_id', as: 'motorista' });
 User.hasMany(Caminhao, { foreignKey: 'motorista_id', as: 'caminhoes' });
 Caminhao.belongsTo(User, { foreignKey: 'motorista_id', as: 'motorista' });
 
+// Associações para Localização
+User.hasMany(Localizacao, { foreignKey: 'motorista_id', as: 'localizacoes' });
+Frete.hasMany(Localizacao, { foreignKey: 'frete_id', as: 'localizacoes' });
+Localizacao.belongsTo(User, { foreignKey: 'motorista_id', as: 'motorista' });
+Localizacao.belongsTo(Frete, { foreignKey: 'frete_id', as: 'frete' });
+
 module.exports = {
   sequelize,
   Sequelize,
   User,
   Frete,
   Caminhao,
+  Localizacao,
 };

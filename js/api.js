@@ -269,7 +269,7 @@ class ApiService {
 
   // Aceitar frete (motorista)
   async acceptFrete(id) {
-    return await this.request(`/fretes/${id}/aceitar`, {
+    return await this.request(`/motorista/fretes/${id}/aceitar`, {
       method: 'POST'
     });
   }
@@ -386,6 +386,37 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ is_active: isActive })
     });
+  }
+
+  // ===== MÉTODOS DE RASTREAMENTO =====
+
+  // Registrar localização do motorista
+  async registrarLocalizacao(localizacaoData) {
+    return await this.request('/rastreamento/localizacao', {
+      method: 'POST',
+      body: JSON.stringify(localizacaoData)
+    });
+  }
+
+  // Obter histórico de localizações de um frete
+  async getHistoricoLocalizacoes(freteId, page = 1, limit = 50) {
+    const params = new URLSearchParams({ page, limit });
+    return await this.request(`/rastreamento/frete/${freteId}/historico?${params}`);
+  }
+
+  // Obter localização atual de um frete
+  async getLocalizacaoAtual(freteId) {
+    return await this.request(`/rastreamento/frete/${freteId}/atual`);
+  }
+
+  // Obter localizações em tempo real (últimas 24 horas)
+  async getLocalizacoesTempoReal(freteId) {
+    return await this.request(`/rastreamento/frete/${freteId}/tempo-real`);
+  }
+
+  // Obter estatísticas de rastreamento
+  async getEstatisticasRastreamento(freteId) {
+    return await this.request(`/rastreamento/frete/${freteId}/estatisticas`);
   }
 }
 

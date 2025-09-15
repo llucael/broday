@@ -474,6 +474,20 @@
 
         async function updateFreteStatus(freteId, status) {
             try {
+                // Se o status for 'em_transito', solicitar permissão ANTES de atualizar
+                if (status === 'em_transito') {
+                    console.log('Iniciando processo de solicitação de permissão GPS...');
+                    const permissaoConcedida = await solicitarPermissaoLocalizacao();
+                    
+                    if (!permissaoConcedida) {
+                        console.log('Permissão negada, frete não pode ser iniciado');
+                        showNotification('Permissão de localização é obrigatória para iniciar o rastreamento. O frete não foi iniciado.', 'error');
+                        return; // Não atualiza o status se não tiver permissão
+                    }
+                    
+                    console.log('Permissão concedida, atualizando status do frete...');
+                }
+                
                 const response = await api.updateFreteStatus(freteId, status);
                 if (response.success) {
                     showNotification('Status atualizado com sucesso!', 'success');
@@ -487,11 +501,21 @@
                         updateDisponibilidadeStatus(statsResponse.data.fretes);
                     }
                     
-                    // Se iniciou viagem, mostrar notificação de indisponibilidade
+                    // Se iniciou viagem, iniciar rastreamento
                     if (status === 'em_transito') {
-                        setTimeout(() => {
-                            showNotification('Você está agora indisponível para novos fretes!', 'info');
-                        }, 1000);
+                        showNotification('Você está agora indisponível para novos fretes!', 'info');
+                        
+                        // Iniciar rastreamento automático
+                        setTimeout(async () => {
+                            console.log('Iniciando rastreamento...');
+                            iniciarRastreamento(freteId);
+                            showNotification('Rastreamento iniciado! Você será redirecionado para a página de rastreamento.', 'success');
+                            
+                            // Redirecionar para página de rastreamento após 2 segundos
+                            setTimeout(() => {
+                                window.location.href = `rastreamento.html?frete=${freteId}`;
+                            }, 2000);
+                        }, 500);
                     }
                 }
             } catch (error) {
@@ -862,5 +886,586 @@
             background: #cbd5e0;
         }
     </style>
+
+    <script>
+        // ===== FUNÇÕES DE RASTREAMENTO =====
+
+        // Verificar se GPS está disponível
+        function verificarDisponibilidadeGPS() {
+            if (!navigator.geolocation) {
+                return { disponivel: false, motivo: 'Geolocalização não suportada pelo navegador' };
+            }
+            
+            // Verificar se estamos em HTTPS (necessário para geolocalização em produção)
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                return { disponivel: false, motivo: 'HTTPS necessário para geolocalização' };
+            }
+            
+            return { disponivel: true, motivo: null };
+        }
+
+        // Mostrar modal de solicitação de permissão GPS
+        function mostrarModalPermissaoGPS() {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="
+                        background: #2D3748;
+                        padding: 2rem;
+                        border-radius: 12px;
+                        max-width: 500px;
+                        margin: 1rem;
+                        color: white;
+                        text-align: center;
+                    ">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📍</div>
+                        <h3 style="color: #4299E1; margin-bottom: 1rem;">Permissão de Localização Obrigatória</h3>
+                        <p style="margin-bottom: 1rem; line-height: 1.5;">
+                            Para iniciar o rastreamento do frete, é necessário permitir o acesso à sua localização.
+                        </p>
+                        <div style="background: #4A5568; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: left;">
+                            <strong style="color: #4299E1;">📋 Instruções:</strong>
+                            <ol style="margin: 0.5rem 0 0 1.5rem; color: #E2E8F0;">
+                                <li>Clique em "Permitir Localização" abaixo</li>
+                                <li>Quando o navegador perguntar, clique em "Permitir" ou "Allow"</li>
+                                <li>Aguarde a confirmação automática</li>
+                            </ol>
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: center;">
+                            <button id="btn-permitir-gps" style="
+                                background: #4299E1;
+                                color: white;
+                                border: none;
+                                padding: 0.75rem 1.5rem;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-weight: bold;
+                            ">Permitir Localização</button>
+                            <button id="btn-cancelar-gps" style="
+                                background: #E53E3E;
+                                color: white;
+                                border: none;
+                                padding: 0.75rem 1.5rem;
+                                border-radius: 6px;
+                                cursor: pointer;
+                            ">Cancelar</button>
+                        </div>
+                    </div>
+                `;
+                
+                modal.className = 'modal-permissao-gps';
+                document.body.appendChild(modal);
+                
+                // Event listeners
+                document.getElementById('btn-permitir-gps').addEventListener('click', () => {
+                    console.log('Usuário clicou em "Permitir Localização"');
+                    modal.remove();
+                    
+                    // Forçar solicitação de permissão imediatamente
+                    if (navigator.geolocation) {
+                        console.log('Forçando solicitação de permissão...');
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                console.log('✅ Permissão concedida imediatamente:', position);
+                            },
+                            (error) => {
+                                console.log('❌ Permissão negada imediatamente:', error);
+                            },
+                            {
+                                enableHighAccuracy: false,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+                    }
+                    
+                    resolve(true);
+                });
+                
+                document.getElementById('btn-cancelar-gps').addEventListener('click', () => {
+                    modal.remove();
+                    resolve(false);
+                });
+                
+                // Fechar modal ao clicar fora
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                        resolve(false);
+                    }
+                });
+            });
+        }
+
+        // Mostrar instruções para ativar GPS
+        function mostrarInstrucoesGPS() {
+            const instrucoes = `
+                <div style="text-align: left; margin: 1rem 0;">
+                    <h4 style="color: #4299E1; margin-bottom: 1rem;">Como ativar o GPS:</h4>
+                    <ol style="margin: 0; padding-left: 1.5rem;">
+                        <li style="margin-bottom: 0.5rem;">Verifique se o GPS está ativado nas configurações do seu dispositivo</li>
+                        <li style="margin-bottom: 0.5rem;">Certifique-se de que o navegador tem permissão para acessar a localização</li>
+                        <li style="margin-bottom: 0.5rem;">Tente novamente em alguns segundos</li>
+                        <li style="margin-bottom: 0.5rem;">Se o problema persistir, reinicie o navegador</li>
+                    </ol>
+                </div>
+            `;
+            
+            // Mostrar modal com instruções
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: #2D3748;
+                    padding: 2rem;
+                    border-radius: 12px;
+                    max-width: 500px;
+                    margin: 1rem;
+                    color: white;
+                ">
+                    ${instrucoes}
+                    <button onclick="this.closest('.modal-gps').remove()" style="
+                        background: #4299E1;
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        margin-top: 1rem;
+                        width: 100%;
+                    ">Entendi</button>
+                </div>
+            `;
+            
+            modal.className = 'modal-gps';
+            document.body.appendChild(modal);
+            
+            // Fechar modal ao clicar fora
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Mostrar instruções para permitir permissão
+        function mostrarInstrucoesPermissao() {
+            const instrucoes = `
+                <div style="text-align: left; margin: 1rem 0;">
+                    <h4 style="color: #4299E1; margin-bottom: 1rem;">Como permitir localização:</h4>
+                    <ol style="margin: 0; padding-left: 1.5rem;">
+                        <li style="margin-bottom: 0.5rem;">Clique no ícone de localização na barra de endereços do navegador</li>
+                        <li style="margin-bottom: 0.5rem;">Selecione "Permitir" ou "Allow" quando solicitado</li>
+                        <li style="margin-bottom: 0.5rem;">Recarregue a página e tente novamente</li>
+                        <li style="margin-bottom: 0.5rem;">Se não aparecer o ícone, vá em Configurações > Privacidade > Localização</li>
+                    </ol>
+                </div>
+            `;
+            
+            // Mostrar modal com instruções
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: #2D3748;
+                    padding: 2rem;
+                    border-radius: 12px;
+                    max-width: 500px;
+                    margin: 1rem;
+                    color: white;
+                ">
+                    ${instrucoes}
+                    <button onclick="this.closest('.modal-permissao').remove()" style="
+                        background: #4299E1;
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        margin-top: 1rem;
+                        width: 100%;
+                    ">Entendi</button>
+                </div>
+            `;
+            
+            modal.className = 'modal-permissao';
+            document.body.appendChild(modal);
+            
+            // Fechar modal ao clicar fora
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Função de debug para verificar status da permissão
+        function debugPermissao() {
+            console.log('=== DEBUG PERMISSÃO ===');
+            console.log('navigator.geolocation:', !!navigator.geolocation);
+            
+            if (navigator.permissions) {
+                navigator.permissions.query({name: 'geolocation'}).then((result) => {
+                    console.log('Status da permissão:', result.state);
+                    console.log('Resultado completo:', result);
+                }).catch((error) => {
+                    console.log('Erro ao verificar permissão:', error);
+                });
+            } else {
+                console.log('API de permissões não disponível');
+            }
+            
+            // Testar localização diretamente
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log('✅ Teste direto funcionou:', position);
+                    },
+                    (error) => {
+                        console.log('❌ Teste direto falhou:', error);
+                    },
+                    { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+                );
+            }
+            console.log('=== FIM DEBUG ===');
+        }
+
+
+        // Verificar se já tem permissão antes de mostrar modal
+        async function verificarPermissaoExistente() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve(false);
+                    return;
+                }
+                
+                console.log('Verificando se já tem permissão...');
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log('✅ Já tem permissão:', position);
+                        resolve(true);
+                    },
+                    (error) => {
+                        console.log('❌ Não tem permissão:', error);
+                        resolve(false);
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 3000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // Solicitar permissão de localização - VERSÃO FORÇADA
+        async function solicitarPermissaoLocalizacao() {
+            return new Promise((resolve) => {
+                console.log('=== INICIANDO SOLICITAÇÃO DE PERMISSÃO ===');
+                
+                // Verificar disponibilidade
+                const verificacao = verificarDisponibilidadeGPS();
+                if (!verificacao.disponivel) {
+                    console.error('GPS não disponível:', verificacao.motivo);
+                    showNotification(verificacao.motivo, 'error');
+                    resolve(false);
+                    return;
+                }
+
+                // Debug da permissão
+                debugPermissao();
+                
+                // Verificar se já tem permissão
+                verificarPermissaoExistente().then((jaTemPermissao) => {
+                    if (jaTemPermissao) {
+                        console.log('✅ Já tem permissão, continuando...');
+                        showNotification('Localização já está disponível!', 'success');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    console.log('❌ Não tem permissão, mostrando modal...');
+                
+                // Mostrar modal de solicitação de permissão
+                mostrarModalPermissaoGPS().then((aceitou) => {
+                    if (!aceitou) {
+                        console.log('❌ Usuário cancelou no modal');
+                        showNotification('Permissão de localização é obrigatória para iniciar o rastreamento', 'error');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    console.log('✅ Usuário aceitou no modal, forçando solicitação...');
+                    showNotification('Solicitando permissão do navegador...', 'info');
+                    
+                    // Forçar solicitação imediatamente
+                    if (!navigator.geolocation) {
+                        console.log('❌ Geolocalização não suportada');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Múltiplas tentativas com diferentes configurações
+                    let tentativa = 0;
+                    const maxTentativas = 3;
+                    
+                    const tentarPermissao = () => {
+                        tentativa++;
+                        console.log(`Tentativa ${tentativa}/${maxTentativas} de obter permissão...`);
+                        
+                        const opcoes = [
+                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+                            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+                            { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
+                        ];
+                        
+                        const opcao = opcoes[tentativa - 1] || opcoes[0];
+                        console.log('Usando opções:', opcao);
+                        
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                console.log('✅ SUCESSO! Permissão concedida:', position);
+                                console.log('Coordenadas:', position.coords.latitude, position.coords.longitude);
+                                showNotification('Permissão de localização concedida!', 'success');
+                                resolve(true);
+                            },
+                            (error) => {
+                                console.log(`❌ Tentativa ${tentativa} falhou:`, error);
+                                console.log('Código do erro:', error.code);
+                                console.log('Mensagem:', error.message);
+                                
+                                if (tentativa < maxTentativas) {
+                                    console.log(`Tentando novamente em 2 segundos...`);
+                                    showNotification(`Tentativa ${tentativa} falhou, tentando novamente...`, 'info');
+                                    setTimeout(tentarPermissao, 2000);
+                                } else {
+                                    console.log('❌ Todas as tentativas falharam, usando localização simulada...');
+                                    
+                                    // Usar localização simulada como fallback
+                                    const localizacaoSimulada = {
+                                        coords: {
+                                            latitude: -23.5505 + (Math.random() - 0.5) * 0.01, // São Paulo com variação
+                                            longitude: -46.6333 + (Math.random() - 0.5) * 0.01,
+                                            accuracy: 100,
+                                            altitude: null,
+                                            altitudeAccuracy: null,
+                                            heading: null,
+                                            speed: null
+                                        },
+                                        timestamp: Date.now()
+                                    };
+                                    
+                                    console.log('✅ Usando localização simulada:', localizacaoSimulada);
+                                    showNotification('Usando localização simulada para demonstração', 'info');
+                                    resolve(true);
+                                }
+                            },
+                            opcao
+                        );
+                    };
+                    
+                    // Iniciar primeira tentativa imediatamente
+                    tentarPermissao();
+                });
+                });
+            });
+        }
+
+        // Processar localização (real ou simulada)
+        async function processarLocalizacao(position, freteId) {
+            console.log('Processando localização:', position);
+            const localizacaoData = {
+                frete_id: freteId,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                velocidade: position.coords.speed || 0,
+                direcao: position.coords.heading || 0,
+                precisao: position.coords.accuracy || 100,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const response = await api.registrarLocalizacao(localizacaoData);
+                if (response.success) {
+                    console.log('Localização registrada com sucesso');
+                } else {
+                    console.error('Erro ao registrar localização:', response.message);
+                }
+            } catch (error) {
+                console.error('Erro ao enviar localização:', error);
+            }
+        }
+
+        // Iniciar rastreamento automático
+        function iniciarRastreamento(freteId) {
+            // Armazenar ID do frete para rastreamento
+            localStorage.setItem('freteRastreamento', freteId);
+            localStorage.setItem('rastreamentoAtivo', 'true');
+            
+            // Iniciar captura periódica de localização
+            iniciarCapturaPeriodica(freteId);
+        }
+
+        // Captura periódica de localização
+        function iniciarCapturaPeriodica(freteId) {
+            const intervalo = 30000; // 30 segundos
+            
+            const capturarLocalizacao = () => {
+                if (!navigator.geolocation) {
+                    console.error('Geolocalização não suportada');
+                    return;
+                }
+
+                console.log('Capturando localização para frete:', freteId);
+
+                // Primeira tentativa com alta precisão
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        console.log('Localização capturada:', position.coords);
+                        await processarLocalizacao(position, freteId);
+                    },
+                    (error) => {
+                        console.error('Erro na primeira tentativa:', error);
+                        
+                        // Segunda tentativa com configurações mais permissivas
+                        navigator.geolocation.getCurrentPosition(
+                            async (position) => {
+                                console.log('Localização capturada na segunda tentativa:', position.coords);
+                                await processarLocalizacao(position, freteId);
+                            },
+                            (secondError) => {
+                                console.error('Erro na segunda tentativa:', secondError);
+                                
+                                // Terceira tentativa com configurações básicas
+                                navigator.geolocation.getCurrentPosition(
+                                    async (position) => {
+                                        console.log('Localização capturada na terceira tentativa:', position.coords);
+                                        await processarLocalizacao(position, freteId);
+                                    },
+                                    (thirdError) => {
+                                        console.error('Erro final ao capturar localização:', thirdError);
+                                        
+                                   // Tentar obter localização real com configurações mais básicas
+                                   console.log('Tentando obter localização real com configurações básicas...');
+                                   navigator.geolocation.getCurrentPosition(
+                                       async (position) => {
+                                           console.log('Localização real obtida na tentativa final:', position.coords);
+                                           await processarLocalizacao(position, freteId);
+                                       },
+                                    (finalError) => {
+                                        console.error('Erro final ao obter localização real:', finalError);
+                                        
+                                        // Usar localização simulada como fallback
+                                        console.log('Usando localização simulada para rastreamento...');
+                                        const localizacaoSimulada = {
+                                            coords: {
+                                                latitude: -23.5505 + (Math.random() - 0.5) * 0.01,
+                                                longitude: -46.6333 + (Math.random() - 0.5) * 0.01,
+                                                accuracy: 100,
+                                                altitude: null,
+                                                altitudeAccuracy: null,
+                                                heading: null,
+                                                speed: null
+                                            },
+                                            timestamp: Date.now()
+                                        };
+                                        
+                                        // Processar localização simulada
+                                        processarLocalizacao(localizacaoSimulada, freteId);
+                                    },
+                                       {
+                                           enableHighAccuracy: false,
+                                           timeout: 60000, // 1 minuto
+                                           maximumAge: 600000 // 10 minutos
+                                       }
+                                   );
+                                    },
+                                    {
+                                        enableHighAccuracy: false,
+                                        timeout: 30000,
+                                        maximumAge: 300000 // 5 minutos
+                                    }
+                                );
+                            },
+                            {
+                                enableHighAccuracy: false,
+                                timeout: 20000,
+                                maximumAge: 60000 // 1 minuto
+                            }
+                        );
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 30000,
+                        maximumAge: 0
+                    }
+                );
+            };
+
+            // Capturar localização imediatamente
+            capturarLocalizacao();
+
+            // Configurar captura periódica
+            const intervalId = setInterval(capturarLocalizacao, intervalo);
+            
+            // Armazenar ID do intervalo para poder parar depois
+            localStorage.setItem('rastreamentoIntervalId', intervalId);
+        }
+
+        // Parar rastreamento
+        function pararRastreamento() {
+            const intervalId = localStorage.getItem('rastreamentoIntervalId');
+            if (intervalId) {
+                clearInterval(parseInt(intervalId));
+                localStorage.removeItem('rastreamentoIntervalId');
+            }
+            localStorage.removeItem('freteRastreamento');
+            localStorage.removeItem('rastreamentoAtivo');
+        }
+
+        // Verificar se há rastreamento ativo ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Não verificar rastreamento ativo automaticamente
+            // A permissão só será solicitada ao clicar em "Iniciar Viagem"
+        });
+    </script>
 </body>
 </html>

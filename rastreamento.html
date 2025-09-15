@@ -6,6 +6,239 @@
     <title>Rastreamento - Broday Transportes</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="config/google-maps.js"></script>
+    <script async src="" id="google-maps-script"></script>
+    <style>
+        /* Estilos específicos para rastreamento */
+        .rastreamento-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .map-container {
+            position: relative;
+            height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .map-controls .btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #667eea;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .map-controls .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .map-controls .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .rastreamento-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #4a5568;
+        }
+
+        .info-card h3 {
+            margin: 0 0 1rem 0;
+            color: #e2e8f0;
+            font-size: 1.1rem;
+        }
+
+        .location-info p {
+            margin: 0.5rem 0;
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+
+        .time-info {
+            color: #4299e1 !important;
+            font-size: 0.8rem !important;
+        }
+
+        .location-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .tracking-status {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #4a5568;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+        .status-value {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-value.active {
+            color: #48bb78;
+        }
+
+        .status-value.inactive {
+            color: #e53e3e;
+        }
+
+        .status-value.viewing {
+            color: #4299e1;
+        }
+
+        .movement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #4a5568;
+            font-size: 0.85rem;
+        }
+
+        .movement-item:last-child {
+            border-bottom: none;
+        }
+
+        .movement-time {
+            color: #a0aec0;
+            flex: 1;
+        }
+
+        .movement-coords {
+            color: #e2e8f0;
+            flex: 1;
+            text-align: right;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #a0aec0;
+            font-style: italic;
+            padding: 2rem;
+        }
+
+        /* Modo claro */
+        body.light-mode .info-card {
+            background: #f7fafc;
+            border-color: #e2e8f0;
+        }
+
+        body.light-mode .info-card h3 {
+            color: #2d3748;
+        }
+
+        body.light-mode .location-info p {
+            color: #4a5568;
+        }
+
+        body.light-mode .status-item {
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.light-mode .status-label {
+            color: #4a5568;
+        }
+
+        body.light-mode .movement-item {
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.light-mode .movement-time {
+            color: #4a5568;
+        }
+
+        body.light-mode .movement-coords {
+            color: #2d3748;
+        }
+
+        body.light-mode .no-data {
+            color: #4a5568;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .rastreamento-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .map-container {
+                height: 300px;
+            }
+
+            .location-buttons {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .movement-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+
+            .movement-coords {
+                text-align: left;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -61,23 +294,52 @@
 
                 <div class="rastreamento-content">
                     <div class="map-container">
-                        <div id="map" class="map">
-                            <div class="map-placeholder">
-                                <i class="fas fa-map"></i>
-                                <p>Mapa de rastreamento</p>
-                                <small>Integração com GPS em desenvolvimento</small>
-                            </div>
+                        <div id="map" class="map"></div>
+                        <div class="map-controls">
+                            <button class="btn btn-sm btn-primary" onclick="centralizarMapa()" title="Centralizar no motorista">
+                                <i class="fas fa-crosshairs"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="alternarTipoMapa()" title="Alternar tipo de mapa">
+                                <i class="fas fa-layer-group"></i>
+                            </button>
                         </div>
                     </div>
 
                     <div class="rastreamento-info">
                         <div class="info-card">
                             <h3>Localização Atual</h3>
+                            <div class="location-info">
                             <p id="localizacao-atual">Carregando...</p>
-                            <button class="btn btn-primary" onclick="atualizarLocalizacao()">
+                                <p id="ultima-atualizacao" class="time-info">Última atualização: --</p>
+                            </div>
+                            <div class="location-buttons">
+                                <button class="btn btn-primary" onclick="atualizarLocalizacao()" id="btn-atualizar">
                                 <i class="fas fa-location-arrow"></i>
                                 Atualizar Localização
                             </button>
+                            <button class="btn btn-success" onclick="testarRastreamento()" id="btn-testar" style="margin-top: 10px;">
+                                <i class="fas fa-play"></i>
+                                Testar Rastreamento
+                            </button>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <h3>Status do Rastreamento</h3>
+                            <div class="tracking-status">
+                                <div class="status-item">
+                                    <span class="status-label">Status:</span>
+                                    <span class="status-value" id="status-rastreamento">Inativo</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Intervalo:</span>
+                                    <span class="status-value" id="intervalo-rastreamento">--</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Próxima atualização:</span>
+                                    <span class="status-value" id="proxima-atualizacao">--</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="info-card">
@@ -134,6 +396,17 @@
 
     <script src="js/api.js"></script>
     <script>
+        // Variáveis globais
+        let map;
+        let marker;
+        let polyline;
+        let trackingInterval = null;
+        let isTracking = false;
+        let freteId;
+        let currentLocation = null;
+        let trackingPath = [];
+        let proximaUpdateInterval = null;
+
         // Verificar se o usuário está logado
         if (!isLoggedIn()) {
             window.location.href = 'login.html';
@@ -141,14 +414,66 @@
 
         // Obter ID do frete da URL
         const urlParams = new URLSearchParams(window.location.search);
-        const freteId = urlParams.get('id') || urlParams.get('frete');
+        freteId = urlParams.get('id') || urlParams.get('frete');
 
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
             loadFreteData();
             setupNavigation();
+            loadGoogleMaps();
+            checkTrackingStatus();
+            
+            // Verificação adicional após 5 segundos para garantir que o rastreamento seja iniciado
+            setTimeout(() => {
+                console.log('=== VERIFICAÇÃO ADICIONAL APÓS 5s ===');
+                console.log('isTracking:', isTracking);
+                console.log('trackingInterval:', trackingInterval);
+                
+                const userType = getUserType();
+                if (userType === 'motorista' && !isTracking) {
+                    console.log('⚠️ Motorista detectado mas rastreamento não ativo, forçando início...');
+                    isTracking = true;
+                    iniciarRastreamentoAutomatico();
+                }
+            }, 5000);
         });
+
+        // Carregar Google Maps dinamicamente
+        function loadGoogleMaps() {
+            console.log('Carregando Google Maps...');
+            const script = document.getElementById('google-maps-script');
+            
+            // Verificar se o script já foi carregado
+            if (window.google && window.google.maps) {
+                console.log('Google Maps já carregado');
+                initializeMap();
+                return;
+            }
+            
+            script.src = getGoogleMapsScriptUrl();
+            console.log('URL do Google Maps:', script.src);
+            
+            script.onload = function() {
+                console.log('Google Maps carregado com sucesso');
+                // Aguardar mais tempo para garantir que tudo esteja carregado
+                setTimeout(() => {
+                    console.log('Iniciando mapa após carregamento...');
+                    if (typeof google !== 'undefined' && google.maps) {
+                        console.log('Google Maps disponível, inicializando mapa...');
+                        initializeMap();
+                    } else {
+                        console.error('Google Maps ainda não está disponível após timeout');
+                        showNotification('Erro ao carregar Google Maps', 'error');
+                    }
+                }, 3000); // Aumentado para 3 segundos
+            };
+            
+            script.onerror = function() {
+                console.error('Erro ao carregar Google Maps');
+                showNotification('Erro ao carregar Google Maps. Verifique a chave da API.', 'error');
+            };
+        }
 
         function loadUserData() {
             const user = getCurrentUser();
@@ -165,6 +490,8 @@
                 backUrl = 'cliente-dashboard.html';
             } else if (userType === 'admin') {
                 backUrl = 'admin-dashboard.html';
+            } else if (userType === 'motorista') {
+                backUrl = 'motorista-dashboard.html';
             }
             
             document.getElementById('back-link').href = backUrl;
@@ -182,6 +509,7 @@
                 if (response.success) {
                     const frete = response.data;
                     displayFreteInfo(frete);
+                    loadTrackingData();
                 } else {
                     showNotification('Erro ao carregar dados do frete', 'error');
                 }
@@ -192,7 +520,7 @@
         }
 
         function displayFreteInfo(frete) {
-            console.log('Dados do frete recebidos:', frete); // Debug log
+            console.log('Dados do frete recebidos:', frete);
             document.getElementById('frete-titulo').textContent = `Frete #${frete.codigo || frete.id}`;
             document.getElementById('frete-status').textContent = getStatusText(frete.status);
             document.getElementById('frete-origem').textContent = `${frete.sender_name || 'N/A'} - ${frete.origin_cep || 'N/A'}`;
@@ -212,23 +540,503 @@
             return statusMap[status] || status;
         }
 
-        function atualizarLocalizacao() {
-            if (navigator.geolocation) {
+        // Inicializar Google Maps
+        function initializeMap() {
+            try {
+                console.log('Inicializando mapa...');
+                
+                // Verificar se o Google Maps está carregado
+                if (typeof google === 'undefined' || !google.maps) {
+                    console.error('Google Maps não está carregado');
+                    showNotification('Erro ao carregar Google Maps', 'error');
+                    return;
+                }
+
+                const mapConfig = getMapConfig();
+                console.log('Configuração do mapa:', mapConfig);
+                
+                map = new google.maps.Map(document.getElementById('map'), mapConfig);
+                console.log('Mapa criado com sucesso');
+
+                // Criar marcador inicial usando AdvancedMarkerElement
+                marker = new google.maps.marker.AdvancedMarkerElement({
+                    position: mapConfig.center,
+                    map: map,
+                    title: 'Localização do Motorista'
+                });
+                console.log('Marcador criado');
+
+                // Criar polyline para rastreamento
+                polyline = new google.maps.Polyline({
+                    path: [],
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 3
+                });
+                polyline.setMap(map);
+                console.log('Polyline criada');
+
+                // Carregar dados de rastreamento após inicializar o mapa
+                loadTrackingData();
+                
+                // Aguardar um pouco antes de iniciar o rastreamento automático
+                setTimeout(() => {
+                    const userType = getUserType();
+                    console.log('Verificando tipo de usuário para rastreamento:', userType);
+                    
+                    if (userType === 'motorista') {
+                        console.log('Iniciando rastreamento automático para motorista...');
+                        iniciarRastreamentoAutomatico();
+                    } else {
+                        console.log('Usuário não é motorista, rastreamento automático não será iniciado');
+                    }
+                }, 2000); // Aumentado para 2 segundos
+            } catch (error) {
+                console.error('Erro ao inicializar mapa:', error);
+                showNotification('Erro ao inicializar mapa: ' + error.message, 'error');
+            }
+        }
+
+        // Carregar dados de rastreamento
+        async function loadTrackingData() {
+            try {
+                const response = await api.getLocalizacoesTempoReal(freteId);
+                if (response.success && response.data.length > 0) {
+                    const localizacoes = response.data;
+                    updateMapWithLocations(localizacoes);
+                    updateLocationInfo(localizacoes[localizacoes.length - 1]);
+                    loadMovementHistory(localizacoes);
+                } else {
+                    showNotification('Nenhuma localização encontrada para este frete', 'info');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados de rastreamento:', error);
+                showNotification('Erro ao carregar dados de rastreamento', 'error');
+            }
+        }
+
+        // Atualizar mapa com localizações
+        function updateMapWithLocations(localizacoes) {
+            if (localizacoes.length === 0) {
+                console.log('Nenhuma localização para atualizar');
+                return;
+            }
+
+            console.log('Atualizando mapa com', localizacoes.length, 'localizações');
+
+            // Verificar se o mapa está inicializado
+            if (!map) {
+                console.error('Mapa não está inicializado');
+                return;
+            }
+
+            // Atualizar posição do marcador
+            const ultimaLocalizacao = localizacoes[localizacoes.length - 1];
+            const position = {
+                lat: parseFloat(ultimaLocalizacao.latitude),
+                lng: parseFloat(ultimaLocalizacao.longitude)
+            };
+
+            console.log('Nova posição:', position);
+
+            // Atualizar posição do marcador
+            if (marker) {
+                marker.position = position;
+                console.log('Marcador atualizado');
+            } else {
+                console.error('Marcador não está inicializado');
+            }
+
+            // Centralizar mapa na nova posição
+            map.setCenter(position);
+            map.setZoom(15); // Zoom fixo para melhor visualização
+            console.log('Mapa centralizado em:', position);
+
+            // Atualizar rota
+            const path = localizacoes.map(loc => ({
+                lat: parseFloat(loc.latitude),
+                lng: parseFloat(loc.longitude)
+            }));
+
+            if (polyline) {
+                polyline.setPath(path);
+                console.log('Rota atualizada com', path.length, 'pontos');
+            } else {
+                console.error('Polyline não está inicializada');
+            }
+
+            trackingPath = path;
+        }
+
+        // Atualizar informações de localização
+        function updateLocationInfo(localizacao) {
+            console.log('=== ATUALIZANDO UI DE LOCALIZAÇÃO ===');
+            console.log('Dados da localização:', localizacao);
+            
+            const lat = parseFloat(localizacao.latitude).toFixed(6);
+            const lng = parseFloat(localizacao.longitude).toFixed(6);
+            
+            // Sempre usar timestamp atual para mostrar quando foi a última atualização
+            const timestamp = new Date().toLocaleString('pt-BR');
+
+            // Atualizar localização atual
+            const localizacaoElement = document.getElementById('localizacao-atual');
+            if (localizacaoElement) {
+                localizacaoElement.textContent = `Lat: ${lat}, Lng: ${lng}`;
+                console.log('Localização atual atualizada:', `Lat: ${lat}, Lng: ${lng}`);
+            } else {
+                console.error('Elemento localizacao-atual não encontrado');
+            }
+
+            // Atualizar última atualização
+            const ultimaAtualizacaoElement = document.getElementById('ultima-atualizacao');
+            if (ultimaAtualizacaoElement) {
+                ultimaAtualizacaoElement.textContent = `Última atualização: ${timestamp}`;
+                console.log('Última atualização atualizada:', timestamp);
+            } else {
+                console.error('Elemento ultima-atualizacao não encontrado');
+            }
+
+            currentLocation = {
+                lat: parseFloat(localizacao.latitude),
+                lng: parseFloat(localizacao.longitude)
+            };
+
+            // Atualizar próxima atualização
+            updateTrackingUI();
+        }
+
+        // Carregar histórico de movimentações
+        function loadMovementHistory(localizacoes) {
+            const container = document.getElementById('movimentacoes-list');
+            container.innerHTML = '';
+
+            if (localizacoes.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhuma movimentação registrada</p>';
+                return;
+            }
+
+            localizacoes.slice(0, 10).forEach((loc, index) => {
+                const item = document.createElement('div');
+                item.className = 'movement-item';
+                
+                const timestamp = new Date(loc.timestamp).toLocaleString('pt-BR');
+                
+                item.innerHTML = `
+                    <div class="movement-time">${timestamp}</div>
+                    <div class="movement-coords">${parseFloat(loc.latitude).toFixed(4)}, ${parseFloat(loc.longitude).toFixed(4)}</div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        // Atualizar localização manualmente (buscar do motorista)
+        async function atualizarLocalizacao() {
+            const btn = document.getElementById('btn-atualizar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+
+            try {
+                console.log('=== ATUALIZANDO LOCALIZAÇÃO ===');
+                console.log('Frete ID:', freteId);
+                console.log('Tempo:', new Date().toLocaleTimeString());
+                
+                // Primeiro, tentar obter localização real do navegador
+                const userType = getUserType();
+                if (userType === 'motorista') {
+                    console.log('Motorista detectado, tentando obter localização real...');
+                    
+                    try {
+                        const position = await obterLocalizacaoReal();
+                        if (position) {
+                            console.log('Localização real obtida:', position);
+                            
+                            // Registrar localização real no servidor
+                            const localizacaoData = {
+                                frete_id: freteId,
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                velocidade: position.coords.speed || 0,
+                                direcao: position.coords.heading || 0,
+                                precisao: position.coords.accuracy || 100,
+                                timestamp: new Date().toISOString()
+                            };
+                            
+                            await api.registrarLocalizacao(localizacaoData);
+                            updateLocationInfo(localizacaoData);
+                            
+                            // Atualizar mapa
+                            if (map) {
+                                updateMapWithLocations([localizacaoData]);
+                            }
+                            
+                            // Definir próxima atualização
+                            if (isTracking) {
+                                const proximaAtualizacao = new Date();
+                                proximaAtualizacao.setSeconds(proximaAtualizacao.getSeconds() + 30);
+                                window.nextUpdateTime = proximaAtualizacao;
+                                updateTrackingUI();
+                            }
+                            
+                            showNotification('Localização real atualizada!', 'success');
+                            return;
+                        }
+                    } catch (error) {
+                        console.log('Erro ao obter localização real:', error);
+                        console.log('Usando localização do servidor...');
+                    }
+                }
+                
+                // Buscar localização atual do motorista via API
+                const response = await api.getLocalizacaoAtual(freteId);
+                console.log('Resposta da API:', response);
+                
+                if (response.success && response.data) {
+                    console.log('Localização encontrada:', response.data);
+                    updateLocationInfo(response.data);
+                    
+                    // Atualizar mapa apenas se estiver inicializado
+                    if (map) {
+                        updateMapWithLocations([response.data]);
+                        console.log('Mapa atualizado com localização');
+                    } else {
+                        console.log('Mapa não inicializado, pulando atualização do mapa');
+                    }
+                    
+                    console.log('Localização atualizada com sucesso');
+                    
+                    // Definir próxima atualização
+                    if (isTracking) {
+                        const proximaAtualizacao = new Date();
+                        proximaAtualizacao.setSeconds(proximaAtualizacao.getSeconds() + 30);
+                        window.nextUpdateTime = proximaAtualizacao;
+                        updateTrackingUI();
+                    }
+                    
+                    showNotification('Localização atualizada!', 'success');
+                } else {
+                    console.log('Nenhuma localização encontrada');
+                    showNotification('Nenhuma localização encontrada para este frete', 'info');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar localização:', error);
+                showNotification('Erro ao buscar localização do motorista', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-location-arrow"></i> Atualizar Localização';
+            }
+        }
+
+        // Obter localização real do navegador
+        function obterLocalizacaoReal() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocalização não suportada'));
+                    return;
+                }
+                
+                console.log('Solicitando localização real...');
+                
                 navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        document.getElementById('localizacao-atual').textContent = 
-                            `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
-                        showNotification('Localização atualizada!', 'success');
+                    (position) => {
+                        console.log('✅ Localização real obtida:', position);
+                        resolve(position);
                     },
-                    function(error) {
-                        showNotification('Erro ao obter localização', 'error');
+                    (error) => {
+                        console.log('❌ Erro ao obter localização real:', error);
+                        reject(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     }
                 );
-            } else {
-                showNotification('Geolocalização não suportada', 'error');
+            });
+        }
+
+        // Iniciar rastreamento automático (apenas para motoristas)
+        function iniciarRastreamentoAutomatico() {
+            console.log('=== INICIANDO RASTREAMENTO AUTOMÁTICO ===');
+            const userType = getUserType();
+            console.log('Tipo de usuário:', userType);
+            
+            // Só permite rastreamento automático para motoristas
+            if (userType !== 'motorista') {
+                console.log('Rastreamento automático disponível apenas para motoristas');
+                return;
             }
+
+            // Sempre limpar intervalo anterior se existir
+            if (trackingInterval) {
+                console.log('Limpando intervalo anterior...');
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+            }
+
+            console.log('Iniciando rastreamento automático...');
+            isTracking = true;
+            
+            // Atualizar localização imediatamente
+            console.log('Atualizando localização imediatamente...');
+            atualizarLocalizacao();
+            
+            // Configurar intervalo de atualização
+            console.log('Configurando intervalo de atualização de 30 segundos...');
+            trackingInterval = setInterval(async () => {
+                console.log('=== ATUALIZAÇÃO AUTOMÁTICA ===');
+                console.log('Tempo atual:', new Date().toLocaleTimeString());
+                console.log('isTracking:', isTracking);
+                
+                if (isTracking) {
+                    await atualizarLocalizacao();
+                } else {
+                    console.log('Rastreamento parado, limpando intervalo');
+                    clearInterval(trackingInterval);
+                    trackingInterval = null;
+                }
+            }, 30000); // 30 segundos
+
+            updateTrackingUI();
+            showNotification('Rastreamento automático iniciado!', 'success');
+            
+            // Log para debug
+            console.log('Intervalo de rastreamento configurado:', trackingInterval);
+            console.log('=== RASTREAMENTO AUTOMÁTICO INICIADO ===');
+        }
+
+        // Parar rastreamento automático
+        function pararRastreamentoAutomatico() {
+            if (!isTracking) return;
+
+            console.log('Parando rastreamento automático...');
+            isTracking = false;
+            
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+                console.log('Intervalo de rastreamento limpo');
+            }
+            
+            updateTrackingUI();
+            showNotification('Rastreamento automático parado!', 'info');
+        }
+
+        // Atualizar interface de rastreamento
+        function updateTrackingUI() {
+            console.log('=== ATUALIZANDO UI DE RASTREAMENTO ===');
+            const status = document.getElementById('status-rastreamento');
+            const intervalo = document.getElementById('intervalo-rastreamento');
+            const proxima = document.getElementById('proxima-atualizacao');
+            const userType = getUserType();
+
+            console.log('isTracking:', isTracking, 'userType:', userType);
+
+            if (isTracking) {
+                status.textContent = 'Ativo';
+                status.className = 'status-value active';
+                intervalo.textContent = '30 segundos';
+
+                // Usar tempo da próxima atualização se já estiver definido, senão calcular novo
+                let proximaAtualizacao;
+                if (window.nextUpdateTime) {
+                    proximaAtualizacao = window.nextUpdateTime;
+                } else {
+                    const agora = new Date();
+                    proximaAtualizacao = new Date(agora.getTime() + 30000); // +30 segundos
+                    window.nextUpdateTime = proximaAtualizacao;
+                }
+                
+                proxima.textContent = proximaAtualizacao.toLocaleTimeString('pt-BR');
+                console.log('Status: Ativo, Próxima atualização:', proximaAtualizacao.toLocaleTimeString('pt-BR'));
+            } else {
+                if (proximaUpdateInterval) {
+                    clearInterval(proximaUpdateInterval);
+                }
+                
+                // Limpar tempo da próxima atualização
+                window.nextUpdateTime = null;
+                
+                if (userType === 'motorista') {
+                    status.textContent = 'Inativo';
+                    status.className = 'status-value inactive';
+                    intervalo.textContent = '--';
+                    proxima.textContent = '--';
+                    console.log('Status: Inativo (motorista)');
+                } else {
+                    status.textContent = 'Visualização';
+                    status.className = 'status-value viewing';
+                    intervalo.textContent = 'Manual';
+                    proxima.textContent = 'Clique em "Atualizar"';
+                    console.log('Status: Visualização (cliente/admin)');
+                }
+            }
+        }
+
+        // Verificar status de rastreamento
+        function checkTrackingStatus() {
+            const userType = getUserType();
+            const rastreamentoAtivo = localStorage.getItem('rastreamentoAtivo');
+            const freteRastreamento = localStorage.getItem('freteRastreamento');
+
+            console.log('=== VERIFICANDO STATUS DE RASTREAMENTO ===');
+            console.log('userType:', userType);
+            console.log('rastreamentoAtivo:', rastreamentoAtivo);
+            console.log('freteRastreamento:', freteRastreamento);
+            console.log('freteId:', freteId);
+            console.log('isTracking atual:', isTracking);
+
+            if (userType === 'motorista' && rastreamentoAtivo === 'true' && freteRastreamento === freteId) {
+                console.log('✅ Rastreamento ativo detectado para frete:', freteRastreamento);
+                // Marcar como rastreando ativo
+                isTracking = true;
+                
+                // Iniciar rastreamento automático imediatamente se for motorista
+                console.log('🚀 Iniciando rastreamento automático para motorista...');
+                iniciarRastreamentoAutomatico();
+            } else {
+                console.log('❌ Rastreamento não ativo. Motivos:');
+                console.log('- userType é motorista?', userType === 'motorista');
+                console.log('- rastreamentoAtivo é true?', rastreamentoAtivo === 'true');
+                console.log('- freteRastreamento === freteId?', freteRastreamento === freteId);
+                // Atualizar UI para mostrar status correto
+                updateTrackingUI();
+            }
+        }
+
+        // Centralizar mapa
+        function centralizarMapa() {
+            if (!map) {
+                console.error('Mapa não está inicializado');
+                showNotification('Mapa não está carregado', 'error');
+                return;
+            }
+            
+            if (currentLocation) {
+                map.setCenter(currentLocation);
+                map.setZoom(15);
+                console.log('Mapa centralizado em:', currentLocation);
+            } else {
+                showNotification('Nenhuma localização disponível', 'warning');
+            }
+        }
+
+        // Alternar tipo de mapa
+        function alternarTipoMapa() {
+            if (!map) {
+                console.error('Mapa não está inicializado');
+                showNotification('Mapa não está carregado', 'error');
+                return;
+            }
+            
+            const currentType = map.getMapTypeId();
+            const newType = currentType === google.maps.MapTypeId.ROADMAP 
+                ? google.maps.MapTypeId.SATELLITE 
+                : google.maps.MapTypeId.ROADMAP;
+            map.setMapTypeId(newType);
+            console.log('Tipo de mapa alterado para:', newType);
         }
 
         // Função para mostrar notificações
@@ -247,6 +1055,14 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone
+            const icon = document.querySelector('.theme-toggle i');
+            if (isLightMode) {
+                icon.className = 'fas fa-moon';
+            } else {
+                icon.className = 'fas fa-sun';
+            }
         }
         
         // Carregar tema salvo
@@ -254,6 +1070,36 @@
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                const icon = document.querySelector('.theme-toggle i');
+                if (icon) icon.className = 'fas fa-moon';
+            }
+        });
+
+        // Função para testar rastreamento manualmente
+        function testarRastreamento() {
+            console.log('=== TESTE MANUAL DE RASTREAMENTO ===');
+            console.log('isTracking atual:', isTracking);
+            console.log('trackingInterval atual:', trackingInterval);
+            console.log('userType:', getUserType());
+            
+            // Sempre parar rastreamento atual primeiro
+            if (isTracking) {
+                console.log('Parando rastreamento atual...');
+                pararRastreamentoAutomatico();
+            }
+            
+            // Aguardar um pouco antes de iniciar novo
+            setTimeout(() => {
+                console.log('Iniciando novo rastreamento...');
+                iniciarRastreamentoAutomatico();
+                showNotification('Teste de rastreamento iniciado!', 'success');
+            }, 100);
+        }
+
+        // Limpar rastreamento ao sair da página
+        window.addEventListener('beforeunload', function() {
+            if (isTracking) {
+                pararRastreamentoAutomatico();
             }
         });
     </script>
