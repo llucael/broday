@@ -324,9 +324,11 @@ class ApiService {
 
   // ===== MÉTODOS DE USUÁRIOS (ADMIN) =====
 
-  // Listar todos os clientes
+  // Listar todos os clientes e administradores
   async getClientes(page = 1, limit = 10, filters = {}) {
-    const params = new URLSearchParams({ page, limit, user_type: 'cliente' });
+    const params = new URLSearchParams({ page, limit });
+    // Incluir tanto clientes quanto administradores
+    params.append('user_type', 'cliente,admin');
     Object.keys(filters).forEach(key => {
       if (filters[key]) params.append(key, filters[key]);
     });

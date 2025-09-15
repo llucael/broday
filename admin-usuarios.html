@@ -56,8 +56,13 @@
             <!-- Clientes Section -->
             <section id="clientes" class="clientes-section active">
                 <div class="section-header">
-                    <h1>Gerenciamento de Clientes</h1>
+                    <h1>Gerenciamento de Usuários</h1>
                     <div class="filters">
+                        <select id="tipo-usuario-filter" onchange="applyFilters()">
+                            <option value="">Todos os Tipos</option>
+                            <option value="cliente">Clientes</option>
+                            <option value="admin">Administradores</option>
+                        </select>
                         <select id="status-cliente-filter" onchange="applyFilters()">
                             <option value="">Todos os Status</option>
                             <option value="ativo">Ativo</option>
@@ -69,23 +74,23 @@
                         </button>
                         <button class="btn btn-success" onclick="showAddClienteModal()">
                             <i class="fas fa-plus"></i>
-                            Cadastrar Cliente
+                            Cadastrar Usuário
                         </button>
                     </div>
                 </div>
 
                 <div class="clientes-list" id="clientes-list">
-                    <!-- Clientes serão carregados aqui -->
+                    <!-- Usuários (clientes e administradores) serão carregados aqui -->
                 </div>
             </section>
         </div>
     </main>
 
-    <!-- Modal para Cadastrar Cliente -->
+    <!-- Modal para Cadastrar Usuário -->
     <div class="modal" id="cliente-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Cadastrar Novo Cliente</h3>
+                <h3>Cadastrar Novo Usuário</h3>
                 <button class="close-btn" onclick="closeClienteModal()">&times;</button>
             </div>
             <form class="usuario-form" id="cliente-form">
@@ -119,6 +124,16 @@
                     <div class="form-group">
                         <label for="cliente-cnpj">CNPJ</label>
                         <input type="text" id="cliente-cnpj" name="cnpj">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cliente-tipo">Tipo de Usuário *</label>
+                        <select id="cliente-tipo" name="user_type" required>
+                            <option value="cliente">Cliente</option>
+                            <option value="admin">Administrador</option>
+                        </select>
                     </div>
                 </div>
 
@@ -323,12 +338,13 @@
 
         async function loadClientes() {
             try {
-                console.log('=== LOAD CLIENTES ===');
+                console.log('=== LOAD USUÁRIOS ===');
                 const container = document.getElementById('clientes-list');
                 container.innerHTML = '<p class="no-data">Carregando usuários...</p>';
                 
-                // Obter filtro de status
+                // Obter filtros
                 const statusFilter = document.getElementById('status-cliente-filter').value;
+                const tipoFilter = document.getElementById('tipo-usuario-filter').value;
                 
                 // Aplicar filtros
                 let usuarios = [];
@@ -339,6 +355,11 @@
                 if (response.success) {
                     usuarios = response.data.usuarios || [];
                     console.log('Usuários recebidos:', usuarios);
+                    
+                    // Filtrar por tipo de usuário
+                    if (tipoFilter) {
+                        usuarios = usuarios.filter(usuario => usuario.user_type === tipoFilter);
+                    }
                     
                     // Filtrar por status
                     if (statusFilter) {
@@ -636,6 +657,7 @@
 
         function clearFilters() {
             document.getElementById('status-cliente-filter').value = '';
+            document.getElementById('tipo-usuario-filter').value = '';
             loadClientes();
         }
 
@@ -669,7 +691,7 @@
                 const clienteData = {
                     email: formData.get('email'),
                     // Não enviar senha - será gerada automaticamente no backend
-                    user_type: 'cliente',
+                    user_type: formData.get('user_type'),
                     nome: formData.get('nome'),
                     telefone: formData.get('telefone'),
                     cpf: formData.get('cpf'),

@@ -15,7 +15,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Verificar e decodificar o token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'seu_jwt_secret_muito_seguro_aqui_123456789');
     
     // Buscar usuário no banco
     const user = await User.findByPk(decoded.userId);
@@ -94,13 +94,13 @@ const generateTokens = async (userId) => {
 
   const accessToken = jwt.sign(
     { userId, userType: user.user_type },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'seu_jwt_secret_muito_seguro_aqui_123456789',
     { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
 
   const refreshToken = jwt.sign(
     { userId, userType: user.user_type, type: 'refresh' },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'seu_jwt_secret_muito_seguro_aqui_123456789',
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );
 
@@ -110,7 +110,7 @@ const generateTokens = async (userId) => {
 // Função para verificar refresh token
 const verifyRefreshToken = (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'seu_jwt_secret_muito_seguro_aqui_123456789');
     if (decoded.type !== 'refresh') {
       throw new Error('Token inválido');
     }

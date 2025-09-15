@@ -165,7 +165,13 @@ const getClientes = async (req, res) => {
     
     // Filtrar por tipo de usuário se especificado
     if (user_type) {
-      whereClause.user_type = user_type;
+      // Suportar múltiplos tipos separados por vírgula
+      if (user_type.includes(',')) {
+        const types = user_type.split(',').map(type => type.trim());
+        whereClause.user_type = { [Op.in]: types };
+      } else {
+        whereClause.user_type = user_type;
+      }
     }
     
     if (status === 'ativo') whereClause.is_active = true;
