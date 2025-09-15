@@ -54,7 +54,8 @@ const login = async (req, res) => {
 
     // Buscar usuário apenas por email
     const user = await User.findOne({
-      where: { email }
+      where: { email },
+      attributes: ['id', 'email', 'password', 'user_type', 'is_active', 'email_verified', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj', 'cnh', 'categoria', 'status', 'cnh_emissao', 'cnh_uf', 'cnh_observacoes', 'cnh_validade', 'created_at', 'updated_at']
     });
 
     if (!user) {

@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 document.getElementById('cargo-value').value.replace(/\./g, '').replace(',', '.')),
                     cargo_weight: parseFloat(document.getElementById('cargo-weight').value),
                     cargo_dimensions: document.getElementById('cargo-dimensions').value.trim(),
+                    data_entrega: document.getElementById('data-entrega').value || null,
                     // Endereço de origem (usando nomes do modelo)
                     origin_cep: document.getElementById('origin-cep').value.trim(),
                     origin_street: document.getElementById('origin-street').value.trim(),
@@ -183,6 +184,11 @@ document.addEventListener('DOMContentLoaded', function() {
         field.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
+            // Limitar caracteres: CPF máximo 11, CNPJ máximo 14
+            if (value.length > 14) {
+                value = value.substring(0, 14);
+            }
+            
             if (value.length <= 11) {
                 // CPF: 000.000.000-00
                 value = value.replace(/(\d{3})(\d)/, '$1.$2');
@@ -205,6 +211,12 @@ document.addEventListener('DOMContentLoaded', function() {
     phoneFields.forEach(field => {
         field.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
+            
+            // Limitar a 11 caracteres (DDD + 9 dígitos)
+            if (value.length > 11) {
+                value = value.substring(0, 11);
+            }
+            
             value = value.replace(/(\d{2})(\d)/, '($1) $2');
             value = value.replace(/(\d{5})(\d)/, '$1-$2');
             e.target.value = value;
@@ -216,6 +228,12 @@ document.addEventListener('DOMContentLoaded', function() {
     cepFields.forEach(field => {
         field.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
+            
+            // Limitar a 8 caracteres
+            if (value.length > 8) {
+                value = value.substring(0, 8);
+            }
+            
             value = value.replace(/(\d{5})(\d)/, '$1-$2');
             e.target.value = value;
         });
@@ -396,3 +414,51 @@ function validateCNPJ(cnpj) {
     
     return parseInt(cnpj.charAt(12)) === digit1 && parseInt(cnpj.charAt(13)) === digit2;
 }
+
+// Função para capitalizar primeira letra de cada palavra
+function capitalizeWords(text) {
+    return text.replace(/\b\w/g, function(char) {
+        return char.toUpperCase();
+    });
+}
+
+// Função para capitalizar apenas primeira letra
+function capitalizeFirst(text) {
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
+// Aplicar formatação de texto para campos específicos
+document.addEventListener('DOMContentLoaded', function() {
+    const nameFields = document.querySelectorAll('input[id*="name"], input[id*="street"], input[id*="city"], input[id*="type"]');
+    nameFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Para campos de nome, rua, cidade e tipo de carga - capitalizar cada palavra
+            if (field.id.includes('name') || field.id.includes('street') || field.id.includes('city') || field.id.includes('type')) {
+                value = capitalizeWords(value);
+            }
+            
+            e.target.value = value;
+        });
+    });
+
+    // Aplicar formatação para complemento (apenas primeira letra maiúscula)
+    const complementFields = document.querySelectorAll('input[id*="complement"]');
+    complementFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value;
+            value = capitalizeFirst(value);
+            e.target.value = value;
+        });
+    });
+
+    // Máscara para campos de número (apenas números)
+    const numberFields = document.querySelectorAll('input[id*="number"]');
+    numberFields.forEach(field => {
+        field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é número
+            e.target.value = value;
+        });
+    });
+});

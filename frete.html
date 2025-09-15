@@ -102,11 +102,15 @@
                             <label for="cargo-dimensions">Dimensões (A x L x C) cm</label>
                             <input type="text" id="cargo-dimensions" placeholder="Ex: 50x30x20" required>
                         </div>
+                        <div class="form-group">
+                            <label for="data-entrega">Data de Entrega (Opcional)</label>
+                            <input type="date" id="data-entrega" placeholder="Selecione a data de entrega">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Addresses -->
-                <div class="form-row">
+                <div class="form-row address-section">
                     <div class="form-section">
                         <h3 class="section-title">Endereço de Origem</h3>
                         <div class="form-group">
@@ -298,6 +302,12 @@
             const user = getCurrentUser();
             if (user) {
                 document.getElementById('user-name').textContent = user.name || user.email;
+                
+                // Preencher automaticamente o email do remetente
+                const senderEmailField = document.getElementById('sender-email');
+                if (senderEmailField && user.email) {
+                    senderEmailField.value = user.email;
+                }
             }
         }
         
@@ -306,13 +316,36 @@
             document.body.classList.toggle('light-mode');
             const isLightMode = document.body.classList.contains('light-mode');
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone do toggle
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            if (toggleIcon) {
+                if (isLightMode) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                } else {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
         }
         
         // Carregar tema salvo
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme');
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                }
+            } else {
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
             }
         });
     </script>

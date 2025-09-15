@@ -207,6 +207,53 @@ class ApiService {
     return await this.request(`/motorista/fretes/meus?${params}`);
   }
 
+  // ===== MÉTODOS DE CAMINHÕES =====
+
+  // Listar todos os caminhões (admin)
+  async getAllCaminhoes(page = 1, limit = 10) {
+    const params = new URLSearchParams({ page, limit });
+    return await this.request(`/caminhoes?${params}`);
+  }
+
+  // Listar caminhões do motorista
+  async getCaminhoesByMotorista(page = 1, limit = 10) {
+    const params = new URLSearchParams({ page, limit });
+    return await this.request(`/caminhoes/motorista?${params}`);
+  }
+
+  // Buscar caminhão por ID
+  async getCaminhaoById(id) {
+    return await this.request(`/caminhoes/${id}`);
+  }
+
+  // Criar caminhão
+  async createCaminhao(caminhaoData) {
+    return await this.request('/caminhoes', {
+      method: 'POST',
+      body: JSON.stringify(caminhaoData)
+    });
+  }
+
+  // Atualizar caminhão
+  async updateCaminhao(id, caminhaoData) {
+    return await this.request(`/caminhoes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(caminhaoData)
+    });
+  }
+
+  // Deletar caminhão
+  async deleteCaminhao(id) {
+    return await this.request(`/caminhoes/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Listar motoristas para seleção
+  async getMotoristas() {
+    return await this.request('/caminhoes/motoristas');
+  }
+
   // Buscar frete por ID
   async getFreteById(id) {
     return await this.request(`/fretes/${id}`);
@@ -287,13 +334,13 @@ class ApiService {
     return await this.request(`/admin/users?${params}`);
   }
 
-  // Listar todos os motoristas
-  async getMotoristas(page = 1, limit = 10, filters = {}) {
+  // Listar todos os motoristas (admin)
+  async getAllMotoristas(page = 1, limit = 10, filters = {}) {
     const params = new URLSearchParams({ page, limit });
     Object.keys(filters).forEach(key => {
       if (filters[key]) params.append(key, filters[key]);
     });
-    
+
     return await this.request(`/admin/motoristas?${params}`);
   }
 

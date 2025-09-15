@@ -11,13 +11,14 @@
     <!-- Header -->
     <header class="header">
         <div class="container">
-                    <div class="logo">
-            <span>Broday Transportes</span>
-        </div>
+            <div class="logo">
+                <span>Broday Transportes</span>
+            </div>
             <nav class="nav">
                 <a href="motorista-dashboard.html" class="nav-link">Dashboard</a>
                 <a href="motorista-fretes-disponiveis.html" class="nav-link active">Fretes Disponíveis</a>
                 <a href="motorista-meus-fretes.html" class="nav-link">Meus Fretes</a>
+                <a href="motorista-caminhoes.html" class="nav-link">Meus Caminhões</a>
                 <a href="motorista-perfil.html" class="nav-link">Perfil</a>
             </nav>
             <div class="header-buttons">
@@ -111,9 +112,15 @@
         });
 
         function loadUserData() {
+            console.log('Carregando dados do usuário...');
             const user = getCurrentUser();
+            console.log('Usuário obtido:', user);
             if (user) {
-                document.getElementById('user-name').textContent = user.name || user.email;
+                const displayName = user.nome || user.email;
+                console.log('Nome a ser exibido:', displayName);
+                document.getElementById('user-name').textContent = displayName;
+            } else {
+                console.log('Nenhum usuário encontrado');
             }
         }
 
@@ -482,6 +489,7 @@
     </div>
 
     <style>
+
         /* Modal Styles */
         .modal {
             display: none;

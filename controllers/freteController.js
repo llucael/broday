@@ -275,7 +275,8 @@ const acceptFrete = async (req, res) => {
     // Aceitar frete
     await frete.update({
       motorista_id: req.user.id,
-      status: 'aceito'
+      status: 'aceito',
+      data_coleta: new Date() // Definir data de coleta quando motorista aceita
     });
 
     // Buscar frete atualizado

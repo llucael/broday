@@ -7,6 +7,7 @@ const freteRoutes = require('./frete');
 const motoristaRoutes = require('./motorista');
 const clienteRoutes = require('./cliente');
 const adminRoutes = require('./admin');
+const caminhaoRoutes = require('./caminhao');
 
 // Rota raiz da API
 router.get('/', (req, res) => {
@@ -38,5 +39,6 @@ router.use('/fretes', freteRoutes);
 router.use('/motorista', motoristaRoutes);
 router.use('/cliente', clienteRoutes);
 router.use('/admin', adminRoutes);
+router.use('/caminhoes', caminhaoRoutes);
 
 module.exports = router;

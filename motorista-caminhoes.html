@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Caminhões - Motorista - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <span>Broday Transportes</span>
+            </div>
+            <nav class="nav">
+                <a href="motorista-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="motorista-fretes-disponiveis.html" class="nav-link">Fretes Disponíveis</a>
+                <a href="motorista-meus-fretes.html" class="nav-link">Meus Fretes</a>
+                <a href="motorista-caminhoes.html" class="nav-link active">Meus Caminhões</a>
+                <a href="motorista-perfil.html" class="nav-link">Perfil</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Motorista</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Caminhões Section -->
+            <section id="caminhoes" class="caminhoes-section active">
+                <div class="section-header">
+                    <h1>Meus Caminhões</h1>
+                    <p class="section-description">Visualize os caminhões associados à sua conta</p>
+                </div>
+
+                <div class="caminhoes-list" id="caminhoes-list">
+                    <!-- Caminhões serão carregados aqui -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        let caminhoes = [];
+
+        // Carregar dados iniciais
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            loadCaminhoes();
+        });
+
+        // Carregar dados do usuário
+        function loadUserData() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.nome || user.email;
+            }
+        }
+
+        // Carregar caminhões do motorista
+        async function loadCaminhoes() {
+            try {
+                console.log('Carregando caminhões do motorista...');
+                console.log('Token de acesso:', localStorage.getItem('accessToken'));
+                console.log('Usuário atual:', getCurrentUser());
+                
+                // Teste direto da API
+                const testResponse = await fetch('http://localhost:3000/api/caminhoes/motorista', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log('Teste direto da API - Status:', testResponse.status);
+                const testData = await testResponse.json();
+                console.log('Teste direto da API - Dados:', testData);
+                
+                const response = await api.getCaminhoesByMotorista();
+                console.log('Resposta da API via api.getCaminhoesByMotorista():', response);
+                
+                if (response && response.success) {
+                    caminhoes = response.data.caminhoes || response.data;
+                    console.log('Caminhões carregados:', caminhoes);
+                    renderCaminhoes();
+                } else {
+                    console.error('Erro na resposta da API:', response ? response.message : 'Resposta inválida');
+                    showNotification('Erro ao carregar caminhões: ' + (response ? response.message : 'Resposta inválida'), 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar caminhões:', error);
+                console.error('Stack trace:', error.stack);
+                showNotification('Erro ao carregar caminhões', 'error');
+            }
+        }
+
+        // Renderizar caminhões
+        function renderCaminhoes() {
+            const container = document.getElementById('caminhoes-list');
+            
+            if (caminhoes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-truck"></i>
+                        <h3>Nenhum caminhão associado</h3>
+                        <p>Você ainda não possui caminhões associados à sua conta.</p>
+                        <p>Entre em contato com o administrador para associar um caminhão.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = caminhoes.map(caminhao => `
+                <div class="caminhao-card">
+                    <div class="caminhao-info">
+                        <h3 class="placa-destaque">${formatPlaca(caminhao.placa)}</h3>
+                        <p><i class="fas fa-truck"></i> ${caminhao.modelo}</p>
+                        <p><i class="fas fa-calendar"></i> Ano: ${caminhao.ano}</p>
+                        <p><i class="fas fa-calendar"></i> Cadastrado em: ${new Date(caminhao.created_at).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Formatar placa
+        function formatPlaca(placa) {
+            if (!placa) return '';
+            // Formatar placa no padrão ABC-1234 ou ABC1D23
+            const cleanPlaca = placa.replace(/[^A-Za-z0-9]/g, '');
+            if (cleanPlaca.length === 7) {
+                // Formato antigo ABC-1234
+                return cleanPlaca.substring(0, 3) + '-' + cleanPlaca.substring(3);
+            }
+            return placa.toUpperCase();
+        }
+
+        // Função para alternar tema
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // Trocar ícone do toggle
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            if (toggleIcon) {
+                if (isLightMode) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                } else {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
+        }
+        
+        // Carregar tema salvo
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                }
+            } else {
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
+        });
+
+        // Função de logout
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+
+
+        // Função para mostrar notificações
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }, 3000);
+        }
+    </script>
+
+    <style>
+        /* Estilos específicos para caminhões do motorista */
+        .caminhoes-section {
+            padding: 2rem 0;
+        }
+
+        .section-description {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .caminhoes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .caminhao-card {
+            background: #2D3748;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #4A5568;
+            transition: all 0.3s ease;
+        }
+
+        .caminhao-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-color: #63B3ED;
+        }
+
+        .caminhao-info {
+            flex: 1;
+        }
+
+        .caminhao-info h3 {
+            color: #63B3ED;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .caminhao-info p {
+            margin-bottom: 0.3rem;
+            color: #E2E8F0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .caminhao-info i {
+            color: #63B3ED;
+            width: 16px;
+        }
+
+        .placa-destaque {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #63B3ED;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        /* Modo claro para cards de caminhão */
+        body.light-mode .caminhao-card {
+            background: #F7FAFC;
+            border-color: #E2E8F0;
+        }
+
+        body.light-mode .caminhao-card:hover {
+            border-color: #468ADC;
+            box-shadow: 0 4px 12px rgba(70, 138, 220, 0.2);
+        }
+
+        body.light-mode .placa-destaque {
+            color: #468ADC;
+        }
+
+        body.light-mode .caminhao-info p {
+            color: #2D3748;
+        }
+
+        body.light-mode .caminhao-info i {
+            color: #468ADC;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .empty-state p {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .caminhoes-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .caminhao-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .status-badge {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</body>
+</html>
