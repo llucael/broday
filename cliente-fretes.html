@@ -205,6 +205,12 @@
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
+                    ${frete.status === 'em_transito' ? `
+                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Rastrear
+                    </button>
+                    ` : ''}
                     ${frete.status === 'aceito' ? `
                     <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})">
                         <i class="fas fa-times"></i>
@@ -346,6 +352,11 @@
 
         function closeFreteDetailsModal() {
             document.getElementById('freteDetailsModal').style.display = 'none';
+        }
+
+        function rastrearFrete(freteId) {
+            // Redirecionar para página de rastreamento
+            window.location.href = `rastreamento.html?frete=${freteId}`;
         }
 
         function clearFilters() {

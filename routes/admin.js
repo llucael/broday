@@ -18,7 +18,8 @@ const {
   reatribuirMotorista,
   ajustarCondicoes,
   getMonitoramentoTempoReal,
-  getRelatoriosUsuarios
+  getRelatoriosUsuarios,
+  deleteFrete
 } = require('../controllers/adminController');
 
 // Aplicar autenticação e verificação de tipo de usuário em todas as rotas
@@ -50,6 +51,7 @@ router.get('/motoristas/:motoristaId/entregas', getEntregasMotorista);
 router.get('/fretes', getTodosFretes);
 router.put('/fretes/:id/reatribuir', reatribuirMotorista);
 router.put('/fretes/:id/ajustar', ajustarCondicoes);
+router.delete('/fretes/:id', deleteFrete);
 
 // Monitoramento em tempo real
 router.get('/monitoramento', getMonitoramentoTempoReal);

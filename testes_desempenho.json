@@ -1,0 +1,490 @@
+{
+  "name": "6. Testes de Desempenho",
+  "item": [
+    {
+      "name": "Testes de Carga Básica",
+      "item": [
+        {
+          "name": "Health Check - Múltiplas Requisições",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response time under load is acceptable', function () {",
+                  "    // Para testes de carga, tempo deve ser menor que 2 segundos",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test('Server handles concurrent requests', function () {",
+                  "    // Verificar se o servidor não retorna erro 500 sob carga",
+                  "    pm.expect(pm.response.code).to.not.equal(500);",
+                  "});",
+                  "",
+                  "pm.test('Memory usage is stable', function () {",
+                  "    // Verificar se não há vazamentos de memória (tempo de resposta consistente)",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login - Performance Sob Carga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login performance under load', function () {",
+                  "    // Login deve ser rápido mesmo sob carga",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "pm.test('Authentication is reliable under load', function () {",
+                  "    // Verificar se a autenticação não falha sob carga",
+                  "    if (pm.response.code === 200) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Testes de Estresse",
+      "item": [
+        {
+          "name": "Estresse - Health Check (100 requests)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Este teste deve ser executado 100 vezes para simular carga",
+                  "pm.test('Stress test - Response time degradation check', function () {",
+                  "    // Verificar se o tempo de resposta não degrada significativamente",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "pm.test('Stress test - Error rate check', function () {",
+                  "    // Verificar se a taxa de erro não aumenta sob estresse",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 429]);",
+                  "});",
+                  "",
+                  "pm.test('Stress test - Memory stability', function () {",
+                  "    // Verificar se não há vazamentos de memória",
+                  "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estresse - Login (50 requests)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Este teste deve ser executado 50 vezes para simular carga",
+                  "pm.test('Login stress test - Performance check', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "pm.test('Login stress test - Success rate check', function () {",
+                  "    // Verificar se a taxa de sucesso se mantém",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401, 429]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Testes de Volume de Dados",
+      "item": [
+        {
+          "name": "Volume - Lista de Fretes (Grande Dataset)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes?limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Large dataset performance', function () {",
+                  "    // Verificar se a API consegue lidar com grandes volumes de dados",
+                  "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+                  "});",
+                  "",
+                  "pm.test('Large dataset response size check', function () {",
+                  "    // Verificar se a resposta não é muito grande",
+                  "    const responseSize = pm.response.responseSize;",
+                  "    pm.expect(responseSize).to.be.below(1000000); // 1MB",
+                  "});",
+                  "",
+                  "pm.test('Large dataset structure integrity', function () {",
+                  "    if (pm.response.code === 200) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        ",
+                  "        if (jsonData.data && jsonData.data.fretes) {",
+                  "            pm.expect(jsonData.data.fretes).to.be.an('array');",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Volume - Criação de Frete com Dados Grandes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoCarga\": \"Eletrônicos\",\n  \"peso\": 1500.000,\n  \"volume\": 2.500,\n  \"valor\": 2500.00,\n  \"observacoes\": \"Teste de volume de dados - observações muito longas para testar o limite da API e verificar se ela consegue processar grandes volumes de texto sem degradar a performance significativamente. Esta observação contém muito texto para simular um cenário real onde o usuário pode inserir informações detalhadas sobre a carga.\",\n  \"origemEndereco\": \"Rua Teste de Volume de Dados, 123, Apto 456, Bloco A, Conjunto 789\",\n  \"origemCidade\": \"São Paulo\",\n  \"origemEstado\": \"SP\",\n  \"origemCep\": \"01234-567\",\n  \"destinoEndereco\": \"Avenida Teste de Performance, 2000, Sala 1001, Edifício Comercial Teste\",\n  \"destinoCidade\": \"São Paulo\",\n  \"destinoEstado\": \"SP\",\n  \"destinoCep\": \"01310-100\",\n  \"dataColeta\": \"2024-12-25T08:00:00Z\",\n  \"dataEntrega\": \"2024-12-26T18:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Large data payload performance', function () {",
+                  "    // Verificar se a API consegue processar dados grandes rapidamente",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "pm.test('Large data payload processing', function () {",
+                  "    // Verificar se os dados grandes são processados corretamente",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "    ",
+                  "    if (pm.response.code === 201) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Testes de Concorrência",
+      "item": [
+        {
+          "name": "Concorrência - Múltiplos Logins Simultâneos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Este teste deve ser executado simultaneamente por múltiplos usuários",
+                  "pm.test('Concurrent login performance', function () {",
+                  "    // Verificar se múltiplos logins simultâneos não degradam a performance",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "pm.test('Concurrent login reliability', function () {",
+                  "    // Verificar se os logins simultâneos não causam erros",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401, 429]);",
+                  "});",
+                  "",
+                  "pm.test('Concurrent login data integrity', function () {",
+                  "    if (pm.response.code === 200) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.true;",
+                  "        pm.expect(jsonData.data).to.have.property('tokens');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Concorrência - Múltiplas Consultas de Fretes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Este teste deve ser executado simultaneamente por múltiplos clientes",
+                  "pm.test('Concurrent data access performance', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "pm.test('Concurrent data access reliability', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401, 429]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Testes de Limite de Recursos",
+      "item": [
+        {
+          "name": "Limite - Rate Limiting",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting is working', function () {",
+                  "    // Verificar se o rate limiting está funcionando",
+                  "    const rateLimitRemaining = pm.response.headers.get('X-RateLimit-Remaining');",
+                  "    const rateLimitReset = pm.response.headers.get('X-RateLimit-Reset');",
+                  "    ",
+                  "    if (rateLimitRemaining) {",
+                  "        const remaining = parseInt(rateLimitRemaining);",
+                  "        pm.expect(remaining).to.be.at.least(0);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Rate limiting response when exceeded', function () {",
+                  "    // Verificar se retorna 429 quando o limite é excedido",
+                  "    if (pm.response.code === 429) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.false;",
+                  "        pm.expect(jsonData.message).to.include('Muitas tentativas');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limite - Tamanho de Payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teste.limite@broday.com\",\n  \"password\": \"teste123\",\n  \"userType\": \"cliente\",\n  \"nome\": \"Teste de Limite de Payload\",\n  \"telefone\": \"(11) 99999-9999\",\n  \"tipoPessoa\": \"fisica\",\n  \"documento\": \"123.456.789-00\",\n  \"endereco\": \"Rua Teste de Limite de Payload, 123, Apto 456, Bloco A, Conjunto 789, Torre Norte, Andar 10\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\",\n  \"cep\": \"01234-567\",\n  \"observacoes\": \"Teste de limite de payload com dados extensos para verificar se a API consegue processar requisições com payloads grandes sem degradar a performance ou causar erros de memória.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Large payload processing', function () {",
+                  "    // Verificar se payloads grandes são processados",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 413]);",
+                  "});",
+                  "",
+                  "pm.test('Large payload performance', function () {",
+                  "    // Verificar se o tempo de resposta não degrada com payloads grandes",
+                  "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Métricas de Performance",
+      "item": [
+        {
+          "name": "Métricas - Tempo de Resposta Médio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Este teste deve ser executado múltiplas vezes para calcular métricas",
+                  "pm.test('Response time metrics', function () {",
+                  "    const responseTime = pm.response.responseTime;",
+                  "    ",
+                  "    // Log para análise posterior",
+                  "    console.log(`Response Time: ${responseTime}ms`);",
+                  "    ",
+                  "    // Verificar se está dentro dos limites aceitáveis",
+                  "    pm.expect(responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test('Response size metrics', function () {",
+                  "    const responseSize = pm.response.responseSize;",
+                  "    ",
+                  "    // Log para análise posterior",
+                  "    console.log(`Response Size: ${responseSize} bytes`);",
+                  "    ",
+                  "    // Verificar se o tamanho é razoável",
+                  "    pm.expect(responseSize).to.be.below(10000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

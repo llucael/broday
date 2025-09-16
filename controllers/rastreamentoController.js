@@ -70,12 +70,48 @@ const obterHistoricoLocalizacoes = async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Verificar se o frete existe
-    const frete = await Frete.findByPk(frete_id);
+    const frete = await Frete.findByPk(frete_id, {
+      include: [
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
+      ]
+    });
     if (!frete) {
       return res.status(404).json({
         success: false,
         message: 'Frete não encontrado'
       });
+    }
+
+    // Verificar acesso baseado no tipo de usuário
+    const userType = req.userType;
+    const userId = req.user.id;
+
+    // Se o frete foi entregue, apenas admin pode ver a localização
+    if (frete.status === 'entregue' && userType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acesso negado. Apenas administradores podem visualizar a localização de fretes entregues.'
+      });
+    }
+
+    // Admin pode ver qualquer frete
+    if (userType !== 'admin') {
+      // Cliente só pode ver seus próprios fretes
+      if (userType === 'cliente' && frete.cliente_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
+
+      // Motorista só pode ver fretes atribuídos a ele
+      if (userType === 'motorista' && frete.motorista_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
     }
 
     // Buscar localizações
@@ -119,12 +155,48 @@ const obterLocalizacaoAtual = async (req, res) => {
     const { frete_id } = req.params;
 
     // Verificar se o frete existe
-    const frete = await Frete.findByPk(frete_id);
+    const frete = await Frete.findByPk(frete_id, {
+      include: [
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
+      ]
+    });
     if (!frete) {
       return res.status(404).json({
         success: false,
         message: 'Frete não encontrado'
       });
+    }
+
+    // Verificar acesso baseado no tipo de usuário
+    const userType = req.userType;
+    const userId = req.user.id;
+
+    // Se o frete foi entregue, apenas admin pode ver a localização
+    if (frete.status === 'entregue' && userType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acesso negado. Apenas administradores podem visualizar a localização de fretes entregues.'
+      });
+    }
+
+    // Admin pode ver qualquer frete
+    if (userType !== 'admin') {
+      // Cliente só pode ver seus próprios fretes
+      if (userType === 'cliente' && frete.cliente_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
+
+      // Motorista só pode ver fretes atribuídos a ele
+      if (userType === 'motorista' && frete.motorista_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
     }
 
     // Buscar última localização
@@ -166,6 +238,51 @@ const obterLocalizacaoAtual = async (req, res) => {
 const obterLocalizacoesTempoReal = async (req, res) => {
   try {
     const { frete_id } = req.params;
+
+    // Verificar se o frete existe e acesso
+    const frete = await Frete.findByPk(frete_id, {
+      include: [
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
+      ]
+    });
+    if (!frete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Frete não encontrado'
+      });
+    }
+
+    // Verificar acesso baseado no tipo de usuário
+    const userType = req.userType;
+    const userId = req.user.id;
+
+    // Se o frete foi entregue, apenas admin pode ver a localização
+    if (frete.status === 'entregue' && userType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acesso negado. Apenas administradores podem visualizar a localização de fretes entregues.'
+      });
+    }
+
+    // Admin pode ver qualquer frete
+    if (userType !== 'admin') {
+      // Cliente só pode ver seus próprios fretes
+      if (userType === 'cliente' && frete.cliente_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
+
+      // Motorista só pode ver fretes atribuídos a ele
+      if (userType === 'motorista' && frete.motorista_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
+    }
 
     // Data de 24 horas atrás
     const vinteQuatroHorasAtras = new Date();
@@ -209,12 +326,48 @@ const obterEstatisticasRastreamento = async (req, res) => {
     const { frete_id } = req.params;
 
     // Verificar se o frete existe
-    const frete = await Frete.findByPk(frete_id);
+    const frete = await Frete.findByPk(frete_id, {
+      include: [
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
+      ]
+    });
     if (!frete) {
       return res.status(404).json({
         success: false,
         message: 'Frete não encontrado'
       });
+    }
+
+    // Verificar acesso baseado no tipo de usuário
+    const userType = req.userType;
+    const userId = req.user.id;
+
+    // Se o frete foi entregue, apenas admin pode ver a localização
+    if (frete.status === 'entregue' && userType !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acesso negado. Apenas administradores podem visualizar a localização de fretes entregues.'
+      });
+    }
+
+    // Admin pode ver qualquer frete
+    if (userType !== 'admin') {
+      // Cliente só pode ver seus próprios fretes
+      if (userType === 'cliente' && frete.cliente_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
+
+      // Motorista só pode ver fretes atribuídos a ele
+      if (userType === 'motorista' && frete.motorista_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado'
+        });
+      }
     }
 
     // Contar total de localizações

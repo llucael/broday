@@ -1,0 +1,207 @@
+{
+  "name": "1. Testes de Unidade",
+  "item": [
+    {
+      "name": "Health Check - Validação Básica",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has success property', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success');",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test('Response has message property', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "});",
+              "",
+              "pm.test('Response has timestamp property', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('timestamp');",
+              "});",
+              "",
+              "pm.test('Response time is less than 1000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação de Estrutura de Resposta - API Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response structure validation', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success');",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData).to.have.property('version');",
+              "    pm.expect(jsonData).to.have.property('endpoints');",
+              "});",
+              "",
+              "pm.test('Version format validation', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.version).to.match(/^\\d+\\.\\d+\\.\\d+$/);",
+              "});",
+              "",
+              "pm.test('Endpoints object structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.endpoints).to.be.an('object');",
+              "    pm.expect(jsonData.endpoints).to.have.property('health');",
+              "    pm.expect(jsonData.endpoints).to.have.property('auth');",
+              "    pm.expect(jsonData.endpoints).to.have.property('fretes');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação de CORS Headers",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "http://localhost:5500"
+          },
+          {
+            "key": "Access-Control-Request-Method",
+            "value": "POST"
+          },
+          {
+            "key": "Access-Control-Request-Headers",
+            "value": "Content-Type,Authorization"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('CORS headers are present', function () {",
+              "    pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.not.be.null;",
+              "    pm.expect(pm.response.headers.get('Access-Control-Allow-Methods')).to.not.be.null;",
+              "    pm.expect(pm.response.headers.get('Access-Control-Allow-Headers')).to.not.be.null;",
+              "});",
+              "",
+              "pm.test('CORS allows correct origin', function () {",
+              "    const allowedOrigin = pm.response.headers.get('Access-Control-Allow-Origin');",
+              "    pm.expect(allowedOrigin).to.include('localhost:5500');",
+              "});",
+              "",
+              "pm.test('CORS allows correct methods', function () {",
+              "    const allowedMethods = pm.response.headers.get('Access-Control-Allow-Methods');",
+              "    pm.expect(allowedMethods).to.include('POST');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação de Rate Limiting",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rate limit headers are present', function () {",
+              "    const rateLimitHeader = pm.response.headers.get('X-RateLimit-Limit');",
+              "    const rateLimitRemaining = pm.response.headers.get('X-RateLimit-Remaining');",
+              "    const rateLimitReset = pm.response.headers.get('X-RateLimit-Reset');",
+              "    ",
+              "    pm.expect(rateLimitHeader).to.not.be.null;",
+              "    pm.expect(rateLimitRemaining).to.not.be.null;",
+              "    pm.expect(rateLimitReset).to.not.be.null;",
+              "});",
+              "",
+              "pm.test('Rate limit values are valid', function () {",
+              "    const rateLimitRemaining = parseInt(pm.response.headers.get('X-RateLimit-Remaining'));",
+              "    pm.expect(rateLimitRemaining).to.be.a('number');",
+              "    pm.expect(rateLimitRemaining).to.be.at.least(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validação de Content-Type",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Content-Type is application/json', function () {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "pm.test('Response is valid JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

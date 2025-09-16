@@ -306,7 +306,7 @@ const getPerfil = async (req, res) => {
     const motoristaId = req.user.id;
 
     const user = await User.findByPk(motoristaId, {
-      attributes: ['id', 'nome', 'email', 'telefone', 'cpf', 'cnh', 'categoria', 'cnh_validade', 'cnh_emissao', 'cnh_uf', 'cnh_observacoes', 'created_at', 'updated_at']
+      attributes: ['id', 'nome', 'email', 'telefone', 'cpf', 'cnh', 'categoria', 'cnh_validade', 'cnh_emissao', 'cnh_uf', 'cnh_observacoes', 'empresa', 'cnpj', 'endereco', 'cidade', 'estado', 'cep', 'created_at', 'updated_at']
     });
 
     if (!user) {
@@ -343,12 +343,19 @@ const atualizarPerfil = async (req, res) => {
       cnh_validade,
       cnh_emissao,
       cnh_uf,
-      cnh_observacoes
+      cnh_observacoes,
+      empresa,
+      cnpj,
+      endereco,
+      cidade,
+      estado,
+      cep
     } = req.body;
 
     console.log('Dados recebidos para atualização:', {
       nome, email, telefone, cpf, cnh, categoria,
-      cnh_validade, cnh_emissao, cnh_uf, cnh_observacoes
+      cnh_validade, cnh_emissao, cnh_uf, cnh_observacoes,
+      empresa, cnpj, endereco, cidade, estado, cep
     });
 
     const user = await User.findByPk(motoristaId);
@@ -361,12 +368,18 @@ const atualizarPerfil = async (req, res) => {
 
     // Atualizar dados do usuário
     const updateData = {
-      email: email || user.email,
-      nome: nome || user.nome,
-      telefone: telefone || user.telefone,
-      cpf: cpf || user.cpf,
-      cnh: cnh || user.cnh,
-      categoria: categoria || user.categoria
+      email: email !== undefined ? email : user.email,
+      nome: nome !== undefined ? nome : user.nome,
+      telefone: telefone !== undefined ? telefone : user.telefone,
+      cpf: cpf !== undefined ? cpf : user.cpf,
+      cnh: cnh !== undefined ? cnh : user.cnh,
+      categoria: categoria !== undefined ? categoria : user.categoria,
+      empresa: empresa !== undefined ? empresa : user.empresa,
+      cnpj: cnpj !== undefined ? cnpj : user.cnpj,
+      endereco: endereco !== undefined ? endereco : user.endereco,
+      cidade: cidade !== undefined ? cidade : user.cidade,
+      estado: estado !== undefined ? estado : user.estado,
+      cep: cep !== undefined ? cep : user.cep
     };
 
     // Adicionar campos de documentos se fornecidos (incluindo strings vazias)
@@ -393,7 +406,13 @@ const atualizarPerfil = async (req, res) => {
         cnh_validade: user.cnh_validade,
         cnh_emissao: user.cnh_emissao,
         cnh_uf: user.cnh_uf,
-        cnh_observacoes: user.cnh_observacoes
+        cnh_observacoes: user.cnh_observacoes,
+        empresa: user.empresa,
+        cnpj: user.cnpj,
+        endereco: user.endereco,
+        cidade: user.cidade,
+        estado: user.estado,
+        cep: user.cep
       }
     });
   } catch (error) {

@@ -1087,6 +1087,44 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Excluir frete (Admin)
+const deleteFrete = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar se o frete existe
+    const frete = await Frete.findByPk(id);
+    if (!frete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Frete não encontrado'
+      });
+    }
+
+    // Verificar se o frete pode ser excluído (não pode estar em trânsito ou entregue)
+    if (['em_transito', 'entregue'].includes(frete.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Não é possível excluir fretes em trânsito ou já entregues'
+      });
+    }
+
+    // Excluir frete
+    await frete.destroy();
+
+    res.json({
+      success: true,
+      message: 'Frete excluído com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao excluir frete:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 module.exports = {
   getDashboard,
   getClientes,
@@ -1105,5 +1143,6 @@ module.exports = {
   ajustarCondicoes,
   getMonitoramentoTempoReal,
   getRelatoriosUsuarios,
-  generateRandomPassword
+  generateRandomPassword,
+  deleteFrete
 };

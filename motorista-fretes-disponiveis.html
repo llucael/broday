@@ -126,12 +126,46 @@
 
         async function loadFretesDisponiveis() {
             try {
+                // Verificar se o motorista tem caminhão cadastrado
+                const caminhaoResponse = await api.getCaminhoesMotorista();
+                console.log('Resposta dos caminhões:', caminhaoResponse);
+                
+                // Verificar se a resposta foi bem-sucedida e se há caminhões ativos
+                const caminhoes = caminhaoResponse.data?.caminhoes || caminhaoResponse.data || [];
+                const temCaminhao = caminhaoResponse.success && 
+                                  Array.isArray(caminhoes) && 
+                                  caminhoes.length > 0 &&
+                                  caminhoes.some(caminhao => caminhao.is_active !== false);
+                
+                console.log('Motorista tem caminhão?', temCaminhao);
+                console.log('Caminhões encontrados:', caminhoes.length);
+                console.log('Lista de caminhões:', caminhoes);
+                
                 const response = await api.getFretesDisponiveis(1, 50);
                 
                 if (response.success) {
                     let fretes = response.data.fretes;
                     const container = document.getElementById('fretes-disponiveis-list');
                     container.innerHTML = '';
+                    
+                    // Mostrar aviso APENAS se realmente não tem caminhão ativo
+                    if (!temCaminhao) {
+                        console.log('Mostrando aviso: motorista não tem caminhão cadastrado');
+                        container.innerHTML = `
+                            <div class="alert alert-warning">
+                                <div class="alert-content">
+                                    <div class="alert-text">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Atenção:</strong> Você precisa cadastrar um caminhão para aceitar fretes.
+                                    </div>
+                                    <a href="motorista-caminhoes.html" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-sync-alt"></i> Atualizar
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
                     
                     if (fretes.length === 0) {
                         container.innerHTML = '<p class="no-data">Nenhum frete disponível</p>';
@@ -147,7 +181,13 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar fretes disponíveis:', error);
-                showNotification('Erro ao carregar fretes disponíveis', 'error');
+                
+                // Se houver erro na verificação de caminhões, mostrar mensagem específica
+                if (error.message && error.message.includes('caminhão')) {
+                    showNotification('Erro ao verificar caminhões cadastrados', 'error');
+                } else {
+                    showNotification('Erro ao carregar fretes disponíveis', 'error');
+                }
             }
         }
 
@@ -753,6 +793,41 @@
 
         body.light-mode .modal-content::-webkit-scrollbar-thumb:hover {
             background: #cbd5e0;
+        }
+
+        /* Estilos para alertas */
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .alert-text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .alert i {
+            font-size: 1.2rem;
+        }
+
+        .ml-2 {
+            margin-left: 0.5rem;
         }
     </style>
 </body>

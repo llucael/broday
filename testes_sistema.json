@@ -1,0 +1,460 @@
+{
+  "name": "3. Testes de Sistema",
+  "item": [
+    {
+      "name": "Fluxo Completo Cliente - Solicitação de Frete",
+      "item": [
+        {
+          "name": "1. Login Cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.sistema@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.collectionVariables.set('clienteToken', jsonData.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('clienteId', jsonData.data.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Criar Solicitação de Frete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoCarga\": \"Móveis\",\n  \"peso\": 2000.000,\n  \"volume\": 5.000,\n  \"valor\": 3500.00,\n  \"observacoes\": \"Móveis para escritório - teste de sistema\",\n  \"origemEndereco\": \"Rua das Flores, 500\",\n  \"origemCidade\": \"São Paulo\",\n  \"origemEstado\": \"SP\",\n  \"origemCep\": \"01234-567\",\n  \"destinoEndereco\": \"Av. Faria Lima, 2000\",\n  \"destinoCidade\": \"São Paulo\",\n  \"destinoEstado\": \"SP\",\n  \"destinoCep\": \"01451-000\",\n  \"dataColeta\": \"2024-12-20T09:00:00Z\",\n  \"dataEntrega\": \"2024-12-21T17:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Frete created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.status).to.eql('solicitado');",
+                  "    pm.collectionVariables.set('freteId', jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Verificar Frete na Lista do Cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Frete appears in client list', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    const freteId = parseInt(pm.collectionVariables.get('freteId'));",
+                  "    ",
+                  "    const frete = jsonData.data.fretes.find(f => f.id === freteId);",
+                  "    pm.expect(frete).to.not.be.undefined;",
+                  "    pm.expect(frete.status).to.eql('solicitado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Visualizar Detalhes do Frete",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/{{freteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "{{freteId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Frete details retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    const frete = jsonData.data;",
+                  "    ",
+                  "    pm.expect(frete.id).to.eql(parseInt(pm.collectionVariables.get('freteId')));",
+                  "    pm.expect(frete.tipoCarga).to.eql('Móveis');",
+                  "    pm.expect(frete.valor).to.eql(3500.00);",
+                  "    pm.expect(frete.clienteId).to.eql(parseInt(pm.collectionVariables.get('clienteId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fluxo Completo Motorista - Aceitar Frete",
+      "item": [
+        {
+          "name": "1. Login Motorista",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"motorista.sistema@broday.com\",\n  \"password\": \"motorista123\",\n  \"userType\": \"motorista\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Motorista login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.collectionVariables.set('motoristaToken', jsonData.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('motoristaId', jsonData.data.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Visualizar Fretes Disponíveis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{motoristaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/disponiveis",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "disponiveis"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Available freights retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('fretes');",
+                  "    pm.expect(jsonData.data.fretes).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Aceitar Frete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{motoristaToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes/{{freteId}}/aceitar",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "{{freteId}}", "aceitar"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Frete accepted successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.status).to.eql('aceito');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Atualizar Status para Em Trânsito",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{motoristaToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"em_transito\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes/{{freteId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "{{freteId}}", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status updated to em_transito', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.status).to.eql('em_transito');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Finalizar Frete",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{motoristaToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"entregue\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes/{{freteId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "{{freteId}}", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Frete completed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data.status).to.eql('entregue');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fluxo Administrativo - Gestão Completa",
+      "item": [
+        {
+          "name": "1. Login Administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin.sistema@broday.com\",\n  \"password\": \"admin123\",\n  \"userType\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Admin login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.collectionVariables.set('adminToken', jsonData.data.tokens.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Visualizar Todos os Fretes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('All freights retrieved by admin', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('fretes');",
+                  "    pm.expect(jsonData.data.fretes).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Visualizar Estatísticas do Sistema",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Admin dashboard data retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('estatisticas');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -194,7 +194,7 @@
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
-                    ${(frete.status === 'em_transito' || frete.status === 'entregue') ? `
+                    ${frete.status === 'em_transito' ? `
                     <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
                         <i class="fas fa-map-marker-alt"></i>
                         Rastrear

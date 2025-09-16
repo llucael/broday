@@ -1834,6 +1834,24 @@ body.light-mode .config-section h2 {
     color: #1A202C;
 }
 
+/* Validação de campos */
+.field-error {
+    color: #e53e3e;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+input.error {
+    border-color: #e53e3e !important;
+    box-shadow: 0 0 0 1px #e53e3e !important;
+}
+
+input.valid {
+    border-color: #48bb78 !important;
+    box-shadow: 0 0 0 1px #48bb78 !important;
+}
+
 /* Responsive Design for Dashboards */
 @media (max-width: 768px) {
     .stats-grid {

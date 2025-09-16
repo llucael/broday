@@ -226,6 +226,10 @@ class ApiService {
     return await this.request(`/caminhoes/${id}`);
   }
 
+  async getCaminhoesMotorista() {
+    return await this.request('/caminhoes/motorista');
+  }
+
   // Criar caminhão
   async createCaminhao(caminhaoData) {
     return await this.request('/caminhoes', {

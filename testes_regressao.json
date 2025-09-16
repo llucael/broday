@@ -1,0 +1,420 @@
+{
+  "name": "4. Testes de Regressão",
+  "item": [
+    {
+      "name": "Validação de Funcionalidades Críticas",
+      "item": [
+        {
+          "name": "Autenticação - Login Válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login still works after changes', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('tokens');",
+                  "    pm.expect(jsonData.data.tokens).to.have.property('accessToken');",
+                  "    pm.expect(jsonData.data.tokens).to.have.property('refreshToken');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autenticação - Login Inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"senha_errada\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid login still returns 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.message).to.include('credenciais');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criação de Frete - Dados Válidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoCarga\": \"Alimentos\",\n  \"peso\": 500.000,\n  \"volume\": 1.000,\n  \"valor\": 800.00,\n  \"observacoes\": \"Teste de regressão - dados válidos\",\n  \"origemEndereco\": \"Rua Teste, 100\",\n  \"origemCidade\": \"São Paulo\",\n  \"origemEstado\": \"SP\",\n  \"origemCep\": \"01000-000\",\n  \"destinoEndereco\": \"Av. Teste, 200\",\n  \"destinoCidade\": \"São Paulo\",\n  \"destinoEstado\": \"SP\",\n  \"destinoCep\": \"02000-000\",\n  \"dataColeta\": \"2024-12-25T08:00:00Z\",\n  \"dataEntrega\": \"2024-12-25T16:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Frete creation still works', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('codigo');",
+                  "    pm.expect(jsonData.data.status).to.eql('solicitado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criação de Frete - Dados Inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoCarga\": \"\",\n  \"peso\": -100,\n  \"volume\": -50,\n  \"valor\": -200,\n  \"origemEndereco\": \"\",\n  \"origemCidade\": \"\",\n  \"origemEstado\": \"\",\n  \"origemCep\": \"\",\n  \"destinoEndereco\": \"\",\n  \"destinoCidade\": \"\",\n  \"destinoEstado\": \"\",\n  \"destinoCep\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid data still returns 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData).to.have.property('errors');",
+                  "    pm.expect(jsonData.errors).to.be.an('array');",
+                  "    pm.expect(jsonData.errors.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Endpoints Críticos",
+      "item": [
+        {
+          "name": "Health Check - Disponibilidade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check still works', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.message).to.include('funcionando');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API Root - Estrutura Mantida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('API root structure unchanged', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('version');",
+                  "    pm.expect(jsonData).to.have.property('endpoints');",
+                  "    pm.expect(jsonData.endpoints).to.have.property('health');",
+                  "    pm.expect(jsonData.endpoints).to.have.property('auth');",
+                  "    pm.expect(jsonData.endpoints).to.have.property('fretes');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rota Não Encontrada - 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rota-inexistente",
+              "host": ["{{baseUrl}}"],
+              "path": ["rota-inexistente"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 still works for non-existent routes', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.message).to.include('não encontrada');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Performance Crítica",
+      "item": [
+        {
+          "name": "Tempo de Resposta - Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response time still acceptable', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "pm.test('Response time is consistent', function () {",
+                  "    // Este teste verifica se o tempo de resposta não degradou significativamente",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tempo de Resposta - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login response time acceptable', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Segurança",
+      "item": [
+        {
+          "name": "Acesso Não Autorizado - Sem Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unauthorized access still blocked', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.message).to.include('token');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Acesso Não Autorizado - Token Inválido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token_invalido_123"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid token still blocked', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rate Limiting - Ainda Funcionando",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting headers still present', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const rateLimitHeader = pm.response.headers.get('X-RateLimit-Limit');",
+                  "    const rateLimitRemaining = pm.response.headers.get('X-RateLimit-Remaining');",
+                  "    ",
+                  "    pm.expect(rateLimitHeader).to.not.be.null;",
+                  "    pm.expect(rateLimitRemaining).to.not.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,638 @@
+{
+  "name": "7. Testes de Segurança",
+  "item": [
+    {
+      "name": "Autenticação e Autorização",
+      "item": [
+        {
+          "name": "Acesso Não Autorizado - Sem Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unauthorized access is blocked', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.message).to.include('token');",
+                  "});",
+                  "",
+                  "pm.test('No sensitive data leaked in error response', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responseText = JSON.stringify(jsonData);",
+                  "    ",
+                  "    // Verificar se não há vazamento de informações sensíveis",
+                  "    pm.expect(responseText).to.not.include('password');",
+                  "    pm.expect(responseText).to.not.include('secret');",
+                  "    pm.expect(responseText).to.not.include('key');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token Inválido - Formato Incorreto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token_invalido_123"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid token is rejected', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Invalid token error message is generic', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    // Mensagem de erro deve ser genérica para não vazar informações",
+                  "    pm.expect(jsonData.message).to.not.include('invalid');",
+                  "    pm.expect(jsonData.message).to.not.include('expired');",
+                  "    pm.expect(jsonData.message).to.not.include('malformed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token Expirado - Simulação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiY2xpZW50ZUB0ZXN0ZS5jb20iLCJ1c2VyVHlwZSI6ImNsaWVudGUiLCJpYXQiOjE2MzA0MDk2MDAsImV4cCI6MTYzMDQwOTYwMH0.invalid_signature"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fretes/meus-fretes",
+              "host": ["{{baseUrl}}"],
+              "path": ["fretes", "meus-fretes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Expired token is rejected', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Acesso Cross-User - Token de Outro Usuário",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Cross-user access is blocked', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.message).to.include('acesso');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Entrada e SQL Injection",
+      "item": [
+        {
+          "name": "SQL Injection - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@broday.com'; DROP TABLE users; --\",\n  \"password\": \"123\",\n  \"userType\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('SQL injection attempt is blocked', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('No database error exposed', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responseText = JSON.stringify(jsonData);",
+                  "    ",
+                  "    // Verificar se não há vazamento de erros de banco",
+                  "    pm.expect(responseText).to.not.include('SQL');",
+                  "    pm.expect(responseText).to.not.include('database');",
+                  "    pm.expect(responseText).to.not.include('syntax');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "XSS - Input Sanitization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"<script>alert('XSS')</script>@test.com\",\n  \"password\": \"123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('XSS attempt is blocked', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('Script tags are sanitized', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responseText = JSON.stringify(jsonData);",
+                  "    ",
+                  "    // Verificar se scripts não são executados",
+                  "    pm.expect(responseText).to.not.include('<script>');",
+                  "    pm.expect(responseText).to.not.include('alert(');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NoSQL Injection - JSON Injection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": {\"$ne\": null},\n  \"password\": {\"$ne\": null},\n  \"userType\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('NoSQL injection attempt is blocked', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Headers e CORS",
+      "item": [
+        {
+          "name": "CORS - Origin Não Permitido",
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "https://malicious-site.com"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "POST"
+              },
+              {
+                "key": "Access-Control-Request-Headers",
+                "value": "Content-Type,Authorization"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('CORS blocks unauthorized origins', function () {",
+                  "    const allowedOrigin = pm.response.headers.get('Access-Control-Allow-Origin');",
+                  "    pm.expect(allowedOrigin).to.not.include('malicious-site.com');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Security Headers - Helmet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Security headers are present', function () {",
+                  "    // Verificar headers de segurança do Helmet",
+                  "    const xFrameOptions = pm.response.headers.get('X-Frame-Options');",
+                  "    const xContentTypeOptions = pm.response.headers.get('X-Content-Type-Options');",
+                  "    const xXSSProtection = pm.response.headers.get('X-XSS-Protection');",
+                  "    ",
+                  "    pm.expect(xFrameOptions).to.not.be.null;",
+                  "    pm.expect(xContentTypeOptions).to.not.be.null;",
+                  "});",
+                  "",
+                  "pm.test('X-Frame-Options prevents clickjacking', function () {",
+                  "    const xFrameOptions = pm.response.headers.get('X-Frame-Options');",
+                  "    pm.expect(xFrameOptions).to.be.oneOf(['DENY', 'SAMEORIGIN']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rate Limiting e DDoS",
+      "item": [
+        {
+          "name": "Rate Limiting - Muitas Requisições",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Este teste deve ser executado rapidamente muitas vezes",
+                  "pm.test('Rate limiting is enforced', function () {",
+                  "    if (pm.response.code === 429) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.success).to.be.false;",
+                  "        pm.expect(jsonData.message).to.include('Muitas tentativas');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('Rate limit headers are present', function () {",
+                  "    const rateLimitHeader = pm.response.headers.get('X-RateLimit-Limit');",
+                  "    const rateLimitRemaining = pm.response.headers.get('X-RateLimit-Remaining');",
+                  "    ",
+                  "    pm.expect(rateLimitHeader).to.not.be.null;",
+                  "    pm.expect(rateLimitRemaining).to.not.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DDoS Simulation - Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Simular ataque DDoS com muitas requisições simultâneas",
+                  "pm.test('Server handles DDoS simulation', function () {",
+                  "    // Verificar se o servidor não cai sob carga",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 429, 503]);",
+                  "});",
+                  "",
+                  "pm.test('Response time under DDoS simulation', function () {",
+                  "    // Verificar se o tempo de resposta não degrada muito",
+                  "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Dados Sensíveis",
+      "item": [
+        {
+          "name": "Vazamento de Senhas - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Password is not exposed in response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    const responseText = JSON.stringify(jsonData);",
+                  "    ",
+                  "    // Verificar se a senha não aparece na resposta",
+                  "    pm.expect(responseText).to.not.include('cliente123');",
+                  "    pm.expect(responseText).to.not.include('password');",
+                  "});",
+                  "",
+                  "pm.test('Sensitive data is properly handled', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    ",
+                  "    if (jsonData.data && jsonData.data.user) {",
+                  "        const user = jsonData.data.user;",
+                  "        // Verificar se dados sensíveis não estão expostos",
+                  "        pm.expect(user).to.not.have.property('password');",
+                  "        pm.expect(user).to.not.have.property('salt');",
+                  "        pm.expect(user).to.not.have.property('hash');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vazamento de Tokens - Logs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.teste@broday.com\",\n  \"password\": \"cliente123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Tokens are not logged in response headers', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    // Verificar se tokens não aparecem em headers",
+                  "    const headers = pm.response.headers.all();",
+                  "    headers.forEach(header => {",
+                  "        if (header.key && header.value) {",
+                  "            pm.expect(header.value).to.not.include('Bearer');",
+                  "        }",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de Entrada Maliciosa",
+      "item": [
+        {
+          "name": "Path Traversal - Arquivos do Sistema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/../../../etc/passwd",
+              "host": ["{{baseUrl}}"],
+              "path": ["..", "..", "..", "etc", "passwd"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Path traversal is blocked', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('No system files are exposed', function () {",
+                  "    const responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.not.include('root:');",
+                  "    pm.expect(responseText).to.not.include('bin:');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Command Injection - Input Validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@test.com; rm -rf /\",\n  \"password\": \"123\",\n  \"userType\": \"cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Command injection is blocked', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "});",
+                  "",
+                  "pm.test('No command execution evidence', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const responseText = JSON.stringify(jsonData);",
+                  "    pm.expect(responseText).to.not.include('rm -rf');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validação de HTTPS e Certificados",
+      "item": [
+        {
+          "name": "HTTPS Enforcement - Headers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Security headers encourage HTTPS', function () {",
+                  "    const strictTransportSecurity = pm.response.headers.get('Strict-Transport-Security');",
+                  "    ",
+                  "    // Em produção, deve ter HSTS",
+                  "    if (pm.response.request.url.protocol === 'https:') {",
+                  "        pm.expect(strictTransportSecurity).to.not.be.null;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

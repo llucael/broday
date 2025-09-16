@@ -7,7 +7,48 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="config/google-maps.js"></script>
-    <script async src="" id="google-maps-script"></script>
+    <script>
+        // Carregar Google Maps dinamicamente
+        function loadGoogleMapsScript() {
+            return new Promise((resolve, reject) => {
+                // Verificar se já está carregado
+                if (window.google && window.google.maps) {
+                    resolve();
+                    return;
+                }
+
+                // Verificar se já existe um script carregando
+                if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+                    // Aguardar o script existente carregar
+                    const checkLoaded = setInterval(() => {
+                        if (window.google && window.google.maps) {
+                            clearInterval(checkLoaded);
+                            resolve();
+                        }
+                    }, 100);
+                    return;
+                }
+
+                // Criar e carregar o script
+                const script = document.createElement('script');
+                script.src = getGoogleMapsScriptUrl();
+                script.async = true;
+                script.defer = true;
+                
+                script.onload = () => {
+                    console.log('Google Maps carregado com sucesso');
+                    resolve();
+                };
+                
+                script.onerror = () => {
+                    console.error('Erro ao carregar Google Maps');
+                    reject(new Error('Falha ao carregar Google Maps'));
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+    </script>
     <style>
         /* Estilos específicos para rastreamento */
         .rastreamento-content {
@@ -28,6 +69,90 @@
         .map {
             width: 100%;
             height: 100%;
+        }
+
+        .map-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 1000;
+        }
+
+        .map-loading i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .map-loading p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .frete-entregue-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .frete-entregue-message .message-content {
+            text-align: center;
+            color: white;
+            padding: 2rem;
+            max-width: 400px;
+        }
+
+        .frete-entregue-message i {
+            font-size: 4rem;
+            color: #48bb78;
+            margin-bottom: 1rem;
+        }
+
+        .frete-entregue-message h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+        }
+
+        .frete-entregue-message p {
+            margin: 0 0 2rem 0;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .frete-entregue-info {
+            background: #2d3748;
+            border: 1px solid #4a5568;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .frete-entregue-info h3 {
+            color: #48bb78;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .frete-entregue-info p {
+            color: #a0aec0;
+            margin: 0;
         }
 
         .map-controls {
@@ -295,6 +420,10 @@
                 <div class="rastreamento-content">
                     <div class="map-container">
                         <div id="map" class="map"></div>
+                        <div id="map-loading" class="map-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Carregando mapa...</p>
+                        </div>
                         <div class="map-controls">
                             <button class="btn btn-sm btn-primary" onclick="centralizarMapa()" title="Centralizar no motorista">
                                 <i class="fas fa-crosshairs"></i>
@@ -406,6 +535,7 @@
         let currentLocation = null;
         let trackingPath = [];
         let proximaUpdateInterval = null;
+        let clienteUpdateInterval = null;
 
         // Verificar se o usuário está logado
         if (!isLoggedIn()) {
@@ -440,39 +570,26 @@
         });
 
         // Carregar Google Maps dinamicamente
-        function loadGoogleMaps() {
-            console.log('Carregando Google Maps...');
-            const script = document.getElementById('google-maps-script');
-            
-            // Verificar se o script já foi carregado
-            if (window.google && window.google.maps) {
-                console.log('Google Maps já carregado');
+        async function loadGoogleMaps() {
+            try {
+                console.log('Carregando Google Maps...');
+                await loadGoogleMapsScript();
+                
+                // Aguardar um pouco para garantir que tudo esteja carregado
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                console.log('Google Maps carregado, inicializando mapa...');
                 initializeMap();
-                return;
+            } catch (error) {
+                console.error('Erro ao carregar Google Maps:', error);
+                showNotification('Erro ao carregar Google Maps: ' + error.message, 'error');
+                
+                // Esconder indicador de carregamento em caso de erro
+                const loadingElement = document.getElementById('map-loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'none';
+                }
             }
-            
-            script.src = getGoogleMapsScriptUrl();
-            console.log('URL do Google Maps:', script.src);
-            
-            script.onload = function() {
-                console.log('Google Maps carregado com sucesso');
-                // Aguardar mais tempo para garantir que tudo esteja carregado
-                setTimeout(() => {
-                    console.log('Iniciando mapa após carregamento...');
-                    if (typeof google !== 'undefined' && google.maps) {
-                        console.log('Google Maps disponível, inicializando mapa...');
-                        initializeMap();
-                    } else {
-                        console.error('Google Maps ainda não está disponível após timeout');
-                        showNotification('Erro ao carregar Google Maps', 'error');
-                    }
-                }, 3000); // Aumentado para 3 segundos
-            };
-            
-            script.onerror = function() {
-                console.error('Erro ao carregar Google Maps');
-                showNotification('Erro ao carregar Google Maps. Verifique a chave da API.', 'error');
-            };
         }
 
         function loadUserData() {
@@ -540,6 +657,45 @@
             return statusMap[status] || status;
         }
 
+        // Configuração do mapa
+        function getMapConfig() {
+            // Coordenadas padrão (São Paulo)
+            const defaultCenter = {
+                lat: -23.5505,
+                lng: -46.6333
+            };
+
+            // Se temos uma localização atual, usar ela
+            if (currentLocation) {
+                return {
+                    center: currentLocation,
+                    zoom: 15,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                    styles: [
+                        {
+                            featureType: 'poi',
+                            elementType: 'labels',
+                            stylers: [{ visibility: 'off' }]
+                        }
+                    ]
+                };
+            }
+
+            // Configuração padrão
+            return {
+                center: defaultCenter,
+                zoom: 10,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            };
+        }
+
         // Inicializar Google Maps
         function initializeMap() {
             try {
@@ -552,17 +708,35 @@
                     return;
                 }
 
+                // Verificar se o elemento do mapa existe
+                const mapElement = document.getElementById('map');
+                if (!mapElement) {
+                    console.error('Elemento do mapa não encontrado');
+                    showNotification('Elemento do mapa não encontrado', 'error');
+                    return;
+                }
+
                 const mapConfig = getMapConfig();
                 console.log('Configuração do mapa:', mapConfig);
                 
-                map = new google.maps.Map(document.getElementById('map'), mapConfig);
+                map = new google.maps.Map(mapElement, mapConfig);
                 console.log('Mapa criado com sucesso');
 
-                // Criar marcador inicial usando AdvancedMarkerElement
-                marker = new google.maps.marker.AdvancedMarkerElement({
+                // Esconder indicador de carregamento
+                const loadingElement = document.getElementById('map-loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'none';
+                }
+
+                // Criar marcador inicial usando Marker tradicional
+                marker = new google.maps.Marker({
                     position: mapConfig.center,
                     map: map,
-                    title: 'Localização do Motorista'
+                    title: 'Localização do Motorista',
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                        scaledSize: new google.maps.Size(32, 32)
+                    }
                 });
                 console.log('Marcador criado');
 
@@ -578,6 +752,7 @@
                 console.log('Polyline criada');
 
                 // Carregar dados de rastreamento após inicializar o mapa
+                console.log('Mapa inicializado, carregando dados de rastreamento...');
                 loadTrackingData();
                 
                 // Aguardar um pouco antes de iniciar o rastreamento automático
@@ -591,7 +766,7 @@
                     } else {
                         console.log('Usuário não é motorista, rastreamento automático não será iniciado');
                     }
-                }, 2000); // Aumentado para 2 segundos
+                }, 2000);
             } catch (error) {
                 console.error('Erro ao inicializar mapa:', error);
                 showNotification('Erro ao inicializar mapa: ' + error.message, 'error');
@@ -601,6 +776,21 @@
         // Carregar dados de rastreamento
         async function loadTrackingData() {
             try {
+                // Primeiro verificar o status do frete
+                const freteResponse = await api.getFreteById(freteId);
+                if (!freteResponse.success) {
+                    throw new Error('Frete não encontrado');
+                }
+                
+                const frete = freteResponse.data;
+                const userType = getUserType();
+                
+                // Se o frete foi entregue e o usuário não é admin, mostrar mensagem
+                if (frete.status === 'entregue' && userType !== 'admin') {
+                    showFreteEntregueMessage();
+                    return;
+                }
+                
                 const response = await api.getLocalizacoesTempoReal(freteId);
                 if (response.success && response.data.length > 0) {
                     const localizacoes = response.data;
@@ -612,7 +802,13 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar dados de rastreamento:', error);
-                showNotification('Erro ao carregar dados de rastreamento', 'error');
+                
+                // Verificar se é erro de acesso negado para frete entregue
+                if (error.message && error.message.includes('fretes entregues')) {
+                    showFreteEntregueMessage();
+                } else {
+                    showNotification('Erro ao carregar dados de rastreamento', 'error');
+                }
             }
         }
 
@@ -627,7 +823,7 @@
 
             // Verificar se o mapa está inicializado
             if (!map) {
-                console.error('Mapa não está inicializado');
+                console.error('Mapa não está inicializado - pulando atualização');
                 return;
             }
 
@@ -640,12 +836,27 @@
 
             console.log('Nova posição:', position);
 
+            // Atualizar currentLocation
+            currentLocation = position;
+            console.log('currentLocation atualizada:', currentLocation);
+
             // Atualizar posição do marcador
             if (marker) {
-                marker.position = position;
-                console.log('Marcador atualizado');
+                marker.setPosition(position);
+                console.log('Marcador atualizado para posição:', position);
             } else {
                 console.error('Marcador não está inicializado');
+                // Recriar marcador se necessário
+                marker = new google.maps.Marker({
+                    position: position,
+                    map: map,
+                    title: 'Localização do Motorista',
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                        scaledSize: new google.maps.Size(32, 32)
+                    }
+                });
+                console.log('Marcador recriado');
             }
 
             // Centralizar mapa na nova posição
@@ -673,6 +884,11 @@
         function updateLocationInfo(localizacao) {
             console.log('=== ATUALIZANDO UI DE LOCALIZAÇÃO ===');
             console.log('Dados da localização:', localizacao);
+            
+            if (!localizacao || !localizacao.latitude || !localizacao.longitude) {
+                console.error('Dados de localização inválidos');
+                return;
+            }
             
             const lat = parseFloat(localizacao.latitude).toFixed(6);
             const lng = parseFloat(localizacao.longitude).toFixed(6);
@@ -975,6 +1191,62 @@
             }
         }
 
+        // Iniciar atualizações automáticas para cliente
+        function iniciarAtualizacoesCliente() {
+            console.log('🔄 Iniciando atualizações automáticas para cliente...');
+            
+            // Carregar dados iniciais
+            loadTrackingData();
+            
+            // Configurar atualizações automáticas a cada 30 segundos
+            if (clienteUpdateInterval) {
+                clearInterval(clienteUpdateInterval);
+            }
+            
+            clienteUpdateInterval = setInterval(async () => {
+                console.log('🔄 Atualizando localização para cliente...');
+                try {
+                    // Verificar se o frete ainda está ativo antes de atualizar
+                    const freteResponse = await api.getFreteById(freteId);
+                    if (freteResponse.success && freteResponse.data.status === 'entregue') {
+                        console.log('Frete entregue, parando atualizações automáticas');
+                        clearInterval(clienteUpdateInterval);
+                        showFreteEntregueMessage();
+                        return;
+                    }
+                    await loadTrackingData();
+                } catch (error) {
+                    console.error('Erro ao atualizar localização para cliente:', error);
+                }
+            }, 30000); // 30 segundos
+            
+            console.log('✅ Atualizações automáticas iniciadas para cliente');
+        }
+
+        function iniciarAtualizacoesAdmin() {
+            console.log('🔄 Iniciando atualizações automáticas para admin...');
+            
+            // Carregar dados iniciais
+            loadTrackingData();
+            
+            // Configurar atualizações automáticas a cada 15 segundos para admin
+            if (clienteUpdateInterval) {
+                clearInterval(clienteUpdateInterval);
+            }
+            
+            clienteUpdateInterval = setInterval(async () => {
+                console.log('🔄 Atualizando localização para admin...');
+                try {
+                    // Admin pode ver fretes entregues, então não precisa verificar status
+                    await loadTrackingData();
+                } catch (error) {
+                    console.error('Erro ao atualizar localização para admin:', error);
+                }
+            }, 15000); // 15 segundos - mais frequente para admin
+            
+            console.log('✅ Atualizações automáticas iniciadas para admin');
+        }
+
         // Verificar status de rastreamento
         function checkTrackingStatus() {
             const userType = getUserType();
@@ -996,6 +1268,15 @@
                 // Iniciar rastreamento automático imediatamente se for motorista
                 console.log('🚀 Iniciando rastreamento automático para motorista...');
                 iniciarRastreamentoAutomatico();
+            } else if (userType === 'cliente') {
+                console.log('👤 Cliente acessando rastreamento do frete:', freteId);
+                // Cliente pode visualizar rastreamento se o frete estiver em trânsito
+                // Iniciar atualizações automáticas para visualizar localização do motorista
+                iniciarAtualizacoesCliente();
+            } else if (userType === 'admin') {
+                console.log('👑 Admin acessando rastreamento do frete:', freteId);
+                // Admin pode visualizar qualquer frete - mostrar última localização do motorista
+                iniciarAtualizacoesAdmin();
             } else {
                 console.log('❌ Rastreamento não ativo. Motivos:');
                 console.log('- userType é motorista?', userType === 'motorista');
@@ -1007,6 +1288,19 @@
         }
 
         // Centralizar mapa
+        // Limpar intervalos ao sair da página
+        window.addEventListener('beforeunload', function() {
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+            }
+            if (clienteUpdateInterval) {
+                clearInterval(clienteUpdateInterval);
+            }
+            if (proximaUpdateInterval) {
+                clearInterval(proximaUpdateInterval);
+            }
+        });
+
         function centralizarMapa() {
             if (!map) {
                 console.error('Mapa não está inicializado');
@@ -1048,6 +1342,37 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+        }
+
+        // Função para mostrar mensagem de frete entregue
+        function showFreteEntregueMessage() {
+            const mapContainer = document.querySelector('.map-container');
+            const trackingInfo = document.querySelector('.tracking-info');
+            
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div class="frete-entregue-message">
+                        <div class="message-content">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>Frete Entregue</h3>
+                            <p>Este frete já foi entregue. Apenas administradores podem visualizar a localização de fretes entregues.</p>
+                            <button class="btn btn-primary" onclick="window.history.back()">
+                                <i class="fas fa-arrow-left"></i>
+                                Voltar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (trackingInfo) {
+                trackingInfo.innerHTML = `
+                    <div class="frete-entregue-info">
+                        <h3><i class="fas fa-check-circle"></i> Frete Entregue</h3>
+                        <p>A localização deste frete não está mais disponível para visualização.</p>
+                    </div>
+                `;
+            }
         }
         
         // Função para alternar tema
