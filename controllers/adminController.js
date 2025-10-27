@@ -479,6 +479,12 @@ const getMotoristas = async (req, res) => {
 
     const total = countResult[0].count;
 
+    console.log('=== DEBUG GET MOTORISTAS ===');
+    console.log('Motoristas encontrados:', motoristas.length);
+    if (motoristas.length > 0) {
+      console.log('Primeiro motorista:', motoristas[0]);
+    }
+
     res.json({
       success: true,
       data: {

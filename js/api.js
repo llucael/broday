@@ -255,7 +255,7 @@ class ApiService {
 
   // Listar motoristas para seleção
   async getMotoristas() {
-    return await this.request('/caminhoes/motoristas');
+    return await this.request('/admin/motoristas');
   }
 
   // Buscar frete por ID
