@@ -440,23 +440,46 @@
                     </div>
                 </div>
                 <div class="frete-actions">
-                    <button class="btn btn-sm btn-primary" onclick="verDetalhes(${frete.id})">
+                    <button class="btn btn-sm btn-primary" onclick="verDetalhes(${frete.id})" title="Ver detalhes">
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
+                    ${frete.status === 'solicitado' ? `
+                    <button class="btn btn-sm btn-success" onclick="aprovarFrete(${frete.id})" title="Aprovar frete">
+                        <i class="fas fa-check-circle"></i>
+                        Aprovar
+                    </button>
+                    ` : ''}
                     ${frete.status === 'em_transito' ? `
-                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
+                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})" title="Rastrear frete">
                         <i class="fas fa-map-marker-alt"></i>
                         Rastrear
                     </button>
                     ` : ''}
-                    <button class="btn btn-sm btn-warning" onclick="editarFrete(${frete.id})">
+                    <button class="btn btn-sm btn-warning" onclick="editarFrete(${frete.id})" title="Editar frete">
                         <i class="fas fa-edit"></i>
                         Editar
                     </button>
                 </div>
             `;
             return card;
+        }
+
+        // Handler para aprovar frete como admin
+        async function aprovarFrete(freteId) {
+            if (!confirm('Deseja aprovar este frete e torná-lo disponível para motoristas?')) return;
+            try {
+                const resp = await api.adminAcceptFrete(freteId);
+                if (resp && resp.success) {
+                    showNotification('Frete aprovado com sucesso', 'success');
+                    loadFretes();
+                } else {
+                    showNotification('Erro ao aprovar frete: ' + (resp.message || 'Erro desconhecido'), 'error');
+                }
+            } catch (err) {
+                console.error('Erro ao aprovar frete:', err);
+                showNotification('Erro ao aprovar frete: ' + (err.message || err), 'error');
+            }
         }
 
         function getStatusText(status) {
@@ -585,7 +608,10 @@
                         </div>
                         <div class="detail-item">
                             <strong>Status:</strong>
-                            <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+                                <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+                                ${frete.status === 'solicitado' ? `<button class="btn btn-sm btn-success" style="margin-left:12px;" onclick="aprovarFrete(${frete.id})" title="Aprovar frete">` +
+                                    `<i class="fas fa-check-circle"></i> Aprovar` +
+                                    `</button>` : ''}
                         </div>
                         <div class="detail-item">
                             <strong>Cliente:</strong>
@@ -728,7 +754,6 @@
 
         // Função para preencher formulário de edição
         function populateEditForm(frete) {
-            document.getElementById('editStatus').value = frete.status || 'solicitado';
             document.getElementById('editMotorista').value = frete.motorista_id || '';
             
             if (frete.data_coleta) {
@@ -763,14 +788,13 @@
             
             if (editarForm) {
                 // Event listener para formulário de edição
-                editarForm.addEventListener('submit', async function(e) {
+                    editarForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
                     const freteId = this.dataset.freteId;
                     const formData = new FormData(this);
                     
                     const updateData = {
-                        status: formData.get('status'),
                         motorista_id: formData.get('motorista_id') || null,
                         data_coleta: formData.get('data_coleta'),
                         data_entrega: formData.get('data_entrega') || null
@@ -1276,16 +1300,7 @@
             </div>
             <div class="modal-body">
                 <form id="editarFreteForm">
-                    <div class="form-group">
-                        <label for="editStatus">Status:</label>
-                        <select id="editStatus" name="status" required>
-                            <option value="solicitado">Solicitado</option>
-                            <option value="aceito">Aceito</option>
-                            <option value="em_transito">Em Trânsito</option>
-                            <option value="entregue">Entregue</option>
-                            <option value="cancelado">Cancelado</option>
-                        </select>
-                    </div>
+                    <!-- Status editing removed: status must be changed via role-specific endpoints -->
                     <div class="form-group">
                         <label for="editMotorista">Motorista:</label>
                         <select id="editMotorista" name="motorista_id">

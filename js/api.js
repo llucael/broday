@@ -1,22 +1,57 @@
-// Configuração da API
-const API_BASE_URL = 'http://localhost:3000/api';
+// Configuração da API (detecção automática do ambiente)
+// Ordem de prioridade para definir a base da API:
+// 1. window.__API_BASE_URL__ (injetável via script para overrides em produção)
+// 2. meta[name="api-base-url"] no HTML
+// 3. Se rodando via file:// => fallback para http://localhost:3000/api
+// 4. Se hostname for localhost/127.0.0.1 => usar origin:porta ou http://localhost:3000/api
+// 5. Caso contrário, assumir mesma origem em /api
+function detectApiBaseUrl() {
+  try {
+    if (window && window.__API_BASE_URL__) return window.__API_BASE_URL__;
+  } catch (e) {}
+
+  const meta = document.querySelector && document.querySelector('meta[name="api-base-url"]');
+  if (meta && meta.content) return meta.content;
+
+  if (location.protocol === 'file:') {
+    return 'http://localhost:3000/api';
+  }
+
+  const hostname = location.hostname;
+  const origin = location.origin;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Frontend on localhost frequently runs on a different port (e.g. 5500).
+    // Prefer the conventional backend dev port 3000 unless explicitly overridden.
+    return 'http://localhost:3000/api';
+  }
+
+  // Ambiente de produção: API no mesmo host sob /api
+  return `${location.origin}/api`;
+}
+
+let API_BASE_URL = detectApiBaseUrl();
+// Informar no console qual URL foi resolvida (útil para debug local/produção)
+console.info('[api] API base URL:', API_BASE_URL);
 
 // Classe para gerenciar requisições à API
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
     this.token = localStorage.getItem('accessToken');
+    // Por padrão, usar credenciais same-origin (cookies) quando apropriado
+    this.credentials = 'same-origin';
   }
 
   // Método para fazer requisições HTTP
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
       },
+      credentials: options.credentials || this.credentials,
       ...options
     };
 
@@ -62,6 +97,17 @@ class ApiService {
     } else {
       localStorage.removeItem('accessToken');
     }
+  }
+
+  // Permite sobrescrever a base URL em runtime (útil para deployments)
+  setBaseURL(url) {
+    this.baseURL = url;
+    API_BASE_URL = url;
+  }
+
+  // Permite configurar política de credentials ('omit' | 'same-origin' | 'include')
+  setCredentialsMode(mode) {
+    this.credentials = mode;
   }
 
   // Método para limpar dados de autenticação
@@ -181,9 +227,15 @@ class ApiService {
   }
 
   // Listar fretes do cliente
-  async getFretesByCliente(page = 1, limit = 10, status = null) {
-    const params = new URLSearchParams({ page, limit });
+  async getFretesByCliente(page = 1, limit = 10, status = null, mostrarTodos = true, search = '') {
+    const params = new URLSearchParams({ 
+      page: String(page), 
+      limit: String(limit), 
+      mostrarTodos: String(mostrarTodos)
+    });
+    
     if (status) params.append('status', status);
+    if (search) params.append('search', search);
     
     return await this.request(`/fretes/cliente/meus-fretes?${params}`);
   }
@@ -274,6 +326,13 @@ class ApiService {
   // Aceitar frete (motorista)
   async acceptFrete(id) {
     return await this.request(`/motorista/fretes/${id}/aceitar`, {
+      method: 'POST'
+    });
+  }
+
+  // Aceitar frete (admin) - aprovar e liberar para motoristas
+  async adminAcceptFrete(id) {
+    return await this.request(`/fretes/${id}/aceitar-admin`, {
       method: 'POST'
     });
   }

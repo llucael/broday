@@ -14,6 +14,78 @@
             align-items: center;
             gap: 2rem;
         }
+
+        /* Estilos para footer da lista */
+        .list-footer {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-top: 1px solid #4a5568;
+        }
+
+        .list-footer p {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            text-align: right;
+            margin: 0;
+        }
+
+        /* Modo claro para footer da lista */
+        body.light-mode .list-footer {
+            border-top-color: #e2e8f0;
+        }
+
+        body.light-mode .list-footer p {
+            color: #4a5568;
+        }
+
+        /* Estilos da caixa de pesquisa */
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+            margin-right: 1rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #4a5568;
+            border-radius: 6px;
+            background: #2d3748;
+            color: #e2e8f0;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+
+        /* Modo claro para caixa de pesquisa */
+        body.light-mode .search-box input {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        body.light-mode .search-box input:focus {
+            border-color: #3182ce;
+            background: #f7fafc;
+        }
+
+        body.light-mode .search-box i {
+            color: #4a5568;
+        }
         
         .nav {
             display: flex;
@@ -58,6 +130,11 @@
                 <div class="section-header">
                     <h1>Gerenciamento de Motoristas</h1>
                     <div class="filters">
+                        <div class="search-box">
+                            <input type="text" id="motorista-search" placeholder="Pesquisar por nome ou email" 
+                                onkeyup="applyFilter()">
+                            <i class="fas fa-search"></i>
+                        </div>
                         <select id="status-motorista-filter">
                             <option value="">Todos os Status</option>
                             <option value="ativo">Ativo</option>
@@ -74,6 +151,9 @@
 
                 <div class="motoristas-list" id="motoristas-list">
                     <!-- Motoristas serão carregados aqui -->
+                </div>
+                <div class="list-footer">
+                    <p id="results-count"></p>
                 </div>
             </section>
         </div>
@@ -407,14 +487,17 @@
         }
 
         function applyFilter() {
-            // Obter filtro selecionado
+            // Obter filtro de status e termo de pesquisa
             const statusFilter = document.getElementById('status-motorista-filter').value;
+            const searchTerm = document.getElementById('motorista-search').value.toLowerCase();
+            
             console.log('Filtro selecionado:', statusFilter);
+            console.log('Termo de pesquisa:', searchTerm);
             console.log('Todos os motoristas:', allMotoristas);
             
             let motoristas = [...allMotoristas]; // Cópia dos motoristas
             
-            // Aplicar filtro se selecionado
+            // Aplicar filtro de status se selecionado
             if (statusFilter && statusFilter !== 'todos') {
                 motoristas = motoristas.filter(motorista => {
                     console.log('Verificando motorista:', motorista.nome, 'is_active:', motorista.is_active, 'status:', motorista.status);
@@ -430,10 +513,31 @@
                     }
                     return true;
                 });
-                console.log('Motoristas filtrados:', motoristas);
             }
             
+            // Aplicar filtro de pesquisa
+            if (searchTerm) {
+                motoristas = motoristas.filter(motorista => {
+                    const nome = (motorista.nome || '').toLowerCase();
+                    const email = (motorista.email || '').toLowerCase();
+                    return nome.includes(searchTerm) || email.includes(searchTerm);
+                });
+            }
+            
+            console.log('Motoristas filtrados:', motoristas);
             renderMotoristas(motoristas);
+            
+            // Atualizar UI para mostrar resultados da pesquisa
+            const totalResults = motoristas.length;
+            const container = document.getElementById('motoristas-list');
+            
+            if (totalResults === 0) {
+                if (searchTerm || statusFilter) {
+                    container.innerHTML = `<p class="no-data">Nenhum motorista encontrado com os filtros selecionados</p>`;
+                } else {
+                    container.innerHTML = `<p class="no-data">Nenhum motorista cadastrado</p>`;
+                }
+            }
         }
 
         function getStatusClass(motorista) {
@@ -466,14 +570,19 @@
 
         function renderMotoristas(motoristas) {
             const container = document.getElementById('motoristas-list');
+            const resultsCount = document.getElementById('results-count');
             
             if (motoristas.length === 0) {
                 container.innerHTML = '<p class="no-data">Nenhum motorista encontrado</p>';
+                resultsCount.textContent = 'Nenhum resultado encontrado';
                 return;
             }
 
             console.log('=== RENDER MOTORISTAS ===');
             console.log('Motoristas recebidos:', motoristas);
+            
+            // Atualizar contagem de resultados
+            resultsCount.textContent = `Exibindo ${motoristas.length} ${motoristas.length === 1 ? 'motorista' : 'motoristas'}`;
 
             const motoristasHTML = motoristas.map(motorista => {
                 const statusClass = getStatusClass(motorista);

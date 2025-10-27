@@ -18,7 +18,15 @@ router.get('/motorista/meus-fretes', requireMotorista, freteController.getFretes
 
 // Rotas genéricas (devem vir por último)
 router.get('/:id', validateId, freteController.getFreteById);
+
+// Motorista aceita um frete previamente aprovado pelo admin -> status passa para 'em_espera'
 router.post('/:id/aceitar', requireMotorista, validateId, freteController.acceptFrete);
+
+// Admin aprova/aceita o frete solicitado: libera o frete para motoristas (status 'aceito')
+router.post('/:id/aceitar-admin', requireAdmin, validateId, freteController.adminAcceptFrete);
+
+// Debug route to list fretes by status (admin only)
+router.get('/debug', requireAdmin, freteController.debugFretes);
 
 // Rotas para atualização de status (motorista ou admin)
 router.put('/:id/status', validateId, freteController.updateFreteStatus);

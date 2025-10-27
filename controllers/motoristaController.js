@@ -9,13 +9,13 @@ const getDashboard = async (req, res) => {
     // Buscar fretes disponíveis
     const fretesDisponiveis = await Frete.findAll({
       where: {
-        status: 'solicitado',
+        status: 'aceito',
         motorista_id: null
       },
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
       limit: 10
     });
 
@@ -28,7 +28,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['updated_at', 'DESC']]
+      order: [['updatedAt', 'DESC']]
     });
 
     // Buscar fretes concluídos do motorista
@@ -40,7 +40,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['updated_at', 'DESC']],
+      order: [['updatedAt', 'DESC']],
       limit: 5
     });
 
@@ -84,27 +84,28 @@ const getFretesDisponiveis = async (req, res) => {
     const { page = 1, limit = 10, localizacao, tipoCarga, valorMin, valorMax } = req.query;
     const offset = (page - 1) * limit;
 
+    // Disponíveis para motoristas são fretes aprovados pelo admin ('aceito') e sem motorista vinculado
     const whereClause = {
-        status: 'solicitado',
+      status: 'aceito',
       motorista_id: null
     };
 
     // Filtros
     if (localizacao) {
       whereClause[Op.or] = [
-        { origem_cidade: { [Op.iLike]: `%${localizacao}%` } },
-        { destino_cidade: { [Op.iLike]: `%${localizacao}%` } }
+        { origin_city: { [Op.iLike]: `%${localizacao}%` } },
+        { destination_city: { [Op.iLike]: `%${localizacao}%` } }
       ];
     }
 
     if (tipoCarga) {
-      whereClause.tipo_carga = { [Op.iLike]: `%${tipoCarga}%` };
+      whereClause.cargo_type = { [Op.iLike]: `%${tipoCarga}%` };
     }
 
     if (valorMin || valorMax) {
-      whereClause.valor = {};
-      if (valorMin) whereClause.valor[Op.gte] = valorMin;
-      if (valorMax) whereClause.valor[Op.lte] = valorMax;
+      whereClause.cargo_value = {};
+      if (valorMin) whereClause.cargo_value[Op.gte] = valorMin;
+      if (valorMax) whereClause.cargo_value[Op.lte] = valorMax;
     }
 
     const fretes = await Frete.findAndCountAll({
@@ -112,7 +113,7 @@ const getFretesDisponiveis = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -153,10 +154,11 @@ const aceitarFrete = async (req, res) => {
       });
     }
 
-    if (frete.status !== 'solicitado') {
+    // Driver can accept only fretes that were approved by admin ('aceito')
+    if (frete.status !== 'aceito') {
       return res.status(400).json({
         success: false,
-        message: 'Frete não está disponível para aceitação'
+        message: 'Frete não está disponível para aceitação pelo motorista'
       });
     }
 
@@ -180,11 +182,11 @@ const aceitarFrete = async (req, res) => {
       });
     }
 
-    // Aceitar o frete
+    // Motorista aceita o frete: vinculamos o motorista e colocamos em 'em_espera'
     await frete.update({
       motorista_id: motoristaId,
-      status: 'aceito',
-      data_aceitacao: new Date()
+      status: 'em_espera'
+      // data_coleta será definida quando o motorista marcar em_transito
     });
 
     res.json({

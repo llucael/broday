@@ -20,6 +20,55 @@
             gap: 2rem;
             margin: 0 1rem;
         }
+
+        /* Estilos para a caixa de pesquisa */
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+            margin-right: 1rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #4a5568;
+            border-radius: 6px;
+            background: #2d3748;
+            color: #e2e8f0;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+
+        /* Modo claro para caixa de pesquisa */
+        body.light-mode .search-box input {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        body.light-mode .search-box input:focus {
+            border-color: #3182ce;
+            background: #f7fafc;
+        }
+
+        body.light-mode .search-box i {
+            color: #4a5568;
+        }
     </style>
 </head>
 <body>
@@ -58,6 +107,10 @@
                 <div class="section-header">
                     <h1>Gerenciamento de Usuários</h1>
                     <div class="filters">
+                        <div class="search-box">
+                            <input type="text" id="usuario-search" placeholder="Buscar por nome do usuário..." onkeyup="applyFilters()">
+                            <i class="fas fa-search"></i>
+                        </div>
                         <select id="tipo-usuario-filter" onchange="applyFilters()">
                             <option value="">Todos os Tipos</option>
                             <option value="cliente">Clientes</option>
@@ -346,6 +399,7 @@
                 // Obter filtros
                 const statusFilter = document.getElementById('status-cliente-filter').value;
                 const tipoFilter = document.getElementById('tipo-usuario-filter').value;
+                const searchTerm = document.getElementById('usuario-search').value.trim().toLowerCase();
                 
                 // Aplicar filtros
                 let usuarios = [];
@@ -368,6 +422,14 @@
                             if (statusFilter === 'ativo') return usuario.is_active;
                             if (statusFilter === 'inativo') return !usuario.is_active;
                             return true;
+                        });
+                    }
+                    
+                    // Filtrar por termo de busca
+                    if (searchTerm) {
+                        usuarios = usuarios.filter(usuario => {
+                            const nome = (usuario.nome || '').toLowerCase();
+                            return nome.includes(searchTerm);
                         });
                     }
                     
@@ -659,6 +721,7 @@
         function clearFilters() {
             document.getElementById('status-cliente-filter').value = '';
             document.getElementById('tipo-usuario-filter').value = '';
+            document.getElementById('usuario-search').value = '';
             loadClientes();
         }
 

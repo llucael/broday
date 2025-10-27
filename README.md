@@ -51,6 +51,24 @@ Sistema completo para gerenciamento de carga e caminhões da Broday Transportes,
 - **Sistema de Login**: `login.html`
 - **Solicitar Frete**: `frete.html`
 
+### Configurar URL da API (localhost e produção)
+
+O frontend tenta detectar automaticamente a URL base da API. Você pode forçar um valor em dois modos:
+
+- Meta tag no HTML (recomendado para deploys estáticos):
+  - Exemplo no `<head>` de `index.html` ou `cliente-fretes.html`:
+    `<meta name="api-base-url" content="https://api.seudominio.com/api">`
+
+- Override via JavaScript (útil em servidores que injetam variáveis):
+  - Antes de carregar `js/api.js`, defina `window.__API_BASE_URL__ = 'https://api.seudominio.com/api';`
+
+Se nenhum override for fornecido, o frontend usa estas regras:
+1. Se estiver rodando a partir de `file://` usa `http://localhost:3000/api`.
+2. Se estiver em `localhost` usa `location.origin + '/api'` (ou `http://localhost:3000/api` como fallback).
+3. Em produção assume `location.origin + '/api'`.
+
+Isso permite rodar localmente (servidor backend em localhost:3000) e também num ambiente online sem alterar o código.
+
 ## 📋 Validações Implementadas
 
 ### Campos Obrigatórios

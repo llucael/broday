@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meus Fretes - Cliente - Broday Transportes</title>
+    <!-- Opcional: definir a URL base da API para ambientes de produção
+         Ex: <meta name="api-base-url" content="https://api.seudominio.com/api"> -->
+    <meta name="api-base-url" content="">
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,30 +14,10 @@
     <!-- Header -->
     <header class="header">
         <div class="container">
-                    <div class="logo">
-            <span>Broday Transportes</span>
-        </div>
-            <nav class="nav">
-                <a href="cliente-dashboard.html" class="nav-link">Dashboard</a>
-                <a href="cliente-fretes.html" class="nav-link active">Meus Fretes</a>
-                <a href="frete.html" class="nav-link">Solicitar Frete</a>
-                <a href="cliente-perfil.html" class="nav-link">Perfil</a>
-            </nav>
-            <div class="header-buttons">
-                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
-                    <i class="fas fa-sun"></i>
-                </button>
-                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
-                <button class="btn btn-secondary" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    Sair
-                </button>
+            <div class="logo">
+                <span>Broday Transportes</span>
             </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="main-content">
+            <nav class="nav">
         <div class="container">
             <!-- Meus Fretes Section -->
             <section id="fretes" class="fretes-section active">
@@ -43,12 +26,17 @@
                     <div class="filters">
                         <select id="status-filter" onchange="loadFretes()">
                             <option value="">Todos os Status</option>
+                            <option value="nao_finalizados">Não Finalizados</option>
                             <option value="solicitado">Solicitado</option>
                             <option value="aceito">Aceito</option>
                             <option value="em_transito">Em Trânsito</option>
                             <option value="entregue">Entregue</option>
                             <option value="cancelado">Cancelado</option>
                         </select>
+                        <div class="search-box">
+                            <input type="text" id="search-input" placeholder="Buscar por endereço, CEP, motorista ou cliente..." onkeyup="loadFretes()">
+                            <i class="fas fa-search"></i>
+                        </div>
                         <button class="btn btn-primary" onclick="clearFilters()">
                             <i class="fas fa-times"></i>
                             Limpar Filtros
@@ -147,16 +135,93 @@
             }
         }
 
+        // Parse de data enviado pelo servidor de forma robusta.
+        // Tratamos strings no formato YYYY-MM-DD como data local (sem timezone),
+        // enquanto aceitamos ISO/UTC quando vier com time/offset.
+        function parseDateSafe(dateStr) {
+            if (!dateStr) return null;
+            // Se for apenas YYYY-MM-DD, criar Date no timezone local
+            const simpleDateMatch = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+            if (simpleDateMatch) {
+                const parts = dateStr.split('-').map(Number);
+                // year, monthIndex, day
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+
+            // Tentar parse normal (suporta ISO com timezone)
+            const parsed = new Date(dateStr);
+            if (isNaN(parsed.getTime())) return null;
+            return parsed;
+        }
+
         async function loadFretes() {
             try {
                 const statusFilter = document.getElementById('status-filter').value;
-                console.log('Carregando fretes com filtro:', statusFilter);
+                const searchQuery = document.getElementById('search-input').value.trim();
+                console.log('Carregando fretes com filtro:', statusFilter, 'busca:', searchQuery);
                 
-                const response = await api.getFretesByCliente(1, 50, statusFilter);
+                // Configurar parâmetros da busca
+                const params = {
+                    page: 1,
+                    limit: 50,
+                    search: searchQuery,
+                };
+
+                // Se o filtro for "não finalizados", vamos passar mostrarTodos como false
+                const mostrarTodos = statusFilter !== 'nao_finalizados';
+                
+                // Se tiver um status específico (diferente de "não finalizados"), incluir no filtro
+                if (statusFilter && statusFilter !== 'nao_finalizados') {
+                    params.status = statusFilter;
+                }
+                
+                const response = await api.getFretesByCliente(params.page, params.limit, params.status, mostrarTodos, params.search);
                 console.log('Resposta da API:', response);
                 
+                if (response.success && response.data && response.data.fretes) {
+                    console.log('Total de fretes recebidos:', response.data.fretes.length);
+                    console.log('Status dos fretes:', response.data.fretes.map(f => f.status));
+                }
+                
                 if (response.success) {
-                    const fretes = response.data.fretes;
+                    let fretes = response.data.fretes;
+                    
+                    // Ordenar fretes por data de coleta: mostrar primeiro a coleta mais próxima da data atual
+                    // Usamos a data do dispositivo (Date.now()) como referência.
+                    // Critério resumido:
+                    // - Fretes sem data vão para o final
+                    // - Entre datas definidas, ordena por menor distância absoluta até agora (menor diff em ms primeiro)
+                    // - Em empate de distância, prioriza datas futuras sobre passadas
+                    // - Mantém estabilidade com fallback por timestamp
+                    const nowMs = Date.now();
+                    const SORT_DEBUG = false; // true para logs de debug
+
+                    fretes.sort((a, b) => {
+                        const aDate = parseDateSafe(a.data_coleta);
+                        const bDate = parseDateSafe(b.data_coleta);
+
+                        if (SORT_DEBUG) console.log('compare', a.id, a.data_coleta, '->', aDate, '|', b.id, b.data_coleta, '->', bDate);
+
+                        // Colocar fretes sem data ao final
+                        if (!aDate && !bDate) return 0;
+                        if (!aDate) return 1;
+                        if (!bDate) return -1;
+
+                        const diffA = Math.abs(aDate.getTime() - nowMs);
+                        const diffB = Math.abs(bDate.getTime() - nowMs);
+
+                        if (diffA !== diffB) return diffA - diffB; // menor distância primeiro
+
+                        // Priorizar futuro quando distâncias são iguais (e.g. +2 dias vs -2 dias)
+                        const aFuture = aDate.getTime() > nowMs;
+                        const bFuture = bDate.getTime() > nowMs;
+                        if (aFuture && !bFuture) return -1;
+                        if (!aFuture && bFuture) return 1;
+
+                        // Fallback por timestamp para estabilidade
+                        return aDate.getTime() - bDate.getTime();
+                    });
+                    
                     const container = document.getElementById('fretes-list');
                     container.innerHTML = '';
                     
@@ -361,6 +426,7 @@
 
         function clearFilters() {
             document.getElementById('status-filter').value = '';
+            document.getElementById('search-input').value = '';
             loadFretes();
         }
 
@@ -764,5 +830,56 @@
         }
     </style>
     </script>
+    <style>
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 15px;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .filter-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .filters {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 32px 8px 12px;
+            border: 1px solid #4a5568;
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #718096;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #3182ce;
+        }
+    </style>
 </body>
 </html>

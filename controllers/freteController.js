@@ -53,7 +53,7 @@ const createFrete = async (req, res) => {
 // Listar fretes do cliente
 const getFretesByCliente = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, cep, mostrarTodos = 'false', search } = req.query;
+    const { page = 1, limit = 10, status, mostrarTodos = 'false', search } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = { cliente_id: req.user.id };
@@ -68,16 +68,20 @@ const getFretesByCliente = async (req, res) => {
       whereClause.status = status;
     }
     
-    // Filtro por CEP ou busca geral
-    if (cep || search) {
-      const searchTerm = cep || search;
+    // Construir condições de busca
+    if (search) {
       whereClause[Op.or] = [
-        { origin_cep: { [Op.like]: `%${searchTerm}%` } },
-        { destination_cep: { [Op.like]: `%${searchTerm}%` } },
-        { origin_street: { [Op.like]: `%${searchTerm}%` } },
-        { destination_street: { [Op.like]: `%${searchTerm}%` } },
-        { origin_city: { [Op.like]: `%${searchTerm}%` } },
-        { destination_city: { [Op.like]: `%${searchTerm}%` } }
+        { origin_cep: { [Op.like]: `%${search}%` } },
+        { destination_cep: { [Op.like]: `%${search}%` } },
+        { origin_street: { [Op.like]: `%${search}%` } },
+        { destination_street: { [Op.like]: `%${search}%` } },
+        { origin_city: { [Op.like]: `%${search}%` } },
+        { destination_city: { [Op.like]: `%${search}%` } },
+        // Buscar também no nome/email do motorista e cliente
+        { '$motorista.nome$': { [Op.like]: `%${search}%` } },
+        { '$motorista.email$': { [Op.like]: `%${search}%` } },
+        { '$cliente.nome$': { [Op.like]: `%${search}%` } },
+        { '$cliente.email$': { [Op.like]: `%${search}%` } }
       ];
     }
 
@@ -122,8 +126,9 @@ const getFretesDisponiveis = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const { count, rows: fretes } = await Frete.findAndCountAll({
+      // Disponíveis são fretes aprovados pelo admin ('aceito') e sem motorista vinculado
       where: {
-        status: 'solicitado',
+        status: 'aceito',
         motorista_id: null
       },
       include: [
@@ -294,10 +299,11 @@ const acceptFrete = async (req, res) => {
       });
     }
 
-    if (frete.status !== 'solicitado') {
+    // Now driver accepts a frete that must have been approved by admin (status 'aceito')
+    if (frete.status !== 'aceito') {
       return res.status(400).json({
         success: false,
-        message: 'Frete não está disponível para aceitação'
+        message: 'Frete não está disponível para aceitação por motorista'
       });
     }
 
@@ -321,11 +327,11 @@ const acceptFrete = async (req, res) => {
       });
     }
 
-    // Aceitar frete
+    // Motorista aceita o frete: vinculamos o motorista e colocamos em 'em_espera'
     await frete.update({
       motorista_id: req.user.id,
-      status: 'aceito',
-      data_coleta: new Date() // Definir data de coleta quando motorista aceita
+      status: 'em_espera'
+      // data_coleta será definida quando o motorista coletar (em_transito)
     });
 
     // Buscar frete atualizado
@@ -350,13 +356,74 @@ const acceptFrete = async (req, res) => {
   }
 };
 
+// Aceitar frete (admin) - aprovar e tornar disponível para motoristas
+const adminAcceptFrete = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const frete = await Frete.findByPk(id);
+    if (!frete) {
+      return res.status(404).json({ success: false, message: 'Frete não encontrado' });
+    }
+
+    // Apenas admin deve acessar essa rota (middleware já define req.userType)
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Ação permitida apenas para administradores' });
+    }
+
+    // Log do estado antes da atualização
+    console.log('Admin aprovando frete - antes:', {
+      id: frete.id,
+      status: frete.status,
+      motorista_id: frete.motorista_id
+    });
+
+    // Marcar como aceito e garantir que não há motorista vinculado ainda
+    await frete.update({ status: 'aceito', motorista_id: null });
+
+    const updatedFrete = await Frete.findByPk(id, {
+      include: [
+        { model: User, as: 'cliente' },
+        { model: User, as: 'motorista' }
+      ]
+    });
+
+    // Log do estado depois da atualização
+    console.log('Admin aprovou frete - depois:', {
+      id: updatedFrete.id,
+      status: updatedFrete.status,
+      motorista_id: updatedFrete.motorista_id
+    });
+
+    return res.json({ success: true, message: 'Frete aprovado e disponibilizado para motoristas', data: { frete: updatedFrete } });
+  } catch (error) {
+    console.error('Erro ao aprovar frete (adminAcceptFrete):', error);
+    res.status(500).json({ success: false, message: 'Erro interno do servidor' });
+  }
+};
+
+// Debug: listar fretes por status (apenas admin)
+const debugFretes = async (req, res) => {
+  try {
+    const status = req.query.status || null;
+    const whereClause = {};
+    if (status) whereClause.status = status;
+
+    const fretes = await Frete.findAll({ where: whereClause, limit: 100, order: [['createdAt', 'DESC']] });
+    res.json({ success: true, data: { fretes } });
+  } catch (error) {
+    console.error('Erro no debugFretes:', error);
+    res.status(500).json({ success: false, message: 'Erro interno do servidor' });
+  }
+};
+
 // Atualizar status do frete
 const updateFreteStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['solicitado', 'cotado', 'aceito', 'em_transito', 'entregue', 'cancelado'];
+    const validStatuses = ['solicitado', 'cotado', 'aceito', 'em_espera', 'em_transito', 'entregue', 'cancelado'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -372,34 +439,72 @@ const updateFreteStatus = async (req, res) => {
       });
     }
 
-    // Verificar permissões
+    // Verificar permissões e transições
     const userType = req.userType;
-    if (userType === 'cliente' && !['cancelado'].includes(status)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Cliente só pode cancelar fretes'
-      });
+
+    // If client requests cancellation, check timing rule: up to 7 days before data_coleta_limite
+    if (userType === 'cliente') {
+      if (status !== 'cancelado') {
+        return res.status(403).json({ success: false, message: 'Cliente só pode cancelar fretes' });
+      }
+
+      // check deadline
+      const limite = frete.data_coleta_limite ? new Date(frete.data_coleta_limite) : null;
+      if (!limite) {
+        return res.status(400).json({ success: false, message: 'Data limite de coleta não definida; não é possível cancelar' });
+      }
+      const now = Date.now();
+      const ms7days = 7 * 24 * 60 * 60 * 1000;
+      if ((limite.getTime() - now) < ms7days) {
+        return res.status(400).json({ success: false, message: 'Cancelamento só permitido até 7 dias antes da data de coleta' });
+      }
+
+      await frete.update({ status: 'cancelado' });
+
+      const updatedFreteClient = await Frete.findByPk(id, { include: [{ model: User, as: 'cliente' }, { model: User, as: 'motorista' }] });
+      return res.json({ success: true, message: 'Frete cancelado com sucesso', data: { frete: updatedFreteClient } });
     }
 
-    if (userType === 'motorista' && frete.motorista_id !== null && frete.motorista_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Acesso negado'
-      });
+    // Motorista actions
+    if (userType === 'motorista') {
+      if (frete.motorista_id !== req.user.id) {
+        return res.status(403).json({ success: false, message: 'Acesso negado - este frete não está vinculado a você' });
+      }
+
+      // Driver can move to 'em_transito' (coleto) and 'entregue'
+      if (status === 'em_transito') {
+        await frete.update({ status: 'em_transito', data_coleta: new Date() });
+      } else if (status === 'entregue') {
+        // only allow if currently em_transito or em_espera (edge cases)
+        await frete.update({ status: 'entregue', data_entrega: new Date() });
+      } else {
+        return res.status(403).json({ success: false, message: 'Motorista só pode marcar fretes como em_transito ou entregue' });
+      }
+
+      const updatedForDriver = await Frete.findByPk(id, { include: [{ model: User, as: 'cliente' }, { model: User, as: 'motorista' }] });
+      return res.json({ success: true, message: 'Status do frete atualizado com sucesso', data: { frete: updatedForDriver } });
     }
 
-    // Atualizar status e datas
-    const updateData = { status };
-    
-    if (status === 'em_transito') {
-      updateData.data_coleta = new Date();
-    }
-    
-    if (status === 'entregue') {
-      updateData.data_entrega = new Date();
+    // Admin can set status (approve/aceito or cancel) - but prefer explicit adminAccept endpoint
+    if (userType === 'admin') {
+      // Only allow admin to set certain statuses via this endpoint
+      if (!['aceito', 'cancelado'].includes(status)) {
+        return res.status(403).json({ success: false, message: 'Admin só pode aprovar (aceito) ou cancelar via este endpoint' });
+      }
+
+      const updateData = { status };
+      if (status === 'aceito') {
+        // ensure motorista not assigned
+        updateData.motorista_id = null;
+      }
+      await frete.update(updateData);
+
+      const updatedForAdmin = await Frete.findByPk(id, { include: [{ model: User, as: 'cliente' }, { model: User, as: 'motorista' }] });
+      return res.json({ success: true, message: 'Status do frete atualizado com sucesso', data: { frete: updatedForAdmin } });
     }
 
-    await frete.update(updateData);
+    // Default: forbidden
+    return res.status(403).json({ success: false, message: 'Ação não permitida' });
 
     // Buscar frete atualizado
     const updatedFrete = await Frete.findByPk(id, {
@@ -512,14 +617,16 @@ const getAllFretes = async (req, res) => {
 const updateFrete = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, motorista_id, data_coleta, data_entrega } = req.body;
+    // Nota: esta rota é para atualização geral de campos do frete pelo admin.
+    // Atualizações de status devem usar /:id/status (updateFreteStatus) ou a rota de aprovação específica /:id/aceitar-admin.
+    const { motorista_id, data_coleta, data_entrega, ...other } = req.body;
 
-    console.log('Dados recebidos para atualização:', {
+    console.log('Dados recebidos para atualização (status deve ser omitido):', {
       id,
-      status,
       motorista_id,
       data_coleta,
-      data_entrega
+      data_entrega,
+      other
     });
 
     const frete = await Frete.findByPk(id);
@@ -530,24 +637,25 @@ const updateFrete = async (req, res) => {
       });
     }
 
-    // Atualizar campos permitidos
+    // Só permitir atualização de campos não relacionados a fluxo de status aqui
     const updateData = {};
-    if (status) updateData.status = status;
     if (motorista_id !== undefined) updateData.motorista_id = motorista_id;
     if (data_coleta) updateData.data_coleta = data_coleta;
     if (data_entrega) updateData.data_entrega = data_entrega;
 
-    console.log('Dados para atualização:', updateData);
+    // Também incluir quaisquer outros campos passados (por exemplo endereços, valores, etc.)
+    // desde que não contenham 'status' — já removido via destructuring.
+    Object.keys(other).forEach(key => {
+      updateData[key] = other[key];
+    });
+
+    console.log('Dados para atualização (admin):', updateData);
 
     await frete.update(updateData);
 
-    console.log('Frete atualizado com sucesso:', frete.toJSON());
+    const refreshed = await Frete.findByPk(id, { include: [{ model: User, as: 'cliente' }, { model: User, as: 'motorista' }] });
 
-    res.json({
-      success: true,
-      message: 'Frete atualizado com sucesso',
-      data: frete
-    });
+    res.json({ success: true, message: 'Frete atualizado com sucesso', data: refreshed });
   } catch (error) {
     console.error('Erro ao atualizar frete:', error);
     res.status(500).json({
@@ -627,6 +735,7 @@ module.exports = {
   getFreteById,
   acceptFrete,
   updateFreteStatus,
+  adminAcceptFrete,
   getAllFretes,
   updateFrete,
   getContatosCadastrados
