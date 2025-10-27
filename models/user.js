@@ -26,6 +26,8 @@ module.exports = (sequelize, DataTypes) => {
     user_type: DataTypes.STRING,
     is_active: DataTypes.BOOLEAN,
     email_verified: DataTypes.BOOLEAN,
+    email_verification_code: DataTypes.STRING,
+    email_verification_expires: DataTypes.DATE,
     nome: DataTypes.STRING,
     telefone: DataTypes.STRING,
     cpf: DataTypes.STRING,

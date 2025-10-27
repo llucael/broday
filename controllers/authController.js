@@ -1,10 +1,16 @@
 const { User, sequelize } = require('../models');
 const { generateTokens, verifyRefreshToken } = require('../middleware/auth');
+const { sendVerificationEmail } = require('../services/emailService');
+
+// Gerar código de verificação (5 dígitos)
+const generateVerificationCode = () => {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+};
 
 // Registrar novo usuário
 const register = async (req, res) => {
   try {
-    const { email, password, userType, ...userData } = req.body;
+    const { email, password, userType, cpf, cnpj, ...userData } = req.body;
 
     // Verificar se usuário já existe
     const existingUser = await User.findOne({ where: { email } });
@@ -15,27 +21,63 @@ const register = async (req, res) => {
       });
     }
 
-    // Criar usuário
+    // Verificar CPF único (se fornecido)
+    if (cpf) {
+      const existingCpf = await User.findOne({ where: { cpf } });
+      if (existingCpf) {
+        return res.status(400).json({
+          success: false,
+          message: 'CPF já está em uso'
+        });
+      }
+    }
+
+    // Verificar CNPJ único (se fornecido)
+    if (cnpj) {
+      const existingCnpj = await User.findOne({ where: { cnpj } });
+      if (existingCnpj) {
+        return res.status(400).json({
+          success: false,
+          message: 'CNPJ já está em uso'
+        });
+      }
+    }
+
+    // Criar usuário (NÃO verificado)
     const user = await User.create({
       email,
       password,
       user_type: userType,
       is_active: true,
-      email_verified: true
+      email_verified: false
     });
 
-    // Gerar tokens
-    const { accessToken, refreshToken } = await generateTokens(user.id);
+    // Gerar e enviar código de verificação
+    const code = generateVerificationCode();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+    await user.update({
+      email_verification_code: code,
+      email_verification_expires: expiresAt
+    });
+
+    // Enviar email de verificação
+    try {
+      const { sendVerificationEmail } = require('../services/emailService');
+      await sendVerificationEmail(email, code);
+    } catch (emailError) {
+      console.error('Erro ao enviar email:', emailError);
+      // Continuar com a criação mesmo se o email falhar
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Usuário criado com sucesso',
+      message: 'Usuário criado com sucesso. Verifique seu email para ativar sua conta.',
       data: {
         user: user.toSafeObject(),
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+        email: user.email,
+        needsVerification: true
       }
     });
   } catch (error) {
@@ -79,6 +121,15 @@ const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Conta desativada'
+      });
+    }
+
+    // Verificar se email está verificado
+    if (!user.email_verified) {
+      return res.status(401).json({
+        success: false,
+        message: 'Email não verificado. Verifique seu email antes de fazer login.',
+        needsVerification: true
       });
     }
 
@@ -341,6 +392,122 @@ const changePassword = async (req, res) => {
   }
 };
 
+// Solicitar verificação de email
+const requestEmailVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    if (user.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email já verificado'
+      });
+    }
+
+    // Gerar código de verificação
+    const code = generateVerificationCode();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+    await user.update({
+      email_verification_code: code,
+      email_verification_expires: expiresAt
+    });
+
+    // Enviar email
+    try {
+      await sendVerificationEmail(email, code);
+      res.json({
+        success: true,
+        message: 'Código de verificação enviado para seu email'
+      });
+    } catch (emailError) {
+      console.error('Erro ao enviar email:', emailError);
+      res.status(500).json({
+        success: false,
+        message: 'Erro ao enviar email de verificação'
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao solicitar verificação:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Verificar código de email
+const verifyEmailCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuário não encontrado'
+      });
+    }
+
+    if (user.email_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email já verificado'
+      });
+    }
+
+    if (!user.email_verification_code || !user.email_verification_expires) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nenhum código de verificação encontrado'
+      });
+    }
+
+    // Verificar expiração
+    if (new Date() > user.email_verification_expires) {
+      return res.status(400).json({
+        success: false,
+        message: 'Código de verificação expirado'
+      });
+    }
+
+    // Verificar código
+    if (user.email_verification_code !== code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Código de verificação inválido'
+      });
+    }
+
+    // Verificar email
+    await user.update({
+      email_verified: true,
+      email_verification_code: null,
+      email_verification_expires: null
+    });
+
+    res.json({
+      success: true,
+      message: 'Email verificado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao verificar código:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -348,5 +515,7 @@ module.exports = {
   logout,
   getProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  requestEmailVerification,
+  verifyEmailCode
 };

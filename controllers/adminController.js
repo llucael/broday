@@ -179,7 +179,10 @@ const getClientes = async (req, res) => {
     
     if (search) {
       whereClause[Op.or] = [
-        { email: { [Op.iLike]: `%${search}%` } }
+        { email: { [Op.iLike]: `%${search}%` } },
+        { nome: { [Op.iLike]: `%${search}%` } },
+        { cpf: { [Op.iLike]: `%${search}%` } },
+        { cnpj: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
@@ -457,8 +460,8 @@ const getMotoristas = async (req, res) => {
     }
     
     if (search) {
-      whereClause += " AND email LIKE ?";
-      replacements.push(`%${search}%`);
+      whereClause += " AND (nome LIKE ? OR email LIKE ? OR cpf LIKE ?)";
+      replacements.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     // Buscar motoristas com todos os campos

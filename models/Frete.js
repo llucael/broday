@@ -80,10 +80,6 @@ const Frete = sequelize.define('Frete', {
     type: DataTypes.DECIMAL(8, 2),
     allowNull: false
   },
-  cargo_dimensions: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   // Endereço de origem
   origin_cep: {
     type: DataTypes.STRING,
@@ -138,6 +134,14 @@ const Frete = sequelize.define('Frete', {
   observacoes: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  data_coleta_limite: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  data_entrega_limite: {
+    type: DataTypes.DATE,
+    allowNull: false
   },
   data_coleta: {
     type: DataTypes.DATE,

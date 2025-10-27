@@ -12,6 +12,8 @@ const {
 router.post('/register', validateUserRegistration, authController.register);
 router.post('/login', validateLogin, authController.login);
 router.post('/refresh-token', authController.refreshToken);
+router.post('/verify-email/request', authController.requestEmailVerification);
+router.post('/verify-email/verify', authController.verifyEmailCode);
 
 // Rotas protegidas
 router.use(authenticateToken); // Todas as rotas abaixo precisam de autenticação

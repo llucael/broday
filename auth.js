@@ -89,6 +89,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (error) {
                     console.error('Erro no login:', error);
                     
+                    // Verificar se precisa verificar email
+                    if (error.message && error.message.includes('não verificado')) {
+                        showNotification('Verifique seu email antes de fazer login.', 'error');
+                        localStorage.setItem('pendingVerification', email);
+                        setTimeout(() => {
+                            window.location.href = 'verify-email.html';
+                        }, 2000);
+                        return;
+                    }
+                    
                     let errorMessage = 'Erro ao fazer login. Tente novamente.';
                     
                     // Verificar se é erro de credenciais baseado na mensagem da API
@@ -141,9 +151,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     const response = await api.register(userData);
                     
                     if (response.success) {
-                        showNotification('Conta criada com sucesso!', 'success');
+                        showNotification('Conta criada com sucesso! Verifique seu email.', 'success');
                         this.reset();
-                        showConfirmationMessage();
+                        
+                        // Redirecionar para tela de verificação
+                        if (response.data.needsVerification) {
+                            localStorage.setItem('pendingVerification', response.data.email);
+                            setTimeout(() => {
+                                window.location.href = 'verify-email.html';
+                            }, 1500);
+                        } else {
+                            showConfirmationMessage();
+                        }
                     }
                 } catch (error) {
                     showNotification(error.message || 'Erro ao criar conta', 'error');

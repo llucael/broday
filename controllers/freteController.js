@@ -11,6 +11,14 @@ const generateFreteCode = () => {
 // Criar novo frete
 const createFrete = async (req, res) => {
   try {
+    // Validar campos obrigatórios
+    if (!req.body.data_coleta_limite || !req.body.data_entrega_limite) {
+      return res.status(400).json({
+        success: false,
+        message: 'Data limite de coleta e data de entrega são obrigatórias'
+      });
+    }
+
     const freteData = {
       ...req.body,
       cliente_id: req.user.id,
@@ -45,21 +53,42 @@ const createFrete = async (req, res) => {
 // Listar fretes do cliente
 const getFretesByCliente = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 10, status, cep, mostrarTodos = 'false', search } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = { cliente_id: req.user.id };
-    if (status) {
+    
+    // Por padrão, mostrar apenas status que precisam de ação (não finalizados)
+    // A menos que o parâmetro mostrarTodos=true seja passado
+    if (mostrarTodos !== 'true') {
+      whereClause.status = { [Op.in]: ['solicitado', 'aceito', 'em_transito'] };
+    }
+    
+    if (status && status !== 'all') {
       whereClause.status = status;
     }
+    
+    // Filtro por CEP ou busca geral
+    if (cep || search) {
+      const searchTerm = cep || search;
+      whereClause[Op.or] = [
+        { origin_cep: { [Op.like]: `%${searchTerm}%` } },
+        { destination_cep: { [Op.like]: `%${searchTerm}%` } },
+        { origin_street: { [Op.like]: `%${searchTerm}%` } },
+        { destination_street: { [Op.like]: `%${searchTerm}%` } },
+        { origin_city: { [Op.like]: `%${searchTerm}%` } },
+        { destination_city: { [Op.like]: `%${searchTerm}%` } }
+      ];
+    }
 
+    // Buscar com ordenação por data_coleta_limite (mais recente primeiro)
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: User, as: 'cliente' },
-        { model: User, as: 'motorista' }
+        { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] },
+        { model: User, as: 'motorista', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -98,9 +127,9 @@ const getFretesDisponiveis = async (req, res) => {
         motorista_id: null
       },
       include: [
-        { model: User, as: 'cliente' }
+        { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [['data_coleta_limite', 'DESC']],
       limit: limit,
       offset: offset
     });
@@ -129,10 +158,17 @@ const getFretesDisponiveis = async (req, res) => {
 // Listar fretes do motorista
 const getFretesByMotorista = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 10, status, mostrarTodos = 'false' } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = { motorista_id: req.user.id };
+    
+    // Por padrão, mostrar apenas status que precisam de ação (não finalizados)
+    // A menos que o parâmetro mostrarTodos=true seja passado
+    if (mostrarTodos !== 'true') {
+      whereClause.status = { [Op.in]: ['solicitado', 'aceito', 'em_transito'] };
+    }
+    
     if (status) {
       if (status.includes(',')) {
         whereClause.status = { [Op.in]: status.split(',') };
@@ -144,10 +180,10 @@ const getFretesByMotorista = async (req, res) => {
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: User, as: 'cliente' },
-        { model: User, as: 'motorista' }
+        { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] },
+        { model: User, as: 'motorista', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -390,7 +426,7 @@ const updateFreteStatus = async (req, res) => {
 // Listar todos os fretes (admin)
 const getAllFretes = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, clienteId, motoristaId, data } = req.query;
+    const { page = 1, limit = 10, status, clienteId, motoristaId, dataInicio, dataFim, nomeMotorista, nomeCliente } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = {};
@@ -398,25 +434,55 @@ const getAllFretes = async (req, res) => {
     if (clienteId) whereClause.cliente_id = clienteId;
     if (motoristaId) whereClause.motorista_id = motoristaId;
     
-    // Filtro por data
-    if (data) {
-      const dataInicio = new Date(data);
-      const dataFim = new Date(data);
-      dataFim.setDate(dataFim.getDate() + 1);
-      
+    // Filtro por intervalo de datas
+    if (dataInicio && dataFim) {
       whereClause.createdAt = {
-        [Op.gte]: dataInicio,
-        [Op.lt]: dataFim
+        [Op.gte]: new Date(dataInicio),
+        [Op.lte]: new Date(dataFim)
       };
+    } else if (dataInicio) {
+      whereClause.createdAt = {
+        [Op.gte]: new Date(dataInicio)
+      };
+    } else if (dataFim) {
+      whereClause.createdAt = {
+        [Op.lte]: new Date(dataFim)
+      };
+    }
+
+    // Configurar includes com filtro de nome do motorista e cliente
+    const includeOptions = [];
+
+    if (nomeCliente) {
+      includeOptions.push({
+        model: User,
+        as: 'cliente',
+        where: {
+          nome: { [Op.like]: `%${nomeCliente}%` }
+        },
+        required: true
+      });
+    } else {
+      includeOptions.push({ model: User, as: 'cliente' });
+    }
+
+    if (nomeMotorista) {
+      includeOptions.push({
+        model: User,
+        as: 'motorista',
+        where: {
+          nome: { [Op.like]: `%${nomeMotorista}%` }
+        },
+        required: false
+      });
+    } else {
+      includeOptions.push({ model: User, as: 'motorista' });
     }
 
     const { count, rows: fretes } = await Frete.findAndCountAll({
       where: whereClause,
-      include: [
-        { model: User, as: 'cliente' },
-        { model: User, as: 'motorista' }
-      ],
-      order: [['created_at', 'DESC']],
+      include: includeOptions,
+      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -491,6 +557,68 @@ const updateFrete = async (req, res) => {
   }
 };
 
+// Buscar remetentes e destinatários já cadastrados do cliente
+const getContatosCadastrados = async (req, res) => {
+  try {
+    const clienteId = req.user.id;
+    
+    // Buscar todos os fretes do cliente
+    const fretes = await Frete.findAll({
+      where: { cliente_id: clienteId },
+      attributes: [
+        'sender_name',
+        'sender_document',
+        'sender_phone',
+        'sender_email',
+        'recipient_name',
+        'recipient_document',
+        'recipient_phone',
+        'recipient_email'
+      ]
+    });
+
+    // Extrair remetentes e destinatários únicos
+    const remetentes = new Map();
+    const destinatarios = new Map();
+
+    fretes.forEach(frete => {
+      // Adicionar remetente
+      if (frete.sender_name) {
+        remetentes.set(frete.sender_document || frete.sender_email, {
+          name: frete.sender_name,
+          document: frete.sender_document,
+          phone: frete.sender_phone,
+          email: frete.sender_email
+        });
+      }
+
+      // Adicionar destinatário
+      if (frete.recipient_name) {
+        destinatarios.set(frete.recipient_document || frete.recipient_email, {
+          name: frete.recipient_name,
+          document: frete.recipient_document,
+          phone: frete.recipient_phone,
+          email: frete.recipient_email
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        remetentes: Array.from(remetentes.values()),
+        destinatarios: Array.from(destinatarios.values())
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar contatos cadastrados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 module.exports = {
   createFrete,
   getFretesByCliente,
@@ -500,5 +628,6 @@ module.exports = {
   acceptFrete,
   updateFreteStatus,
   getAllFretes,
-  updateFrete
+  updateFrete,
+  getContatosCadastrados
 };

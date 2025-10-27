@@ -293,6 +293,11 @@ class ApiService {
     });
   }
 
+  // Buscar contatos cadastrados (remetentes e destinatários)
+  async getContatosCadastrados() {
+    return await this.request('/fretes/cliente/contatos-cadastrados');
+  }
+
   // ===== MÉTODOS DE PERFIL =====
 
   // Buscar perfil do usuário

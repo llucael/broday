@@ -27,6 +27,11 @@ app.get('/login-success', (req, res) => {
     res.sendFile(path.join(__dirname, 'login-success.html'));
 });
 
+// Rota para servir verify-email.html
+app.get('/verify-email', (req, res) => {
+    res.sendFile(path.join(__dirname, 'verify-email.html'));
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`🌐 Servidor web rodando na porta ${PORT}`);
@@ -36,7 +41,7 @@ app.listen(PORT, () => {
     console.log(`   - Início: http://localhost:${PORT}`);
     console.log(`   - Login: http://localhost:${PORT}/login`);
     console.log(`   - Frete: http://localhost:${PORT}/frete`);
-    console.log(`   - Login Success: http://localhost:${PORT}/login-success`);
+    console.log(`   - Verificação: http://localhost:${PORT}/verify-email`);
 });
 
 module.exports = app;

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificação de Email - Broday Transportes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .verification-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            background: #1a202c;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .verification-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+
+        .code-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .code-input {
+            width: 50px;
+            height: 60px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid #4a5568;
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .code-input:focus {
+            border-color: #667eea;
+            outline: none;
+            background: #1a202c;
+        }
+
+        .timer {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            color: #a0aec0;
+        }
+
+        .timer.warning {
+            color: #f6ad55;
+        }
+
+        .timer.expired {
+            color: #e53e3e;
+        }
+
+        .resend-btn {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .error-message {
+            background: #e53e3e;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #38a169;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="verification-icon">
+            <i class="fas fa-envelope"></i>
+        </div>
+        
+        <h1>Verificação de Email</h1>
+        <p style="text-align: center; color: #a0aec0; margin-bottom: 30px;">
+            Digite o código de 5 dígitos que enviamos para seu email
+        </p>
+
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+
+        <form id="verification-form">
+            <div class="code-inputs">
+                <input type="text" class="code-input" id="code-0" maxlength="1" pattern="[0-9]" required>
+                <input type="text" class="code-input" id="code-1" maxlength="1" pattern="[0-9]" required>
+                <input type="text" class="code-input" id="code-2" maxlength="1" pattern="[0-9]" required>
+                <input type="text" class="code-input" id="code-3" maxlength="1" pattern="[0-9]" required>
+                <input type="text" class="code-input" id="code-4" maxlength="1" pattern="[0-9]" required>
+            </div>
+
+            <div class="timer" id="timer">
+                ⏱️ Tempo restante: <span id="time-left">30:00</span>
+            </div>
+
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner fa-spin"></i> Verificando...
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                <i class="fas fa-check"></i> Verificar Código
+            </button>
+
+            <div class="resend-btn">
+                <button type="button" id="resend-btn" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Reenviar Código
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        const email = localStorage.getItem('pendingVerification');
+        let countdown = 30 * 60; // 30 minutos em segundos
+
+        if (!email) {
+            window.location.href = 'login.html';
+        }
+
+        // Configurar inputs de código
+        const codeInputs = document.querySelectorAll('.code-input');
+        codeInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value && index < codeInputs.length - 1) {
+                    codeInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    codeInputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = e.clipboardData.getData('text');
+                const digits = paste.replace(/\D/g, '');
+                
+                for (let i = 0; i < Math.min(5, digits.length); i++) {
+                    if (codeInputs[i]) {
+                        codeInputs[i].value = digits[i];
+                    }
+                }
+                
+                if (codeInputs[4] && digits.length >= 5) {
+                    codeInputs[4].focus();
+                }
+            });
+        });
+
+        // Timer
+        const timerElement = document.getElementById('timer');
+        const timeLeftElement = document.getElementById('time-left');
+        
+        function updateTimer() {
+            const minutes = Math.floor(countdown / 60);
+            const seconds = countdown % 60;
+            timeLeftElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (countdown <= 60) {
+                timerElement.classList.add('warning');
+            }
+            
+            if (countdown <= 0) {
+                timerElement.classList.add('expired');
+                timeLeftElement.textContent = 'EXPIRADO';
+            } else {
+                countdown--;
+            }
+        }
+
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        // Form submit
+        document.getElementById('verification-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+
+            const code = Array.from(codeInputs).map(input => input.value).join('');
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/verify-email/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, code })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('success-message').textContent = 'Email verificado com sucesso! Redirecionando...';
+                    document.getElementById('success-message').style.display = 'block';
+                    
+                    localStorage.removeItem('pendingVerification');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error-message').textContent = data.message || 'Erro ao verificar código';
+                    document.getElementById('error-message').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-message').textContent = 'Erro ao verificar código. Tente novamente.';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        });
+
+        // Reenviar código
+        document.getElementById('resend-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/verify-email/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    countdown = 30 * 60;
+                    timerElement.classList.remove('expired', 'warning');
+                    document.getElementById('success-message').textContent = 'Código reenviado com sucesso!';
+                    document.getElementById('success-message').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Erro ao reenviar código. Tente novamente.';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
+

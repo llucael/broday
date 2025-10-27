@@ -10,6 +10,7 @@ router.use(authenticateToken);
 // Rotas para clientes
 router.post('/', requireCliente, validateFrete, freteController.createFrete);
 router.get('/cliente/meus-fretes', requireCliente, validatePagination, freteController.getFretesByCliente);
+router.get('/cliente/contatos-cadastrados', requireCliente, freteController.getContatosCadastrados);
 
 // Rotas para motoristas
 router.get('/disponiveis', requireMotorista, freteController.getFretesDisponiveis);
