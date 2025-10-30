@@ -15,7 +15,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 10
     });
 
@@ -83,6 +83,25 @@ const getFretesDisponiveis = async (req, res) => {
   try {
     const { page = 1, limit = 10, localizacao, tipoCarga, valorMin, valorMax } = req.query;
     const offset = (page - 1) * limit;
+    const motoristaId = req.user.id;
+
+    // Motorista só pode ver fretes disponíveis se NÃO tiver frete ativo
+    const freteAtivoCount = await Frete.count({
+      where: {
+        motorista_id: motoristaId,
+        status: { [Op.in]: ['em_espera', 'em_transito'] }
+      }
+    });
+
+    if (freteAtivoCount > 0) {
+      return res.json({
+        success: true,
+        data: {
+          fretes: [],
+          pagination: { total: 0, page: parseInt(page), limit: parseInt(limit), pages: 0 }
+        }
+      });
+    }
 
     // Disponíveis para motoristas são fretes aprovados pelo admin ('aceito') e sem motorista vinculado
     const whereClause = {
@@ -93,13 +112,13 @@ const getFretesDisponiveis = async (req, res) => {
     // Filtros
     if (localizacao) {
       whereClause[Op.or] = [
-        { origin_city: { [Op.iLike]: `%${localizacao}%` } },
-        { destination_city: { [Op.iLike]: `%${localizacao}%` } }
+        { origin_city: { [Op.like]: `%${localizacao}%` } },
+        { destination_city: { [Op.like]: `%${localizacao}%` } }
       ];
     }
 
     if (tipoCarga) {
-      whereClause.cargo_type = { [Op.iLike]: `%${tipoCarga}%` };
+      whereClause.cargo_type = { [Op.like]: `%${tipoCarga}%` };
     }
 
     if (valorMin || valorMax) {
@@ -113,7 +132,7 @@ const getFretesDisponiveis = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -189,6 +208,12 @@ const aceitarFrete = async (req, res) => {
       // data_coleta será definida quando o motorista marcar em_transito
     });
 
+    // Atualizar status do motorista para 'indisponivel'
+    const motorista = await User.findByPk(motoristaId);
+    if (motorista) {
+      await motorista.update({ status: 'indisponivel' });
+    }
+
     res.json({
       success: true,
       message: 'Frete aceito com sucesso',
@@ -241,8 +266,18 @@ const atualizarStatusFrete = async (req, res) => {
     
     if (status === 'em_transito') {
       updateData.data_inicio_transporte = new Date();
+      // Motorista em viagem
+      const motorista = await User.findByPk(motoristaId);
+      if (motorista) {
+        await motorista.update({ status: 'em_viagem' });
+      }
     } else if (status === 'entregue') {
       updateData.data_entrega = new Date();
+      // Libera motorista
+      const motorista = await User.findByPk(motoristaId);
+      if (motorista) {
+        await motorista.update({ status: 'disponivel' });
+      }
     }
 
     await frete.update(updateData);
@@ -264,19 +299,23 @@ const atualizarStatusFrete = async (req, res) => {
 // Visualizar fretes do motorista
 const getMeusFretes = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 10, status, mostrarTodos = 'false' } = req.query;
     const offset = (page - 1) * limit;
     const motoristaId = req.user.id;
 
     const whereClause = { motorista_id: motoristaId };
+    // Por padrão, somente não finalizados
+    if (mostrarTodos !== 'true') {
+      whereClause.status = { [Op.in]: ['aceito', 'em_espera', 'em_transito'] };
+    }
     if (status) whereClause.status = status;
 
     const fretes = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: User, as: 'cliente', attributes: ['id', 'email'] }
+        { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['updated_at', 'DESC']],
+      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });

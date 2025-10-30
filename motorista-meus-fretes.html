@@ -177,11 +177,12 @@
             
             // Verificar se motorista já está em viagem
             const isMotoristaEmViagem = await checkMotoristaEmViagem();
+            const statusClass = (frete.status || '').replace(/_/g, '-');
             
             card.innerHTML = `
                 <div class="frete-header">
                     <h3>Frete #${frete.id}</h3>
-                    <span class="status status-${frete.status}">${getStatusText(frete.status)}</span>
+                    <span class="status status-${statusClass}">${getStatusText(frete.status)}</span>
                 </div>
                 <div class="frete-info">
                     <p><strong>Origem:</strong> ${frete.origin_city}</p>
@@ -200,12 +201,12 @@
                         Rastrear
                     </button>
                     ` : ''}
-                    ${frete.status === 'aceito' ? `
+                    ${frete.status === 'em_espera' ? `
                         <button class="btn btn-sm ${isMotoristaEmViagem ? 'btn-disabled' : 'btn-success'}" 
                                 onclick="${isMotoristaEmViagem ? 'showNotification("Você já está em viagem!", "error")' : `updateFreteStatus(${frete.id}, 'em_transito')`}"
                                 ${isMotoristaEmViagem ? 'disabled' : ''}>
                             <i class="fas fa-truck"></i>
-                            ${isMotoristaEmViagem ? 'Indisponível' : 'Iniciar Viagem'}
+                            ${isMotoristaEmViagem ? 'Indisponível' : 'Iniciar Frete'}
                         </button>
                     ` : ''}
                     ${frete.status === 'em_transito' ? `
@@ -223,6 +224,7 @@
             const statusMap = {
                 'solicitado': 'Solicitado',
                 'aceito': 'Aceito',
+                'em_espera': 'Em Espera',
                 'em_transito': 'Em Trânsito',
                 'entregue': 'Entregue',
                 'cancelado': 'Cancelado'
@@ -268,6 +270,7 @@
             const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A';
             const dataEntrega = frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A';
             const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'A negociar';
+            const statusClass = (frete.status || '').replace(/_/g, '-');
             
             content.innerHTML = `
                 <div class="frete-details-container">
@@ -279,7 +282,7 @@
                         </div>
                         <div class="detail-item">
                             <strong>Status:</strong>
-                            <span class="status-badge status-${frete.status}">${getStatusText(frete.status)}</span>
+                            <span class="status-badge status-${statusClass}">${getStatusText(frete.status)}</span>
                         </div>
                         <div class="detail-item">
                             <strong>Cliente:</strong>

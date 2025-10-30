@@ -25,8 +25,7 @@ router.post('/:id/aceitar', requireMotorista, validateId, freteController.accept
 // Admin aprova/aceita o frete solicitado: libera o frete para motoristas (status 'aceito')
 router.post('/:id/aceitar-admin', requireAdmin, validateId, freteController.adminAcceptFrete);
 
-// Debug route to list fretes by status (admin only)
-router.get('/debug', requireAdmin, freteController.debugFretes);
+// (debug route removida: handler inexistente)
 
 // Rotas para atualização de status (motorista ou admin)
 router.put('/:id/status', validateId, freteController.updateFreteStatus);

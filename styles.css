@@ -1356,6 +1356,11 @@ h2 {
     color: #22543D;
 }
 
+.status-em-espera {
+    background-color: #F6E05E;
+    color: #744210;
+}
+
 .status-em_transito {
     background-color: #63B3ED;
     color: #2A4365;
@@ -3213,6 +3218,11 @@ body.light-mode .form-actions {
 .status-em_transito {
     background-color: #FEF5E7;
     color: #DD6B20;
+}
+
+.status-em-espera {
+    background-color: #FEEBC8;
+    color: #975A16;
 }
 
 .status-entregue {

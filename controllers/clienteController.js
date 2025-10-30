@@ -211,19 +211,23 @@ const acompanharFrete = async (req, res) => {
 // Gerenciar fretes do cliente
 const getMeusFretes = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 10, status, mostrarTodos = 'false' } = req.query;
     const offset = (page - 1) * limit;
     const clienteId = req.user.id;
 
     const whereClause = { cliente_id: clienteId };
+    // Por padrão, somente não finalizados
+    if (mostrarTodos !== 'true') {
+      whereClause.status = { [Op.in]: ['solicitado', 'aceito', 'em_transito', 'em_espera'] };
+    }
     if (status) whereClause.status = status;
 
     const fretes = await Frete.findAndCountAll({
       where: whereClause,
       include: [
-        { model: User, as: 'motorista', attributes: ['id', 'email'] }
+        { model: User, as: 'motorista', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['updated_at', 'DESC']],
+      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
