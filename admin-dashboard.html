@@ -43,6 +43,78 @@
             gap: 2rem;
             margin: 0 1rem;
         }
+
+        /* Estilos do Dashboard Header e Filtros */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dashboard-title {
+            flex: 1;
+        }
+
+        .dashboard-filters {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+
+        .form-select {
+            padding: 0.5rem 2.5rem 0.5rem 1rem;
+            border: 1px solid #4A5568;
+            border-radius: 8px;
+            background-color: #2D3748;
+            color: #ffffff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-width: 180px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px;
+        }
+
+        .form-select:hover {
+            border-color: #63B3ED;
+            background-color: #2C5282;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #4299E1;
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.25);
+        }
+
+        /* Estilo para o modo claro */
+        .light-mode .form-select {
+            background-color: #EDF2F7;
+            color: #2D3748;
+            border-color: #CBD5E0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        }
+
+        .light-mode .form-select:hover {
+            background-color: #E2E8F0;
+            border-color: #4A5568;
+        }
     </style>
 </head>
 <body>
@@ -79,8 +151,30 @@
             <!-- Dashboard Section -->
             <section id="dashboard" class="dashboard-section active">
                 <div class="dashboard-header">
-                    <h1>Dashboard Administrativo</h1>
-                    <p>Visão geral das operações e métricas do sistema</p>
+                    <div class="dashboard-title">
+                        <h1>Dashboard Administrativo</h1>
+                        <p>Visão geral das operações e métricas do sistema</p>
+                    </div>
+                    <div class="dashboard-filters">
+                        <div class="filter-group">
+                            <label for="mes-filtro">Filtrar por Mês:</label>
+                            <select id="mes-filtro" class="form-select" onchange="filtrarPorMes()">
+                                <option value="todos">Todos os Meses</option>
+                                <option value="1">Janeiro</option>
+                                <option value="2">Fevereiro</option>
+                                <option value="3">Março</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Maio</option>
+                                <option value="6">Junho</option>
+                                <option value="7">Julho</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Setembro</option>
+                                <option value="10">Outubro</option>
+                                <option value="11">Novembro</option>
+                                <option value="12">Dezembro</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Stats Cards -->
@@ -100,7 +194,7 @@
                         </div>
                         <div class="stat-content">
                             <h3 id="fretes-concluidos-mes">0</h3>
-                            <p>Fretes Concluídos (Mês)</p>
+                            <p>Fretes Concluídos (<span id="mes-selecionado-texto">Mês</span>)</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -211,30 +305,253 @@
         }
 
         async function loadDashboardData() {
+            const mesSelecionado = document.getElementById('mes-filtro')?.value || 'todos';
             // Carregar estatísticas primeiro
-            await loadStats();
+            await loadStats(mesSelecionado);
             // Depois carregar gráficos com os dados reais
-            loadCharts();
+            loadCharts(mesSelecionado);
         }
 
         let dashboardData = null; // Armazenar dados do dashboard globalmente
+        let statusChart = null; // Referência global para o gráfico de status
+        let mesChart = null; // Referência global para o gráfico de mês
 
-        async function loadStats() {
+        // Definir mês atual no filtro ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            const mesAtual = new Date().getMonth() + 1;
+            const mesSelect = document.getElementById('mes-filtro');
+            if (mesSelect) {
+                mesSelect.value = mesAtual.toString();
+                loadDashboardData(); // Carregar dados iniciais com o mês atual
+            }
+        });
+
+        // Função para obter o nome do mês
+        function getNomeMes(mes) {
+            const meses = {
+                'todos': 'Total',
+                '1': 'Janeiro',
+                '2': 'Fevereiro',
+                '3': 'Março',
+                '4': 'Abril',
+                '5': 'Maio',
+                '6': 'Junho',
+                '7': 'Julho',
+                '8': 'Agosto',
+                '9': 'Setembro',
+                '10': 'Outubro',
+                '11': 'Novembro',
+                '12': 'Dezembro'
+            };
+            return meses[mes] || 'Mês';
+        }
+
+        // Retorna array de fretes filtrados pelo mês (string: 'todos' ou '1'..'12')
+        function getFretesFiltradosPorMes(mes) {
+            if (!dashboardData) return [];
+            // Preferir lista de fretes detalhada quando disponível
+            const fretes = Array.isArray(dashboardData.fretes) ? dashboardData.fretes : [];
+
+            if (mes === 'todos') return fretes;
+
+            return fretes.filter(f => {
+                // Tenta extrair a data do frete; aceita campos comuns: data, dataColeta, createdAt
+                const d = f.data || f.dataColeta || f.createdAt || f.created_at;
+                if (!d) return false;
+                const dt = new Date(d);
+                if (isNaN(dt.getTime())) return false;
+                return (dt.getMonth() + 1).toString() === mes;
+            });
+        }
+
+        // Calcula contagem por status a partir de um array de fretes
+        function calcularStatusPorFretes(fretes) {
+            const counts = {
+                solicitado: 0,
+                aceito: 0,
+                em_transito: 0,
+                entregue: 0,
+                cancelado: 0
+            };
+
+            if (!Array.isArray(fretes)) return counts;
+
+            fretes.forEach(f => {
+                const status = (f.status || f.status_frete || '').toString();
+                // normalizar alguns nomes possíveis
+                if (status === 'pendente') counts.solicitado++;
+                else if (status === 'solicitado') counts.solicitado++;
+                else if (status === 'aceito') counts.aceito++;
+                else if (status === 'em_transito' || status === 'em trânsito' || status === 'em_transito') counts.em_transito++;
+                else if (status === 'entregue') counts.entregue++;
+                else if (status === 'cancelado') counts.cancelado++;
+            });
+
+            return counts;
+        }
+
+        // Busca todas as páginas de /fretes para o intervalo dado e retorna um array com todos os fretes
+        async function fetchAllFretesForRange(startISO, endISO) {
+            const limit = 100; // conforme validação do backend
+            let page = 1;
+            let allFretes = [];
+
+            while (true) {
+                const url = `/fretes?page=${page}&limit=${limit}&dataInicio=${encodeURIComponent(startISO)}&dataFim=${encodeURIComponent(endISO)}`;
+                try {
+                    const resp = await api.request(url);
+                    if (!resp || !resp.success) {
+                        console.warn('Resposta inválida ao buscar fretes, interrompendo paginação', resp);
+                        break;
+                    }
+
+                    const pageFretes = resp.data?.fretes || resp.data || [];
+                    if (Array.isArray(pageFretes)) {
+                        allFretes = allFretes.concat(pageFretes);
+                    }
+
+                    // Se houver paginação informada, usá-la para decidir continuar
+                    const pagination = resp.data?.pagination;
+                    if (pagination && typeof pagination.page === 'number' && typeof pagination.pages === 'number') {
+                        if (pagination.page < pagination.pages) {
+                            page++;
+                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // Caso não haja informação de páginas, parar se retornou menos do que o limite
+                    if (!Array.isArray(pageFretes) || pageFretes.length < limit) break;
+
+                    page++;
+                } catch (err) {
+                    console.error('Erro ao buscar página de fretes:', err);
+                    break;
+                }
+            }
+
+            return allFretes;
+        }
+
+        async function loadStats(mes = 'todos') {
             try {
-                // Carregar dados do dashboard da API
-                const dashboardResponse = await api.request('/admin/dashboard');
-                
-                if (dashboardResponse.success) {
-                    dashboardData = dashboardResponse.data.dashboard;
-                    
-                    // Atualizar contadores
-                    document.getElementById('fretes-ativos').textContent = dashboardData.fretesAtivos || 0;
-                    document.getElementById('fretes-concluidos-mes').textContent = dashboardData.fretesConcluidosMes || 0;
-                    document.getElementById('total-clientes').textContent = dashboardData.usuarios.totalClientes || 0;
-                    document.getElementById('total-motoristas').textContent = dashboardData.usuarios.totalMotoristas || 0;
-                } else {
+                // Carregar dados do dashboard da API (sem depender de agregações específicas)
+                const url = mes === 'todos' ? '/admin/dashboard' : `/admin/dashboard?mes=${mes}`;
+                const dashboardResponse = await api.request(url);
+
+                if (!dashboardResponse.success) {
                     throw new Error(dashboardResponse.message || 'Erro ao carregar dashboard');
                 }
+
+                // servidor pode retornar { dashboard: {...} } ou dados diretos; tratar ambos
+                dashboardData = dashboardResponse.data?.dashboard || dashboardResponse.data || {};
+
+                // Se o usuário selecionou um mês específico, buscar a lista detalhada de fretes
+                // usando o endpoint /fretes com filtro de data (dataInicio/dataFim)
+                if (mes !== 'todos') {
+                    try {
+                        const year = new Date().getFullYear();
+                        const monthNum = parseInt(mes, 10);
+                        const start = new Date(year, monthNum - 1, 1);
+                        const end = new Date(year, monthNum, 0); // último dia do mês
+                        // ajustar fim para incluir final do dia
+                        end.setHours(23, 59, 59, 999);
+
+                        const startISO = start.toISOString();
+                        const endISO = end.toISOString();
+
+                        // Buscar todas as páginas para o intervalo
+                        const allFretes = await fetchAllFretesForRange(startISO, endISO);
+                        dashboardData.fretes = allFretes || [];
+                        console.log(`Fretes detalhados (todas páginas) buscados para ${mes}:`, dashboardData.fretes.length);
+                        // Se a API de detalhamento falhar (500) pode retornar lista vazia;
+                        // neste caso, vamos sinalizar para usar os agregados do servidor como fallback.
+                        if ((!dashboardData.fretes || dashboardData.fretes.length === 0)) {
+                            console.warn('Nenhum frete detalhado disponível para o mês; usaremos agregados do servidor como fallback.');
+                            dashboardData._useAggregatesFallback = true;
+                        } else {
+                            dashboardData._useAggregatesFallback = false;
+                        }
+                    } catch (err) {
+                        console.warn('Não foi possível buscar fretes detalhados para o mês:', err);
+                        // Em caso de erro, marcar fallback para usar agregados
+                        dashboardData.fretes = [];
+                        dashboardData._useAggregatesFallback = true;
+                    }
+                }
+
+                // Agora calculamos todas as métricas a partir da lista detalhada de fretes quando disponível
+                // Primeiro tentamos calcular tudo a partir dos fretes detalhados
+                const fretesFiltrados = getFretesFiltradosPorMes(mes);
+
+                let fretesAtivos = 0;
+                let fretesConcluidos = 0;
+
+                if (dashboardData._useAggregatesFallback) {
+                    // Fallback: usar agregados do servidor quando não temos lista detalhada
+                    console.warn('Usando dados agregados do servidor para preencher métricas do mês.');
+
+                    // fretesConcluidos: procurar em fretesPorMes por YYYY-MM
+                    const year = new Date().getFullYear();
+                    const monthNum = mes === 'todos' ? null : parseInt(mes, 10);
+                    if (monthNum) {
+                        const key = `${year}-${String(monthNum).padStart(2, '0')}`;
+                        const found = (dashboardData.fretesPorMes || []).find(it => String(it.mes) === key || String(it.mes).startsWith(key));
+                        fretesConcluidos = found ? parseInt(found.count || 0) : 0;
+                    } else {
+                        fretesConcluidos = dashboardData.fretesConcluidosMes || 0;
+                    }
+
+                    // fretesAtivos: usar valor agregado global (melhor que zero)
+                    fretesAtivos = dashboardData.fretesAtivos || 0;
+
+                    console.log('Resumo (fallback agregados):', { mes, fretesAtivos, fretesConcluidos });
+                } else {
+                    // fretes ativos = status aceito ou em_transito
+                    fretesAtivos = fretesFiltrados.filter(f => {
+                        const s = (f.status || f.status_frete || '').toString();
+                        return s === 'aceito' || s === 'em_transito' || s === 'em trânsito';
+                    }).length;
+
+                    // fretes concluídos = status entregue
+                    fretesConcluidos = fretesFiltrados.filter(f => {
+                        const s = (f.status || f.status_frete || '').toString();
+                        return s === 'entregue';
+                    }).length;
+
+                    console.log('Resumo após filtragem:', {
+                        mes,
+                        fretesFiltrados: fretesFiltrados.length,
+                        fretesAtivos,
+                        fretesConcluidos
+                    });
+                }
+
+                // calcular clientes e motoristas ativos no mês: usar IDs disponíveis; fallback para totals do servidor
+                const clientesSet = new Set();
+                const motoristasSet = new Set();
+                fretesFiltrados.forEach(f => {
+                    if (f.clienteId) clientesSet.add(f.clienteId);
+                    if (f.senderId) clientesSet.add(f.senderId);
+                    if (f.senderEmail) clientesSet.add(f.senderEmail);
+                    if (f.recipientEmail) clientesSet.add(f.recipientEmail);
+                    if (f.motoristaId) motoristasSet.add(f.motoristaId);
+                    if (f.driverId) motoristasSet.add(f.driverId);
+                });
+
+                const totalClientesMes = clientesSet.size || (dashboardData.usuarios?.clientesPorMes?.[mes] || 0);
+                const totalMotoristasMes = motoristasSet.size || (dashboardData.usuarios?.motoristasPorMes?.[mes] || 0) || dashboardData.usuarios?.totalMotoristas || 0;
+
+                // Atualizar contadores
+                document.getElementById('fretes-ativos').textContent = fretesAtivos;
+                document.getElementById('fretes-concluidos-mes').textContent = fretesConcluidos;
+                document.getElementById('total-clientes').textContent = mes === 'todos' ? (dashboardData.usuarios?.totalClientes || totalClientesMes) : totalClientesMes;
+                document.getElementById('total-motoristas').textContent = mes === 'todos' ? (dashboardData.usuarios?.totalMotoristas || totalMotoristasMes) : totalMotoristasMes;
+
+                // Atualizar texto do mês selecionado
+                const mesTexto = getNomeMes(mes);
+                document.getElementById('mes-selecionado-texto').textContent = mesTexto;
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
                 // Valores padrão em caso de erro
@@ -242,30 +559,66 @@
                 document.getElementById('fretes-concluidos-mes').textContent = '0';
                 document.getElementById('total-motoristas').textContent = '0';
                 document.getElementById('total-clientes').textContent = '0';
+                document.getElementById('mes-selecionado-texto').textContent = 'Mês';
             }
         }
 
-        function loadCharts() {
-            // Usar dados reais do dashboard se disponível, senão usar dados padrão
-            let fretesPorStatus = {
-                'solicitado': 0,
-                'aceito': 0,
-                'em_transito': 0,
-                'entregue': 0,
-                'cancelado': 0
-            };
+        // Função para filtrar dados por mês
+        async function filtrarPorMes() {
+            showLoadingState(true);
+            try {
+                const mesSelecionado = document.getElementById('mes-filtro').value;
+                console.log('Filtro por mês acionado, mês:', mesSelecionado);
+                await loadDashboardData(); // Isso irá pegar o mês selecionado automaticamente
+                console.log('Atualização do dashboard concluída para mês:', mesSelecionado);
+            } catch (error) {
+                console.error('Erro ao filtrar por mês:', error);
+                showNotification('Erro ao atualizar os dados', 'error');
+            } finally {
+                showLoadingState(false);
+            }
+        }
 
-            if (dashboardData && dashboardData.fretesPorStatus) {
-                // Processar dados reais de fretes por status
-                dashboardData.fretesPorStatus.forEach(item => {
-                    const status = item.status;
-                    const count = parseInt(item.count);
-                    
-                    if (status === 'solicitado') fretesPorStatus.solicitado = count;
-                    else if (status === 'aceito') fretesPorStatus.aceito = count;
-                    else if (status === 'em_transito') fretesPorStatus.em_transito = count;
-                    else if (status === 'entregue') fretesPorStatus.entregue = count;
-                    else if (status === 'cancelado') fretesPorStatus.cancelado = count;
+        // Função para mostrar/ocultar estado de carregamento
+        function showLoadingState(loading) {
+            const dashboard = document.querySelector('.dashboard-section');
+            if (loading) {
+                dashboard.style.opacity = '0.6';
+                dashboard.style.pointerEvents = 'none';
+            } else {
+                dashboard.style.opacity = '1';
+                dashboard.style.pointerEvents = 'auto';
+            }
+        }
+
+        function loadCharts(mes = 'todos') {
+            // Destruir gráficos existentes se houver
+            if (statusChart) {
+                statusChart.destroy();
+                statusChart = null;
+            }
+            if (mesChart) {
+                mesChart.destroy();
+                mesChart = null;
+            }
+
+            if (!dashboardData) return;
+
+            // Calcular fretes por status a partir da lista detalhada de fretes (filtrada por mês)
+            const fretesFiltrados = getFretesFiltradosPorMes(mes);
+            let fretesPorStatus = calcularStatusPorFretes(fretesFiltrados);
+
+            // Se estivermos usando fallback (detalhes não disponíveis), tentar extrair dos agregados do servidor
+            if ((dashboardData && dashboardData._useAggregatesFallback) && (!fretesFiltrados || fretesFiltrados.length === 0)) {
+                fretesPorStatus = { solicitado:0, aceito:0, em_transito:0, entregue:0, cancelado:0 };
+                (dashboardData.fretesPorStatus || []).forEach(item => {
+                    const status = (item.status || item[0] || '').toString();
+                    const count = parseInt(item.count || item[1] || 0);
+                    if (status === 'pendente' || status === 'solicitado') fretesPorStatus.solicitado += count;
+                    else if (status === 'aceito') fretesPorStatus.aceito += count;
+                    else if (status === 'em_transito' || status === 'em trânsito') fretesPorStatus.em_transito += count;
+                    else if (status === 'entregue') fretesPorStatus.entregue += count;
+                    else if (status === 'cancelado') fretesPorStatus.cancelado += count;
                 });
             }
 
@@ -309,7 +662,8 @@
 
             // Gráfico de fretes por status (pizza)
             const statusCtx = document.getElementById('fretes-status-chart').getContext('2d');
-            new Chart(statusCtx, {
+            const mesSelecionadoNome = getNomeMes(mes);
+            statusChart = new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Solicitado', 'Aceito', 'Em Trânsito', 'Entregue', 'Cancelado'],
@@ -336,6 +690,16 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
+                        title: {
+                            display: true,
+                            text: mes === 'todos' ? 'Status de Todos os Fretes' : `Status dos Fretes - ${mesSelecionadoNome}`,
+                            font: {
+                                size: 16
+                            },
+                            padding: {
+                                bottom: 15
+                            }
+                        },
                         legend: {
                             position: 'bottom',
                             labels: {
@@ -358,7 +722,7 @@
 
             // Gráfico de fretes por mês (linha)
             const mesCtx = document.getElementById('fretes-mes-chart').getContext('2d');
-            new Chart(mesCtx, {
+            mesChart = new Chart(mesCtx, {
                 type: 'line',
                 data: {
                     labels: Object.keys(fretesPorMes),
