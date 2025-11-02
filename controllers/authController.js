@@ -303,6 +303,42 @@ const updateProfile = async (req, res) => {
       }
     }
 
+    // Verificar CPF único (se está sendo alterado)
+    if (req.body.cpf) {
+      const [existingCpf] = await sequelize.query(
+        'SELECT id FROM users WHERE cpf = ? AND id != ?',
+        {
+          replacements: [req.body.cpf, req.user.id],
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      if (existingCpf) {
+        return res.status(400).json({
+          success: false,
+          message: 'CPF já está em uso'
+        });
+      }
+    }
+
+    // Verificar CNPJ único (se está sendo alterado)
+    if (req.body.cnpj) {
+      const [existingCnpj] = await sequelize.query(
+        'SELECT id FROM users WHERE cnpj = ? AND id != ?',
+        {
+          replacements: [req.body.cnpj, req.user.id],
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      if (existingCnpj) {
+        return res.status(400).json({
+          success: false,
+          message: 'CNPJ já está em uso'
+        });
+      }
+    }
+
     // Campos permitidos para atualização
     const allowedFields = ['nome', 'email', 'telefone', 'cpf', 'endereco', 'cnh', 'categoria', 'vencimento_cnh', 'empresa', 'cnpj'];
     const updateFields = [];

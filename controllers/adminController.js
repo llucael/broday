@@ -32,32 +32,77 @@ function generateRandomPassword(length = 8) {
 // Dashboard do Administrador
 const getDashboard = async (req, res) => {
   try {
-    // Fretes ativos
+    const { mes } = req.query; // Extrair filtro de mês da query
+    
+    // Configurar filtros de data baseados no mês selecionado
+    let whereConditions = {};
+    let whereConditionsEntrega = {};
+    
+    if (mes && mes !== 'todos') {
+      const year = new Date().getFullYear();
+      const monthNum = parseInt(mes, 10);
+      const start = new Date(year, monthNum - 1, 1);
+      const end = new Date(year, monthNum, 0); // último dia do mês
+      end.setHours(23, 59, 59, 999);
+      
+      // Filtro para fretes em geral (usando created_at)
+      whereConditions.created_at = {
+        [Op.between]: [start, end]
+      };
+      
+      // Filtro para fretes entregues (usando data_entrega)
+      whereConditionsEntrega.data_entrega = {
+        [Op.between]: [start, end]
+      };
+    }
+    
+    // Fretes ativos (aplicar filtro de mês se necessário)
     const fretesAtivos = await Frete.count({
       where: {
         status: {
           [Op.in]: ['solicitado', 'aceito', 'em_transito']
-        }
+        },
+        ...whereConditions
       }
     });
 
-    // Fretes concluídos nos últimos 2 meses (agosto e setembro)
-    const inicioAgosto = new Date();
-    inicioAgosto.setMonth(inicioAgosto.getMonth() - 1); // Agosto
-    inicioAgosto.setDate(1);
-    inicioAgosto.setHours(0, 0, 0, 0);
-
+    // Fretes concluídos no mês
     const fretesConcluidosMes = await Frete.count({
       where: {
         status: 'entregue',
-        data_entrega: {
-          [Op.gte]: inicioAgosto
-        }
+        ...whereConditionsEntrega
       }
     });
 
-    // Fretes por status para gráficos
+    // Fretes por status para gráficos (aplicar filtro de mês se necessário)
+    let fretesPorStatusQuery = {};
+    if (mes && mes !== 'todos') {
+      // Para um mês específico, buscar fretes que tiveram atividade no mês
+      // (criados OU entregues no mês)
+      const year = new Date().getFullYear();
+      const monthNum = parseInt(mes, 10);
+      const start = new Date(year, monthNum - 1, 1);
+      const end = new Date(year, monthNum, 0);
+      end.setHours(23, 59, 59, 999);
+      
+      fretesPorStatusQuery = {
+        [Op.or]: [
+          {
+            created_at: {
+              [Op.between]: [start, end]
+            }
+          },
+          {
+            data_entrega: {
+              [Op.between]: [start, end]
+            }
+          }
+        ]
+      };
+    }
+    
     const fretesPorStatus = await Frete.findAll({
+      where: fretesPorStatusQuery,
       attributes: [
         'status',
         [Frete.sequelize.fn('COUNT', Frete.sequelize.col('id')), 'count']
@@ -65,7 +110,10 @@ const getDashboard = async (req, res) => {
       group: ['status']
     });
 
-    // Fretes por mês (últimos 6 meses) - consulta simplificada
+    // Log para debug dos dados de fretes por status
+    console.log('Fretes por status (mês: ' + (mes || 'todos') + '):', JSON.stringify(fretesPorStatus, null, 2));
+
+    // Fretes por mês (últimos 6 meses) - sempre mostrar todos os meses (não filtrar)
     const fretesPorMes = await Frete.findAll({
       where: {
         status: 'entregue'
@@ -78,13 +126,11 @@ const getDashboard = async (req, res) => {
       order: [[Frete.sequelize.fn('strftime', '%Y-%m', Frete.sequelize.col('data_entrega')), 'ASC']]
     });
 
-    // Fretes concluídos por motorista
+    // Fretes concluídos por motorista (aplicar filtro de mês se necessário)
     const fretesPorMotorista = await Frete.findAll({
       where: {
         status: 'entregue',
-        data_entrega: {
-          [Op.gte]: inicioAgosto
-        }
+        ...whereConditionsEntrega
       },
       attributes: [
         'motorista_id',
@@ -104,10 +150,11 @@ const getDashboard = async (req, res) => {
       }
     });
 
-    // Fretes pendentes para aprovação
+    // Fretes pendentes para aprovação (aplicar filtro de mês se necessário)
     const fretesPendentes = await Frete.count({
       where: {
-        status: 'pendente'
+        status: 'pendente',
+        ...whereConditions
       }
     });
 
@@ -290,6 +337,38 @@ const createUser = async (req, res) => {
       });
     }
 
+    // Verificar CPF único (se fornecido)
+    if (cpf) {
+      const [existingCpf] = await sequelize.query(
+        'SELECT id, cpf FROM users WHERE cpf = ?',
+        { replacements: [cpf] }
+      );
+      
+      if (existingCpf.length > 0) {
+        console.log('CPF já cadastrado:', cpf);
+        return res.status(400).json({
+          success: false,
+          message: 'CPF já está em uso'
+        });
+      }
+    }
+
+    // Verificar CNPJ único (se fornecido)
+    if (cnpj) {
+      const [existingCnpj] = await sequelize.query(
+        'SELECT id, cnpj FROM users WHERE cnpj = ?',
+        { replacements: [cnpj] }
+      );
+      
+      if (existingCnpj.length > 0) {
+        console.log('CNPJ já cadastrado:', cnpj);
+        return res.status(400).json({
+          success: false,
+          message: 'CNPJ já está em uso'
+        });
+      }
+    }
+
     // Gerar senha aleatória se não for fornecida
     const finalPassword = password || generateRandomPassword(10);
     console.log('Senha gerada:', finalPassword);
@@ -417,7 +496,7 @@ const getFretesPorCliente = async (req, res) => {
         { model: User, as: 'motorista', attributes: ['id', 'email'] },
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -655,7 +734,7 @@ const getEntregasMotorista = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['data_entrega', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -699,16 +778,67 @@ const getTodosFretes = async (req, res) => {
       };
     }
 
-    const fretes = await Frete.findAndCountAll({
+    const fretesResult = await Frete.findAndCountAll({
       where: whereClause,
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] },
         { model: User, as: 'motorista', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    // Data atual (2025-11-02)
+    const hoje = new Date('2025-11-02');
+    
+    console.log('\n=== DEBUG ORDENAÇÃO ADMIN FRETES POR STATUS E DATA ===');
+    console.log('Data atual para comparação:', hoje.toISOString().split('T')[0]);
+    
+    // Definir ordem de prioridade dos status
+    const statusPriority = {
+      'aceito': 1,
+      'em_transito': 2,
+      'solicitado': 3,
+      'entregue': 4,
+      'cancelado': 5
+    };
+    
+    // Ordenar manualmente por status (prioridade) e depois por proximidade da data atual
+    const fretesOrdenados = fretesResult.rows.sort((a, b) => {
+      // Primeiro, comparar por prioridade de status
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      
+      if (priorityA !== priorityB) {
+        console.log(`Ordenação por status: Frete ${a.id} (${a.status}, prioridade ${priorityA}) vs Frete ${b.id} (${b.status}, prioridade ${priorityB})`);
+        return priorityA - priorityB;
+      }
+      
+      // Se o status for o mesmo, ordenar por proximidade de data
+      const dataA = new Date(a.data_coleta_limite);
+      const dataB = new Date(b.data_coleta_limite);
+      
+      // Calcular diferença em dias
+      const diffA = Math.abs((dataA.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      const diffB = Math.abs((dataB.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`Ordenação por data (mesmo status ${a.status}): Frete ${a.id} (${a.data_coleta_limite}, diff: ${diffA.toFixed(1)} dias) vs Frete ${b.id} (${b.data_coleta_limite}, diff: ${diffB.toFixed(1)} dias)`);
+      
+      return diffA - diffB;
+    });
+
+    console.log('--- RESULTADO FINAL ORDENAÇÃO ADMIN POR STATUS E DATA ---');
+    fretesOrdenados.forEach((frete, index) => {
+      const dataColeta = new Date(frete.data_coleta_limite);
+      const diffDias = Math.abs((dataColeta.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`${index + 1}. Frete ID: ${frete.id}, Status: ${frete.status}, Data Coleta: ${frete.data_coleta_limite}, Diferença: ${diffDias.toFixed(1)} dias`);
+    });
+    console.log('=== FIM DEBUG ADMIN ===\n');
+
+    const fretes = {
+      count: fretesResult.count,
+      rows: fretesOrdenados
+    };
 
     res.json({
       success: true,
@@ -978,6 +1108,38 @@ const updateUser = async (req, res) => {
       empresa: usuario.empresa,
       cnpj: usuario.cnpj
     });
+
+    // Verificar CPF único (se estiver sendo alterado e for diferente do atual)
+    if (updateData.cpf && updateData.cpf !== usuario.cpf) {
+      const [existingCpf] = await sequelize.query(
+        'SELECT id, cpf FROM users WHERE cpf = ? AND id != ?',
+        { replacements: [updateData.cpf, id] }
+      );
+      
+      if (existingCpf.length > 0) {
+        console.log('CPF já cadastrado para outro usuário:', updateData.cpf);
+        return res.status(400).json({
+          success: false,
+          message: 'CPF já está em uso por outro usuário'
+        });
+      }
+    }
+
+    // Verificar CNPJ único (se estiver sendo alterado e for diferente do atual)
+    if (updateData.cnpj && updateData.cnpj !== usuario.cnpj) {
+      const [existingCnpj] = await sequelize.query(
+        'SELECT id, cnpj FROM users WHERE cnpj = ? AND id != ?',
+        { replacements: [updateData.cnpj, id] }
+      );
+      
+      if (existingCnpj.length > 0) {
+        console.log('CNPJ já cadastrado para outro usuário:', updateData.cnpj);
+        return res.status(400).json({
+          success: false,
+          message: 'CNPJ já está em uso por outro usuário'
+        });
+      }
+    }
 
     // Usar SQL direto para atualizar
     const { nome, email, telefone, cpf, empresa, cnpj, cnh, categoria, user_type, is_active, status, password } = updateData;

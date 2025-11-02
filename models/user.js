@@ -30,9 +30,23 @@ module.exports = (sequelize, DataTypes) => {
     email_verification_expires: DataTypes.DATE,
     nome: DataTypes.STRING,
     telefone: DataTypes.STRING,
-    cpf: DataTypes.STRING,
+    cpf: {
+      type: DataTypes.STRING,
+      unique: {
+        name: 'unique_cpf',
+        msg: 'CPF já está em uso'
+      },
+      allowNull: true
+    },
     empresa: DataTypes.STRING,
-    cnpj: DataTypes.STRING,
+    cnpj: {
+      type: DataTypes.STRING,
+      unique: {
+        name: 'unique_cnpj',
+        msg: 'CNPJ já está em uso'
+      },
+      allowNull: true
+    },
     cnh: DataTypes.STRING,
     categoria: DataTypes.STRING(10),
     status: DataTypes.STRING(50),

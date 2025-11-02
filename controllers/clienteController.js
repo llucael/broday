@@ -1,4 +1,4 @@
-const { User, Frete } = require('../models');
+const { User, Frete, Endereco } = require('../models');
 const { Op } = require('sequelize');
 
 // Dashboard do Cliente
@@ -15,7 +15,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'motorista', attributes: ['id', 'email'] }
       ],
-      order: [['updated_at', 'DESC']]
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']]
     });
 
     // Buscar fretes concluídos do cliente
@@ -27,7 +27,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'motorista', attributes: ['id', 'email'] }
       ],
-      order: [['updated_at', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: 5
     });
 
@@ -37,7 +37,7 @@ const getDashboard = async (req, res) => {
         cliente_id: clienteId,
         status: 'solicitado'
       },
-      order: [['created_at', 'DESC']]
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']]
     });
 
     // Estatísticas
@@ -222,15 +222,66 @@ const getMeusFretes = async (req, res) => {
     }
     if (status) whereClause.status = status;
 
-    const fretes = await Frete.findAndCountAll({
+    const fretesResult = await Frete.findAndCountAll({
       where: whereClause,
       include: [
         { model: User, as: 'motorista', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    // Data atual (2025-11-02)
+    const hoje = new Date('2025-11-02');
+    
+    console.log('\n=== DEBUG ORDENAÇÃO CLIENTE FRETES POR STATUS E DATA ===');
+    console.log('Data atual para comparação:', hoje.toISOString().split('T')[0]);
+    
+    // Definir ordem de prioridade dos status
+    const statusPriority = {
+      'aceito': 1,
+      'em_transito': 2,
+      'solicitado': 3,
+      'entregue': 4,
+      'cancelado': 5
+    };
+    
+    // Ordenar manualmente por status (prioridade) e depois por proximidade da data atual
+    const fretesOrdenados = fretesResult.rows.sort((a, b) => {
+      // Primeiro, comparar por prioridade de status
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      
+      if (priorityA !== priorityB) {
+        console.log(`Ordenação por status: Frete ${a.id} (${a.status}, prioridade ${priorityA}) vs Frete ${b.id} (${b.status}, prioridade ${priorityB})`);
+        return priorityA - priorityB;
+      }
+      
+      // Se o status for o mesmo, ordenar por proximidade de data
+      const dataA = new Date(a.data_coleta_limite);
+      const dataB = new Date(b.data_coleta_limite);
+      
+      // Calcular diferença em dias
+      const diffA = Math.abs((dataA.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      const diffB = Math.abs((dataB.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`Ordenação por data (mesmo status ${a.status}): Frete ${a.id} (${a.data_coleta_limite}, diff: ${diffA.toFixed(1)} dias) vs Frete ${b.id} (${b.data_coleta_limite}, diff: ${diffB.toFixed(1)} dias)`);
+      
+      return diffA - diffB;
+    });
+
+    console.log('--- RESULTADO FINAL ORDENAÇÃO CLIENTE POR STATUS E DATA ---');
+    fretesOrdenados.forEach((frete, index) => {
+      const dataColeta = new Date(frete.data_coleta_limite);
+      const diffDias = Math.abs((dataColeta.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`${index + 1}. Frete ID: ${frete.id}, Status: ${frete.status}, Data Coleta: ${frete.data_coleta_limite}, Diferença: ${diffDias.toFixed(1)} dias`);
+    });
+    console.log('=== FIM DEBUG CLIENTE ===\n');
+
+    const fretes = {
+      count: fretesResult.count,
+      rows: fretesOrdenados
+    };
 
     res.json({
       success: true,
@@ -472,10 +523,16 @@ const getPerfil = async (req, res) => {
 // Obter endereços do cliente
 const getEnderecos = async (req, res) => {
   try {
-    // Por enquanto, retornar array vazio até implementar a tabela de endereços
+    const clienteId = req.user.id;
+    
+    const enderecos = await Endereco.findAll({
+      where: { cliente_id: clienteId },
+      order: [['is_principal', 'DESC'], ['created_at', 'DESC']]
+    });
+
     res.json({
       success: true,
-      data: []
+      data: enderecos
     });
   } catch (error) {
     console.error('Erro ao obter endereços:', error);
@@ -489,10 +546,45 @@ const getEnderecos = async (req, res) => {
 // Criar endereço do cliente
 const createEndereco = async (req, res) => {
   try {
-    // Por enquanto, retornar sucesso até implementar a tabela de endereços
+    const clienteId = req.user.id;
+    const { nome, rua, numero, complemento, cidade, estado, cep, is_principal } = req.body;
+
+    console.log('Dados recebidos para criar endereço:', req.body);
+
+    // Validação básica
+    if (!nome || !rua || !numero || !cidade || !estado || !cep) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos os campos obrigatórios devem ser preenchidos'
+      });
+    }
+
+    // Se for endereço principal, remover o principal de outros endereços
+    if (is_principal) {
+      await Endereco.update(
+        { is_principal: false },
+        { where: { cliente_id: clienteId } }
+      );
+    }
+
+    const endereco = await Endereco.create({
+      cliente_id: clienteId,
+      nome,
+      rua,
+      numero,
+      complemento,
+      cidade,
+      estado,
+      cep,
+      is_principal: is_principal || false
+    });
+
+    console.log('Endereço criado com sucesso:', endereco.toJSON());
+
     res.json({
       success: true,
-      message: 'Endereço criado com sucesso'
+      message: 'Endereço criado com sucesso',
+      data: endereco
     });
   } catch (error) {
     console.error('Erro ao criar endereço:', error);
@@ -602,7 +694,7 @@ const getHistoricoCompleto = async (req, res) => {
       include: [
         { model: User, as: 'motorista', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });

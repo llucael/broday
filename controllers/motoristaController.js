@@ -15,7 +15,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: 10
     });
 
@@ -28,7 +28,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['updatedAt', 'DESC']]
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']]
     });
 
     // Buscar fretes concluídos do motorista
@@ -40,7 +40,7 @@ const getDashboard = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['updatedAt', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: 5
     });
 
@@ -132,7 +132,7 @@ const getFretesDisponiveis = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email'] }
       ],
-      order: [['created_at', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -310,15 +310,66 @@ const getMeusFretes = async (req, res) => {
     }
     if (status) whereClause.status = status;
 
-    const fretes = await Frete.findAndCountAll({
+    const fretesResult = await Frete.findAndCountAll({
       where: whereClause,
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    // Data atual (2025-11-02)
+    const hoje = new Date('2025-11-02');
+    
+    console.log('\n=== DEBUG ORDENAÇÃO MOTORISTA FRETES POR STATUS E DATA ===');
+    console.log('Data atual para comparação:', hoje.toISOString().split('T')[0]);
+    
+    // Definir ordem de prioridade dos status
+    const statusPriority = {
+      'aceito': 1,
+      'em_transito': 2,
+      'solicitado': 3,
+      'entregue': 4,
+      'cancelado': 5
+    };
+    
+    // Ordenar manualmente por status (prioridade) e depois por proximidade da data atual
+    const fretesOrdenados = fretesResult.rows.sort((a, b) => {
+      // Primeiro, comparar por prioridade de status
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      
+      if (priorityA !== priorityB) {
+        console.log(`Ordenação por status: Frete ${a.id} (${a.status}, prioridade ${priorityA}) vs Frete ${b.id} (${b.status}, prioridade ${priorityB})`);
+        return priorityA - priorityB;
+      }
+      
+      // Se o status for o mesmo, ordenar por proximidade de data
+      const dataA = new Date(a.data_coleta_limite);
+      const dataB = new Date(b.data_coleta_limite);
+      
+      // Calcular diferença em dias
+      const diffA = Math.abs((dataA.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      const diffB = Math.abs((dataB.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`Ordenação por data (mesmo status ${a.status}): Frete ${a.id} (${a.data_coleta_limite}, diff: ${diffA.toFixed(1)} dias) vs Frete ${b.id} (${b.data_coleta_limite}, diff: ${diffB.toFixed(1)} dias)`);
+      
+      return diffA - diffB;
+    });
+
+    console.log('--- RESULTADO FINAL ORDENAÇÃO MOTORISTA POR STATUS E DATA ---');
+    fretesOrdenados.forEach((frete, index) => {
+      const dataColeta = new Date(frete.data_coleta_limite);
+      const diffDias = Math.abs((dataColeta.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`${index + 1}. Frete ID: ${frete.id}, Status: ${frete.status}, Data Coleta: ${frete.data_coleta_limite}, Diferença: ${diffDias.toFixed(1)} dias`);
+    });
+    console.log('=== FIM DEBUG MOTORISTA ===\n');
+
+    const fretes = {
+      count: fretesResult.count,
+      rows: fretesOrdenados
+    };
 
     res.json({
       success: true,

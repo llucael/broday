@@ -166,7 +166,8 @@
                 <div class="section-header">
                     <h1>Gerenciamento de Fretes</h1>
                     <div class="filters">
-                        <select id="status-filter">
+                        <label for="status-filter" class="sr-only">Filtrar por status</label>
+                        <select id="status-filter" title="Filtrar fretes por status" aria-label="Filtrar fretes por status">
                             <option value="">Todos os Status</option>
                             <option value="solicitado">Solicitado</option>
                             <option value="aceito">Aceito</option>
@@ -174,10 +175,12 @@
                             <option value="entregue">Entregue</option>
                             <option value="cancelado">Cancelado</option>
                         </select>
-                        <select id="cliente-filter">
+                        <label for="cliente-filter" class="sr-only">Filtrar por cliente</label>
+                        <select id="cliente-filter" title="Filtrar fretes por cliente" aria-label="Filtrar fretes por cliente">
                             <option value="">Todos os Clientes</option>
                         </select>
-                        <select id="motorista-filter">
+                        <label for="motorista-filter" class="sr-only">Filtrar por motorista</label>
+                        <select id="motorista-filter" title="Filtrar fretes por motorista" aria-label="Filtrar fretes por motorista">
                             <option value="">Todos os Motoristas</option>
                         </select>
                         <button class="btn btn-primary" onclick="clearFilters()">
@@ -381,8 +384,8 @@
             const origem = `${frete.origin_city}/${frete.origin_state}`;
             const destino = `${frete.destination_city}/${frete.destination_state}`;
             
-            // Formatar data de coleta
-            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'Não definida';
+            // Formatar data de coleta limite
+            const dataColeta = frete.data_coleta_limite ? new Date(frete.data_coleta_limite).toLocaleDateString('pt-BR') : 'Não definida';
             
             // Obter nomes do cliente e motorista
             const clienteNome = frete.cliente ? (frete.cliente.name || frete.cliente.email) : 'N/A';
@@ -594,8 +597,8 @@
             
             const origem = `${frete.origin_city || 'N/A'}, ${frete.origin_state || 'N/A'}`;
             const destino = `${frete.destination_city || 'N/A'}, ${frete.destination_state || 'N/A'}`;
-            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A';
-            const dataEntrega = frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A';
+            const dataColeta = frete.data_coleta_limite ? new Date(frete.data_coleta_limite).toLocaleDateString('pt-BR') : 'N/A';
+            const dataEntrega = frete.data_entrega_limite ? new Date(frete.data_entrega_limite).toLocaleDateString('pt-BR') : 'N/A';
             const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'A negociar';
             
             content.innerHTML = `
@@ -756,8 +759,8 @@
         function populateEditForm(frete) {
             document.getElementById('editMotorista').value = frete.motorista_id || '';
             
-            if (frete.data_coleta) {
-                const dataColeta = new Date(frete.data_coleta);
+            if (frete.data_coleta_limite) {
+                const dataColeta = new Date(frete.data_coleta_limite);
                 // Converter para formato YYYY-MM-DDTHH:MM para input datetime-local
                 const year = dataColeta.getFullYear();
                 const month = String(dataColeta.getMonth() + 1).padStart(2, '0');
@@ -767,8 +770,8 @@
                 document.getElementById('editDataColeta').value = `${year}-${month}-${day}T${hours}:${minutes}`;
             }
             
-            if (frete.data_entrega) {
-                const dataEntrega = new Date(frete.data_entrega);
+            if (frete.data_entrega_limite) {
+                const dataEntrega = new Date(frete.data_entrega_limite);
                 // Converter para formato YYYY-MM-DDTHH:MM para input datetime-local
                 const year = dataEntrega.getFullYear();
                 const month = String(dataEntrega.getMonth() + 1).padStart(2, '0');
@@ -796,8 +799,8 @@
                     
                     const updateData = {
                         motorista_id: formData.get('motorista_id') || null,
-                        data_coleta: formData.get('data_coleta'),
-                        data_entrega: formData.get('data_entrega') || null
+                        data_coleta_limite: formData.get('data_coleta'),
+                        data_entrega_limite: formData.get('data_entrega') || null
                     };
 
                     try {

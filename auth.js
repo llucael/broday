@@ -139,7 +139,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     showNotification('Criando conta...', 'info');
                     
                     const email = document.getElementById('register-email').value.trim();
+                    const documento = document.getElementById('register-cpf').value.trim();
                     const password = document.getElementById('register-password').value;
+                    
+                    // Determinar se é CPF ou CNPJ
+                    const cleanDocument = documento.replace(/\D/g, '');
+                    const isCPF = cleanDocument.length === 11;
                     
                     // Coletar dados básicos do usuário
                     const userData = {
@@ -147,6 +152,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         password,
                         userType: 'cliente' // Default para cliente
                     };
+                    
+                    // Adicionar CPF ou CNPJ baseado no tipo
+                    if (isCPF) {
+                        userData.cpf = documento;
+                    } else {
+                        userData.cnpj = documento;
+                    }
                     
                     const response = await api.register(userData);
                     
@@ -209,9 +221,9 @@ function validateLoginForm() {
 // Função para validar formulário de registro
 function validateRegisterForm() {
     const email = document.getElementById('register-email').value.trim();
+    const cpf = document.getElementById('register-cpf').value.trim();
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
-    const terms = document.querySelector('input[name="terms"]').checked;
     
     if (!email) {
         showNotification('Por favor, informe seu e-mail.', 'error');
@@ -220,6 +232,16 @@ function validateRegisterForm() {
     
     if (!isValidEmail(email)) {
         showNotification('Por favor, informe um e-mail válido.', 'error');
+        return false;
+    }
+    
+    if (!cpf) {
+        showNotification('Por favor, informe seu CPF ou CNPJ.', 'error');
+        return false;
+    }
+    
+    if (!isValidCPForCNPJ(cpf)) {
+        showNotification('Por favor, informe um CPF ou CNPJ válido.', 'error');
         return false;
     }
     
@@ -233,11 +255,6 @@ function validateRegisterForm() {
         return false;
     }
     
-    if (!terms) {
-        showNotification('Você deve aceitar os termos de uso.', 'error');
-        return false;
-    }
-    
     return true;
 }
 
@@ -245,19 +262,34 @@ function validateRegisterForm() {
 
 // Função para aplicar máscaras aos campos
 function applyMasks() {
-    // Máscara para CPF
+    // Máscara inteligente para CPF/CNPJ
     const cpfFields = document.querySelectorAll('input[id*="cpf"]');
     cpfFields.forEach(field => {
         field.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            
+            // Limitar a 14 dígitos (tamanho máximo para CNPJ)
+            if (value.length > 14) {
+                value = value.substring(0, 14);
+            }
+            
+            if (value.length <= 11) {
+                // Máscara de CPF: 000.000.000-00
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            } else {
+                // Máscara de CNPJ: 00.000.000/0001-00
+                value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                value = value.replace(/(\d{4})(\d)/, '$1-$2');
+            }
             e.target.value = value;
         });
     });
     
-    // Máscara para CNPJ
+    // Máscara para CNPJ em campos específicos de documento
     const cnpjFields = document.querySelectorAll('input[id*="documento"]');
     cnpjFields.forEach(field => {
         field.addEventListener('input', function(e) {
@@ -313,6 +345,15 @@ function setupRealTimeValidation() {
             // Remover estilo de erro ao digitar
             if (this.classList.contains('error')) {
                 this.classList.remove('error');
+                
+                // Para campos de CPF/CNPJ, validar em tempo real quando tiver tamanho suficiente
+                if (this.id && this.id.includes('cpf') && this.value.trim()) {
+                    const cleanValue = this.value.replace(/\D/g, '');
+                    if (cleanValue.length === 11 || cleanValue.length === 14) {
+                        // Re-validar se já tem tamanho completo
+                        setTimeout(() => validateField(this), 100);
+                    }
+                }
             }
         });
     });
@@ -333,21 +374,30 @@ function validateField(field) {
         return false;
     }
     
-    // Validação específica para CPF
-    if (field.id && field.id.includes('cpf') && value && !validateCPF(value)) {
-        field.classList.add('error');
-        return false;
-    }
-    
-    // Validação específica para CNPJ
-    if (field.id && field.id.includes('documento') && value) {
+    // Validação específica para CPF/CNPJ
+    if (field.id && field.id.includes('cpf') && value) {
         const cleanValue = value.replace(/\D/g, '');
-        if (cleanValue.length === 14 && !validateCNPJ(value)) {
+        // Só validar se tiver tamanho completo (11 para CPF ou 14 para CNPJ)
+        if (cleanValue.length === 11 || cleanValue.length === 14) {
+            if (!isValidCPForCNPJ(value)) {
+                field.classList.add('error');
+                return false;
+            }
+        } else if (cleanValue.length > 0 && cleanValue.length !== 11 && cleanValue.length !== 14) {
+            // Se tiver dígitos mas não for tamanho válido, marcar como erro apenas se saiu do foco
             field.classList.add('error');
             return false;
         }
     }
     
+    // Validação específica para documento (CPF/CNPJ)
+    if (field.id && field.id.includes('documento') && value && !isValidCPForCNPJ(value)) {
+        field.classList.add('error');
+        return false;
+    }
+    
+    // Se chegou até aqui, remover classe de erro se existir
+    field.classList.remove('error');
     return true;
 }
 
@@ -432,4 +482,34 @@ function redirectToDashboard() {
         default:
             showNotification('Tipo de usuário não reconhecido', 'error');
     }
+}
+
+// Função para validar CPF
+function isValidCPF(cpf) {
+    const validation = new FormValidation();
+    const result = validation.validateCPF(cpf);
+    return result.valid;
+}
+
+// Função para validar CPF ou CNPJ
+function isValidCPForCNPJ(document) {
+    const validation = new FormValidation();
+    const cleanDocument = document.replace(/\D/g, '');
+    
+    console.log('Validando documento:', document, 'Limpo:', cleanDocument, 'Tamanho:', cleanDocument.length);
+    
+    if (cleanDocument.length === 11) {
+        // Validar como CPF
+        const result = validation.validateCPF(document);
+        console.log('Resultado CPF:', result);
+        return result.valid;
+    } else if (cleanDocument.length === 14) {
+        // Validar como CNPJ
+        const result = validation.validateCNPJ(document);
+        console.log('Resultado CNPJ:', result);
+        return result.valid;
+    }
+    
+    console.log('Tamanho inválido para CPF/CNPJ');
+    return false; // Tamanho inválido
 }

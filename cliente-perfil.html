@@ -334,7 +334,7 @@
         function loadUserData() {
             const user = getCurrentUser();
             if (user) {
-                document.getElementById('user-name').textContent = user.name || user.email;
+                document.getElementById('user-name').textContent = user.nome || user.email;
             }
         }
 
@@ -361,7 +361,7 @@
             if (enderecoForm) {
                 enderecoForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    saveEndereco();
+                    saveEndereco(e);
                 });
             }
 
@@ -541,7 +541,8 @@
                     }
                     
                     // Carregar endereços
-                    loadEnderecos();
+                    console.log('loadProfile() - Carregando endereços...');
+                    await loadEnderecos();
                 } else {
                     console.error('Erro ao carregar perfil:', response.message);
                     showNotification('Erro ao carregar dados do perfil', 'error');
@@ -588,21 +589,37 @@
 
         async function loadEnderecos() {
             try {
+                console.log('loadEnderecos() chamada - Iniciando carregamento...');
                 const response = await api.getEnderecos();
+                console.log('Resposta api.getEnderecos():', response);
+                
                 if (response.success) {
                     const enderecos = response.data;
+                    console.log('Endereços recebidos:', enderecos);
                     const container = document.getElementById('enderecos-list');
+                    console.log('Container encontrado:', container);
+                    
+                    if (!container) {
+                        console.error('Container enderecos-list não encontrado!');
+                        return;
+                    }
+                    
                     container.innerHTML = '';
                     
                     if (enderecos.length === 0) {
+                        console.log('Nenhum endereço encontrado - mostrando mensagem');
                         container.innerHTML = '<p class="no-data">Nenhum endereço cadastrado</p>';
                         return;
                     }
                     
+                    console.log('Criando cards para', enderecos.length, 'endereços');
                     enderecos.forEach(endereco => {
                         const enderecoCard = createEnderecoCard(endereco);
                         container.appendChild(enderecoCard);
                     });
+                    console.log('Cards adicionados ao container');
+                } else {
+                    console.error('Erro na resposta da API:', response.message);
                 }
             } catch (error) {
                 console.error('Erro ao carregar endereços:', error);
@@ -619,10 +636,6 @@
                     <p>${endereco.cidade} - ${endereco.estado}, ${endereco.cep}</p>
                 </div>
                 <div class="endereco-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="editEndereco(${endereco.id})">
-                        <i class="fas fa-edit"></i>
-                        Editar
-                    </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteEndereco(${endereco.id})">
                         <i class="fas fa-trash"></i>
                         Excluir
@@ -633,17 +646,21 @@
         }
 
         async function saveEndereco(event) {
-            event.preventDefault();
-            
             try {
+                console.log('saveEndereco() chamada - evento:', event);
                 const formData = new FormData(event.target);
                 const data = Object.fromEntries(formData.entries());
                 
+                console.log('Dados do endereço sendo enviados:', data);
+                
                 const response = await api.createEndereco(data);
+                console.log('Resposta api.createEndereco():', response);
+                
                 if (response.success) {
                     showNotification('Endereço adicionado com sucesso!', 'success');
                     closeEnderecoModal();
-                    loadEnderecos();
+                    console.log('Chamando loadEnderecos() após salvar...');
+                    await loadEnderecos();
                     event.target.reset();
                 } else {
                     console.error('Erro ao salvar endereço:', response.message);

@@ -18,6 +18,26 @@
                 <span>Broday Transportes</span>
             </div>
             <nav class="nav">
+                <a href="cliente-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="cliente-fretes.html" class="nav-link active">Meus Fretes</a>
+                <a href="frete.html" class="nav-link">Solicitar Frete</a>
+                <a href="cliente-perfil.html" class="nav-link">Perfil</a>
+            </nav>
+            <div class="header-buttons">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
         <div class="container">
             <!-- Meus Fretes Section -->
             <section id="fretes" class="fretes-section active">
@@ -131,7 +151,7 @@
         function loadUserData() {
             const user = getCurrentUser();
             if (user) {
-                document.getElementById('user-name').textContent = user.name || user.email;
+                document.getElementById('user-name').textContent = user.nome || user.email;
             }
         }
 
@@ -499,6 +519,31 @@
     </script>
 
     <style>
+        /* Garantir que o main e a section sejam visíveis */
+        .main {
+            padding-top: 80px;
+            min-height: calc(100vh - 80px);
+        }
+
+        .fretes-section {
+            display: block;
+            width: 100%;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .section-header h1 {
+            margin: 0;
+            color: var(--text-color);
+        }
+
         /* Estilos para o modal de detalhes do frete */
         .modal {
             display: none;

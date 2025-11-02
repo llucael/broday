@@ -85,17 +85,63 @@ const getFretesByCliente = async (req, res) => {
       ];
     }
 
-    // Buscar com ordenação por data_coleta_limite (mais recente primeiro)
-    const { count, rows: fretes } = await Frete.findAndCountAll({
+    // Buscar todos os fretes primeiro sem ordenação específica
+    const { count, rows: fretesRaw } = await Frete.findAndCountAll({
       where: whereClause,
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] },
         { model: User, as: 'motorista', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    // Data atual (2025-11-02)
+    const hoje = new Date('2025-11-02');
+    
+    console.log('\n=== DEBUG ORDENAÇÃO FRETES POR STATUS E DATA ===');
+    console.log('Data atual para comparação:', hoje.toISOString().split('T')[0]);
+    
+    // Definir ordem de prioridade dos status
+    const statusPriority = {
+      'aceito': 1,
+      'em_transito': 2,
+      'solicitado': 3,
+      'entregue': 4,
+      'cancelado': 5
+    };
+    
+    // Ordenar manualmente por status (prioridade) e depois por proximidade da data atual
+    const fretes = fretesRaw.sort((a, b) => {
+      // Primeiro, comparar por prioridade de status
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      
+      if (priorityA !== priorityB) {
+        console.log(`Ordenação por status: Frete ${a.id} (${a.status}, prioridade ${priorityA}) vs Frete ${b.id} (${b.status}, prioridade ${priorityB})`);
+        return priorityA - priorityB;
+      }
+      
+      // Se o status for o mesmo, ordenar por proximidade de data
+      const dataA = new Date(a.data_coleta_limite);
+      const dataB = new Date(b.data_coleta_limite);
+      
+      // Calcular diferença em dias
+      const diffA = Math.abs((dataA.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      const diffB = Math.abs((dataB.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`Ordenação por data (mesmo status ${a.status}): Frete ${a.id} (${a.data_coleta_limite}, diff: ${diffA.toFixed(1)} dias) vs Frete ${b.id} (${b.data_coleta_limite}, diff: ${diffB.toFixed(1)} dias)`);
+      
+      return diffA - diffB;
+    });
+
+    console.log('\n--- RESULTADO FINAL ORDENAÇÃO POR STATUS E DATA ---');
+    fretes.forEach((frete, index) => {
+      const dataColeta = new Date(frete.data_coleta_limite);
+      const diffDias = Math.abs((dataColeta.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`${index + 1}. Frete ID: ${frete.id}, Status: ${frete.status}, Data Coleta: ${frete.data_coleta_limite}, Diferença: ${diffDias.toFixed(1)} dias`);
+    });
+    console.log('=== FIM DEBUG ===\n');
 
     res.json({
       success: true,
@@ -134,7 +180,7 @@ const getFretesDisponiveis = async (req, res) => {
       include: [
         { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['data_coleta_limite', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: limit,
       offset: offset
     });
@@ -188,7 +234,7 @@ const getFretesByMotorista = async (req, res) => {
         { model: User, as: 'cliente', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] },
         { model: User, as: 'motorista', attributes: ['id', 'email', 'nome', 'telefone', 'cpf', 'empresa', 'cnpj'] }
       ],
-      order: [['data_coleta_limite', 'DESC']],
+      order: [[Frete.sequelize.literal("ABS(julianday(data_coleta_limite) - julianday('now'))"), 'ASC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -584,23 +630,75 @@ const getAllFretes = async (req, res) => {
       includeOptions.push({ model: User, as: 'motorista' });
     }
 
-    const { count, rows: fretes } = await Frete.findAndCountAll({
+    const fretesResult = await Frete.findAndCountAll({
       where: whereClause,
       include: includeOptions,
-      order: [['data_coleta_limite', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
 
+    // Data atual (2025-11-02)
+    const hoje = new Date('2025-11-02');
+    
+    console.log('\n=== DEBUG ORDENAÇÃO ADMIN TODOS FRETES POR STATUS E DATA ===');
+    console.log('Data atual para comparação:', hoje.toISOString().split('T')[0]);
+    console.log('Total de fretes encontrados:', fretesResult.rows.length);
+    
+    // Definir ordem de prioridade dos status
+    const statusPriority = {
+      'aceito': 1,
+      'em_transito': 2,
+      'solicitado': 3,
+      'entregue': 4,
+      'cancelado': 5
+    };
+    
+    // Ordenar manualmente por status (prioridade) e depois por proximidade da data atual
+    const fretesOrdenados = fretesResult.rows.sort((a, b) => {
+      // Primeiro, comparar por prioridade de status
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      
+      if (priorityA !== priorityB) {
+        console.log(`Ordenação por status: Frete ${a.id} (${a.status}, prioridade ${priorityA}) vs Frete ${b.id} (${b.status}, prioridade ${priorityB})`);
+        return priorityA - priorityB;
+      }
+      
+      // Se o status for o mesmo, ordenar por proximidade de data
+      const dataA = new Date(a.data_coleta_limite);
+      const dataB = new Date(b.data_coleta_limite);
+      
+      // Calcular diferença em dias
+      const diffA = Math.abs((dataA.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      const diffB = Math.abs((dataB.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`Ordenação por data (mesmo status ${a.status}): Frete ${a.id} (${a.data_coleta_limite}, diff: ${diffA.toFixed(1)} dias) vs Frete ${b.id} (${b.data_coleta_limite}, diff: ${diffB.toFixed(1)} dias)`);
+      
+      return diffA - diffB;
+    });
+
+    console.log('--- RESULTADO FINAL ORDENAÇÃO ADMIN TODOS FRETES POR STATUS E DATA ---');
+    fretesOrdenados.forEach((frete, index) => {
+      const dataColeta = new Date(frete.data_coleta_limite);
+      const diffDias = Math.abs((dataColeta.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`${index + 1}. Frete ID: ${frete.id}, Status: ${frete.status}, Data Coleta: ${frete.data_coleta_limite}, Diferença: ${diffDias.toFixed(1)} dias`);
+    });
+    console.log('=== FIM DEBUG ADMIN TODOS FRETES ===\n');
+
+    const fretes = {
+      count: fretesResult.count,
+      rows: fretesOrdenados
+    };
+
     res.json({
       success: true,
       data: {
-        fretes,
+        fretes: fretesOrdenados,
         pagination: {
-          total: count,
+          total: fretes.count,
           page: parseInt(page),
           limit: parseInt(limit),
-          pages: Math.ceil(count / limit)
+          pages: Math.ceil(fretes.count / limit)
         }
       }
     });

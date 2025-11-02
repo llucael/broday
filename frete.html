@@ -234,6 +234,43 @@
         </div>
     </main>
 
+    <!-- Modal de Seleção de Endereço -->
+    <div id="endereco-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="endereco-modal-title">Selecionar Endereço</h3>
+                <button class="close-btn" onclick="closeEnderecoSelectionModal()">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Lista única de endereços -->
+                <div id="enderecos-container" class="enderecos-container">
+                    <div id="enderecos-list" class="enderecos-grid">
+                        <!-- Lista de endereços será carregada aqui -->
+                    </div>
+                </div>
+                
+                <!-- Mensagem quando não há endereços -->
+                <div id="no-enderecos-message" class="no-data" style="display: none;">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <p>Nenhum endereço encontrado.</p>
+                    <p>Cadastre endereços em seu perfil para facilitar o preenchimento.</p>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEnderecoSelectionModal()">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="preencherManualmente()">
+                    <i class="fas fa-edit"></i>
+                    Preencher Manualmente
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -284,6 +321,10 @@
     <script src="js/validation.js"></script>
     <script src="script.js"></script>
     <script>
+        // Variáveis globais para controle do modal
+        let currentEnderecoTarget = '';
+        let enderecosDisponiveis = [];
+
         // Verificar se o usuário está logado
         if (!isLoggedIn()) {
             window.location.href = 'login.html';
@@ -296,21 +337,442 @@
 
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
-            loadUserData();
+            console.log('🚀 DOM carregado, iniciando configuração...');
+            // Aguardar um pouco para garantir que todos os elementos estão carregados
+            setTimeout(() => {
+                loadUserData();
+                setupEnderecoClickHandlers();
+            }, 200);
         });
 
-        function loadUserData() {
-            const user = getCurrentUser();
-            if (user) {
-                document.getElementById('user-name').textContent = user.name || user.email;
+        // Também tentar preencher quando a página estiver completamente carregada
+        window.addEventListener('load', function() {
+            console.log('🌐 Página completamente carregada');
+            setTimeout(() => {
+                loadUserData();
+            }, 100);
+        });
+
+        async function loadUserData() {
+            try {
+                console.log('🔄 Iniciando carregamento dos dados do usuário...');
                 
-                // Preencher automaticamente o email do remetente
-                const senderEmailField = document.getElementById('sender-email');
-                if (senderEmailField && user.email) {
-                    senderEmailField.value = user.email;
+                // Verificar se os campos existem
+                const campos = [
+                    'sender-name', 'sender-email', 'sender-document', 'sender-phone'
+                ];
+                
+                let camposEncontrados = 0;
+                campos.forEach(id => {
+                    const elemento = document.getElementById(id);
+                    if (elemento) {
+                        camposEncontrados++;
+                        console.log(`✅ Campo ${id} encontrado`);
+                    } else {
+                        console.log(`❌ Campo ${id} NÃO encontrado`);
+                    }
+                });
+                
+                console.log(`📊 ${camposEncontrados}/${campos.length} campos encontrados`);
+                
+                // Primeiro tentar dados do localStorage
+                const localUser = getCurrentUser();
+                console.log('📱 Dados do usuário local:', localUser);
+                
+                let user = localUser;
+                
+                // Tentar buscar dados do servidor
+                try {
+                    console.log('🌐 Fazendo chamada para getProfile()...');
+                    const response = await api.getProfile();
+                    console.log('🌐 Resposta do perfil da API:', response);
+                    console.log('📋 Estrutura da resposta:', {
+                        success: response?.success,
+                        user: response?.user,
+                        data: response?.data,
+                        keys: Object.keys(response || {})
+                    });
+                    
+                    if (response && response.success) {
+                        // Verificar se os dados estão em 'user' ou 'data'
+                        const userData = response.user || response.data;
+                        if (userData) {
+                            user = userData;
+                            console.log('✅ Usando dados do servidor:', user);
+                            console.log('📋 Dados detalhados do servidor:', {
+                                nome: user.nome,
+                                email: user.email,
+                                cpf: user.cpf,
+                                cnpj: user.cnpj,
+                                telefone: user.telefone,
+                                documento: user.documento,
+                                allKeys: Object.keys(user)
+                            });
+                        } else {
+                            console.log('⚠️ Resposta da API não contém dados do usuário');
+                        }
+                    } else {
+                        console.log('⚠️ Resposta da API não foi bem-sucedida');
+                    }
+                } catch (apiError) {
+                    console.log('⚠️ Erro na API, usando dados locais:', apiError.message);
                 }
+                
+                if (user) {
+                    // Atualizar nome na interface
+                    const userNameElement = document.getElementById('user-name');
+                    if (userNameElement) {
+                        userNameElement.textContent = user.nome || user.email;
+                        console.log('👤 Nome atualizado na interface:', user.nome || user.email);
+                    }
+                    
+                    // Preencher dados do remetente
+                    preencherDadosRemetente(user);
+                } else {
+                    console.log('❌ Nenhum usuário logado encontrado');
+                }
+            } catch (error) {
+                console.error('❌ Erro geral ao carregar dados do usuário:', error);
             }
         }
+
+        function preencherDadosRemetente(user) {
+            console.log('📝 Preenchendo dados do remetente com:', user);
+            console.log('📋 Dados disponíveis do usuário:', {
+                nome: user.nome,
+                email: user.email,
+                cpf: user.cpf,
+                cnpj: user.cnpj,
+                telefone: user.telefone,
+                documento: user.documento
+            });
+            
+            // Tentar preencher várias vezes se necessário
+            let tentativas = 0;
+            const maxTentativas = 5;
+            
+            const tentarPreencher = () => {
+                tentativas++;
+                console.log(`🔄 Tentativa ${tentativas} de preenchimento...`);
+                
+                let preenchidos = 0;
+                
+                // Email
+                if (user.email) {
+                    const campo = document.getElementById('sender-email');
+                    if (campo) {
+                        campo.value = user.email;
+                        preenchidos++;
+                        console.log('✅ Email preenchido:', user.email);
+                    } else {
+                        console.log('❌ Campo sender-email não encontrado');
+                    }
+                }
+                
+                // Nome
+                if (user.nome) {
+                    const campo = document.getElementById('sender-name');
+                    if (campo) {
+                        campo.value = user.nome;
+                        preenchidos++;
+                        console.log('✅ Nome preenchido:', user.nome);
+                    } else {
+                        console.log('❌ Campo sender-name não encontrado');
+                    }
+                }
+                
+                // CPF/CNPJ - tentar diferentes campos
+                const documento = user.cpf || user.cnpj || user.documento;
+                if (documento) {
+                    const campo = document.getElementById('sender-document');
+                    if (campo) {
+                        campo.value = documento;
+                        preenchidos++;
+                        console.log('✅ Documento preenchido:', documento);
+                    } else {
+                        console.log('❌ Campo sender-document não encontrado');
+                    }
+                } else {
+                    console.log('⚠️ Nenhum documento encontrado (cpf/cnpj/documento)');
+                }
+                
+                // Telefone
+                if (user.telefone) {
+                    const campo = document.getElementById('sender-phone');
+                    if (campo) {
+                        campo.value = user.telefone;
+                        preenchidos++;
+                        console.log('✅ Telefone preenchido:', user.telefone);
+                    } else {
+                        console.log('❌ Campo sender-phone não encontrado');
+                    }
+                } else {
+                    console.log('⚠️ Telefone não encontrado nos dados do usuário');
+                }
+                
+                console.log(`📊 ${preenchidos} campos preenchidos na tentativa ${tentativas}`);
+                
+                // Se não conseguiu preencher nada e ainda tem tentativas, tentar novamente
+                if (preenchidos === 0 && tentativas < maxTentativas) {
+                    console.log(`⏳ Tentando novamente em 200ms...`);
+                    setTimeout(tentarPreencher, 200);
+                } else {
+                    console.log(`✅ Preenchimento finalizado! Total: ${preenchidos} campos`);
+                }
+            };
+            
+            tentarPreencher();
+        }
+
+        // Configurar event listeners para as seções de endereço
+        function setupEnderecoClickHandlers() {
+            // Apenas clique na seção inteira, não nos inputs individuais
+            const originSection = document.querySelector('.address-section .form-section:first-child');
+            if (originSection) {
+                originSection.classList.add('form-section-clickable');
+                originSection.addEventListener('click', function(e) {
+                    // Não abrir modal se clicou em um input ou select
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                        return;
+                    }
+                    currentEnderecoTarget = 'origin';
+                    openEnderecoSelectionModal('Usar Endereço de Origem');
+                });
+            }
+
+            const destinationSection = document.querySelector('.address-section .form-section:last-child');
+            if (destinationSection) {
+                destinationSection.classList.add('form-section-clickable');
+                destinationSection.addEventListener('click', function(e) {
+                    // Não abrir modal se clicou em um input ou select
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                        return;
+                    }
+                    currentEnderecoTarget = 'destination';
+                    openEnderecoSelectionModal('Usar Endereço de Destino');
+                });
+            }
+        }
+
+        // Abrir modal de seleção de endereços
+        async function openEnderecoSelectionModal(title) {
+            try {
+                console.log('🔄 Abrindo modal de endereços...');
+                
+                // Carregar endereços do usuário
+                const response = await api.getEnderecos();
+                console.log('📦 Resposta da API de endereços:', response);
+                
+                if (response.success && response.data && response.data.length > 0) {
+                    enderecosDisponiveis = response.data;
+                    console.log('🏠 Endereços disponíveis:', enderecosDisponiveis);
+                    
+                    // Definir título baseado no tipo
+                    let modalTitle = 'Selecionar Endereço';
+                    if (currentEnderecoTarget === 'origin') {
+                        modalTitle = 'Selecionar Endereço de Origem';
+                    } else if (currentEnderecoTarget === 'destination') {
+                        modalTitle = 'Selecionar Endereço de Destinatário';
+                    }
+                    
+                    document.getElementById('endereco-modal-title').textContent = modalTitle;
+                    
+                    // Mostrar lista de endereços
+                    populateEnderecosList();
+                    
+                    // Mostrar modal
+                    document.getElementById('endereco-modal').style.display = 'flex';
+                    document.getElementById('enderecos-container').style.display = 'block';
+                    document.getElementById('no-enderecos-message').style.display = 'none';
+                } else {
+                    console.log('⚠️ Nenhum endereço encontrado ou resposta inválida');
+                    
+                    // Mostrar modal com mensagem de sem endereços
+                    document.getElementById('endereco-modal-title').textContent = 'Nenhum Endereço Cadastrado';
+                    document.getElementById('endereco-modal').style.display = 'flex';
+                    document.getElementById('enderecos-container').style.display = 'none';
+                    document.getElementById('no-enderecos-message').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar endereços:', error);
+                showNotification('Erro ao carregar endereços cadastrados', 'error');
+            }
+        }
+
+        // Fechar modal de seleção de endereços
+        function closeEnderecoSelectionModal() {
+            document.getElementById('endereco-modal').style.display = 'none';
+            currentEnderecoTarget = '';
+        }
+
+        // Popular lista de endereços
+        function populateEnderecosList() {
+            const container = document.getElementById('enderecos-list');
+            container.innerHTML = '';
+
+            enderecosDisponiveis.forEach(endereco => {
+                const card = createEnderecoCard(endereco);
+                container.appendChild(card);
+            });
+        }
+
+        // Criar card de endereço
+        function createEnderecoCard(endereco) {
+            console.log('📦 Criando card para endereço:', endereco);
+            
+            const card = document.createElement('div');
+            card.className = 'endereco-card';
+            card.onclick = () => selectEndereco(endereco);
+            
+            // Tratar tipo do endereço com fallback seguro
+            let tipoLabel = 'Endereço';
+            if (endereco.tipo) {
+                switch(endereco.tipo.toLowerCase()) {
+                    case 'residencial':
+                        tipoLabel = 'Casa';
+                        break;
+                    case 'comercial':
+                        tipoLabel = 'Empresa';
+                        break;
+                    default:
+                        tipoLabel = endereco.tipo.charAt(0).toUpperCase() + endereco.tipo.slice(1);
+                        break;
+                }
+            }
+            
+            // Garantir que todos os campos tenham valores seguros
+            const enderecoSeguro = {
+                apelido: endereco.apelido || endereco.nome || 'Endereço',
+                logradouro: endereco.logradouro || endereco.rua || 'Não informado',
+                numero: endereco.numero || 'S/N',
+                complemento: endereco.complemento || '',
+                bairro: endereco.bairro || 'Não informado',
+                cidade: endereco.cidade || 'Não informado',
+                estado: endereco.estado || endereco.uf || 'Não informado',
+                cep: endereco.cep || 'Não informado'
+            };
+            
+            // Criar endereço formatado
+            let enderecoCompleto = `${enderecoSeguro.logradouro}, ${enderecoSeguro.numero}`;
+            if (enderecoSeguro.complemento) {
+                enderecoCompleto += `, ${enderecoSeguro.complemento}`;
+            }
+            
+            card.innerHTML = `
+                <div class="endereco-card-header">
+                    <h4 class="endereco-card-title">${enderecoSeguro.apelido}</h4>
+                    <span class="endereco-card-type">${tipoLabel}</span>
+                </div>
+                <div class="endereco-card-details">
+                    <p><strong>${enderecoCompleto}</strong></p>
+                    <p>${enderecoSeguro.bairro}</p>
+                    <p>${enderecoSeguro.cidade} - ${enderecoSeguro.estado}</p>
+                    <p><strong>CEP:</strong> ${enderecoSeguro.cep}</p>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Selecionar endereço
+        function selectEndereco(endereco) {
+            console.log('📍 Endereço selecionado:', endereco);
+            console.log('🎯 Target atual:', currentEnderecoTarget);
+            
+            // Marcar visualmente o card selecionado
+            document.querySelectorAll('.endereco-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Encontrar e marcar o card clicado
+            const clickedCard = event.currentTarget;
+            clickedCard.classList.add('selected');
+            
+            // Aguardar um pouco para mostrar o feedback visual
+            setTimeout(() => {
+                if (currentEnderecoTarget === 'origin') {
+                    preencherEndereco(endereco, 'sender'); // Manter 'sender' na função para mapear para 'origin'
+                    showNotification('Endereço de origem preenchido com sucesso!', 'success');
+                } else if (currentEnderecoTarget === 'destination') {
+                    preencherEndereco(endereco, 'destination');
+                    showNotification('Endereço de destinatário preenchido com sucesso!', 'success');
+                }
+                
+                closeEnderecoSelectionModal();
+            }, 300);
+        }
+
+        // Função para preencher manualmente (fechar modal)
+        function preencherManualmente() {
+            closeEnderecoSelectionModal();
+        }
+
+        // Função para preencher endereço (nova versão)
+        function preencherEndereco(endereco, tipo) {
+            console.log(`📝 Preenchendo endereço do ${tipo}:`, endereco);
+            
+            // Corrigir o mapeamento: sender = origin, destination = destination
+            const prefix = tipo === 'sender' ? 'origin' : 'destination';
+            
+            // Mapeamento de campos com fallbacks
+            const fieldsMapping = [
+                { 
+                    id: `${prefix}-cep`, 
+                    value: endereco.cep 
+                },
+                { 
+                    id: `${prefix}-street`, 
+                    value: endereco.logradouro || endereco.rua 
+                },
+                { 
+                    id: `${prefix}-number`, 
+                    value: endereco.numero 
+                },
+                { 
+                    id: `${prefix}-complement`, 
+                    value: endereco.complemento 
+                },
+                { 
+                    id: `${prefix}-city`, 
+                    value: endereco.cidade 
+                },
+                { 
+                    id: `${prefix}-state`, 
+                    value: endereco.estado || endereco.uf 
+                }
+            ];
+            
+            let preenchidos = 0;
+            
+            fieldsMapping.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (element) {
+                    // Sempre limpar o campo primeiro
+                    element.value = '';
+                    
+                    // Preencher se houver valor
+                    if (field.value) {
+                        element.value = field.value;
+                        preenchidos++;
+                        console.log(`✅ ${field.id}: ${field.value}`);
+                    } else {
+                        console.log(`⚠️ ${field.id}: valor vazio ou undefined`);
+                    }
+                } else {
+                    console.log(`❌ Elemento ${field.id} não encontrado`);
+                }
+            });
+            
+            console.log(`✅ Total de ${preenchidos} campos preenchidos para ${tipo}`);
+        }
+
+        // Fechar modal ao clicar fora dele
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('endereco-modal');
+            if (event.target === modal) {
+                closeEnderecoSelectionModal();
+            }
+        });
         
         // Função para alternar tema
         function toggleTheme() {

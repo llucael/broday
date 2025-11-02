@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste Preenchimento Automático</title>
+</head>
+<body>
+    <h1>Teste de Preenchimento Automático</h1>
+    <button onclick="simularLogin()">Simular Login como Cliente</button>
+    <button onclick="testarPreenchimento()">Testar Preenchimento</button>
+    <button onclick="irParaFrete()">Ir para Página de Frete</button>
+    
+    <div id="resultado" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+
+    <script>
+        function simularLogin() {
+            // Simular dados do cliente logado
+            const userData = {
+                email: 'cliente@broday.com',
+                nome: 'Teste Debug',
+                cpf: '12345678901',
+                telefone: '11999999999',
+                user_type: 'cliente'
+            };
+            
+            // Salvar no localStorage como o sistema faz
+            localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('token', 'fake-token-for-test');
+            
+            document.getElementById('resultado').innerHTML = 
+                '<strong>✅ Login simulado!</strong><br>' +
+                'Usuário: ' + userData.nome + '<br>' +
+                'Email: ' + userData.email + '<br>' +
+                'CPF: ' + userData.cpf + '<br>' +
+                'Telefone: ' + userData.telefone;
+        }
+        
+        function testarPreenchimento() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            document.getElementById('resultado').innerHTML = 
+                '<strong>📱 Dados no localStorage:</strong><br>' +
+                JSON.stringify(user, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+        }
+        
+        function irParaFrete() {
+            window.location.href = 'frete.html';
+        }
+    </script>
+</body>
+</html>

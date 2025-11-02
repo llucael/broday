@@ -436,122 +436,38 @@
 
         async function loadStats(mes = 'todos') {
             try {
-                // Carregar dados do dashboard da API (sem depender de agregações específicas)
+                // Carregar dados do dashboard da API com filtro de mês
                 const url = mes === 'todos' ? '/admin/dashboard' : `/admin/dashboard?mes=${mes}`;
+                console.log('Fazendo requisição para:', url);
                 const dashboardResponse = await api.request(url);
 
                 if (!dashboardResponse.success) {
                     throw new Error(dashboardResponse.message || 'Erro ao carregar dashboard');
                 }
 
-                // servidor pode retornar { dashboard: {...} } ou dados diretos; tratar ambos
+                // Servidor retorna { dashboard: {...} } ou dados diretos
                 dashboardData = dashboardResponse.data?.dashboard || dashboardResponse.data || {};
+                
+                console.log('Dados do dashboard carregados:', dashboardData);
+                console.log('Mês solicitado:', mes);
+                console.log('fretesPorStatus:', dashboardData.fretesPorStatus);
 
-                // Se o usuário selecionou um mês específico, buscar a lista detalhada de fretes
-                // usando o endpoint /fretes com filtro de data (dataInicio/dataFim)
-                if (mes !== 'todos') {
-                    try {
-                        const year = new Date().getFullYear();
-                        const monthNum = parseInt(mes, 10);
-                        const start = new Date(year, monthNum - 1, 1);
-                        const end = new Date(year, monthNum, 0); // último dia do mês
-                        // ajustar fim para incluir final do dia
-                        end.setHours(23, 59, 59, 999);
+                // Usar os valores diretamente do backend (já filtrados por mês)
+                const fretesAtivos = dashboardData.fretesAtivos || 0;
+                const fretesConcluidos = dashboardData.fretesConcluidosMes || 0;
+                const totalClientes = dashboardData.usuarios?.totalClientes || 0;
+                const totalMotoristas = dashboardData.usuarios?.totalMotoristas || 0;
 
-                        const startISO = start.toISOString();
-                        const endISO = end.toISOString();
-
-                        // Buscar todas as páginas para o intervalo
-                        const allFretes = await fetchAllFretesForRange(startISO, endISO);
-                        dashboardData.fretes = allFretes || [];
-                        console.log(`Fretes detalhados (todas páginas) buscados para ${mes}:`, dashboardData.fretes.length);
-                        // Se a API de detalhamento falhar (500) pode retornar lista vazia;
-                        // neste caso, vamos sinalizar para usar os agregados do servidor como fallback.
-                        if ((!dashboardData.fretes || dashboardData.fretes.length === 0)) {
-                            console.warn('Nenhum frete detalhado disponível para o mês; usaremos agregados do servidor como fallback.');
-                            dashboardData._useAggregatesFallback = true;
-                        } else {
-                            dashboardData._useAggregatesFallback = false;
-                        }
-                    } catch (err) {
-                        console.warn('Não foi possível buscar fretes detalhados para o mês:', err);
-                        // Em caso de erro, marcar fallback para usar agregados
-                        dashboardData.fretes = [];
-                        dashboardData._useAggregatesFallback = true;
-                    }
-                }
-
-                // Agora calculamos todas as métricas a partir da lista detalhada de fretes quando disponível
-                // Primeiro tentamos calcular tudo a partir dos fretes detalhados
-                const fretesFiltrados = getFretesFiltradosPorMes(mes);
-
-                let fretesAtivos = 0;
-                let fretesConcluidos = 0;
-
-                if (dashboardData._useAggregatesFallback) {
-                    // Fallback: usar agregados do servidor quando não temos lista detalhada
-                    console.warn('Usando dados agregados do servidor para preencher métricas do mês.');
-
-                    // fretesConcluidos: procurar em fretesPorMes por YYYY-MM
-                    const year = new Date().getFullYear();
-                    const monthNum = mes === 'todos' ? null : parseInt(mes, 10);
-                    if (monthNum) {
-                        const key = `${year}-${String(monthNum).padStart(2, '0')}`;
-                        const found = (dashboardData.fretesPorMes || []).find(it => String(it.mes) === key || String(it.mes).startsWith(key));
-                        fretesConcluidos = found ? parseInt(found.count || 0) : 0;
-                    } else {
-                        fretesConcluidos = dashboardData.fretesConcluidosMes || 0;
-                    }
-
-                    // fretesAtivos: usar valor agregado global (melhor que zero)
-                    fretesAtivos = dashboardData.fretesAtivos || 0;
-
-                    console.log('Resumo (fallback agregados):', { mes, fretesAtivos, fretesConcluidos });
-                } else {
-                    // fretes ativos = status aceito ou em_transito
-                    fretesAtivos = fretesFiltrados.filter(f => {
-                        const s = (f.status || f.status_frete || '').toString();
-                        return s === 'aceito' || s === 'em_transito' || s === 'em trânsito';
-                    }).length;
-
-                    // fretes concluídos = status entregue
-                    fretesConcluidos = fretesFiltrados.filter(f => {
-                        const s = (f.status || f.status_frete || '').toString();
-                        return s === 'entregue';
-                    }).length;
-
-                    console.log('Resumo após filtragem:', {
-                        mes,
-                        fretesFiltrados: fretesFiltrados.length,
-                        fretesAtivos,
-                        fretesConcluidos
-                    });
-                }
-
-                // calcular clientes e motoristas ativos no mês: usar IDs disponíveis; fallback para totals do servidor
-                const clientesSet = new Set();
-                const motoristasSet = new Set();
-                fretesFiltrados.forEach(f => {
-                    if (f.clienteId) clientesSet.add(f.clienteId);
-                    if (f.senderId) clientesSet.add(f.senderId);
-                    if (f.senderEmail) clientesSet.add(f.senderEmail);
-                    if (f.recipientEmail) clientesSet.add(f.recipientEmail);
-                    if (f.motoristaId) motoristasSet.add(f.motoristaId);
-                    if (f.driverId) motoristasSet.add(f.driverId);
-                });
-
-                const totalClientesMes = clientesSet.size || (dashboardData.usuarios?.clientesPorMes?.[mes] || 0);
-                const totalMotoristasMes = motoristasSet.size || (dashboardData.usuarios?.motoristasPorMes?.[mes] || 0) || dashboardData.usuarios?.totalMotoristas || 0;
-
-                // Atualizar contadores
+                // Atualizar contadores na interface
                 document.getElementById('fretes-ativos').textContent = fretesAtivos;
                 document.getElementById('fretes-concluidos-mes').textContent = fretesConcluidos;
-                document.getElementById('total-clientes').textContent = mes === 'todos' ? (dashboardData.usuarios?.totalClientes || totalClientesMes) : totalClientesMes;
-                document.getElementById('total-motoristas').textContent = mes === 'todos' ? (dashboardData.usuarios?.totalMotoristas || totalMotoristasMes) : totalMotoristasMes;
+                document.getElementById('total-clientes').textContent = totalClientes;
+                document.getElementById('total-motoristas').textContent = totalMotoristas;
 
                 // Atualizar texto do mês selecionado
                 const mesTexto = getNomeMes(mes);
                 document.getElementById('mes-selecionado-texto').textContent = mesTexto;
+                
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
                 // Valores padrão em caso de erro
@@ -604,16 +520,14 @@
 
             if (!dashboardData) return;
 
-            // Calcular fretes por status a partir da lista detalhada de fretes (filtrada por mês)
-            const fretesFiltrados = getFretesFiltradosPorMes(mes);
-            let fretesPorStatus = calcularStatusPorFretes(fretesFiltrados);
-
-            // Se estivermos usando fallback (detalhes não disponíveis), tentar extrair dos agregados do servidor
-            if ((dashboardData && dashboardData._useAggregatesFallback) && (!fretesFiltrados || fretesFiltrados.length === 0)) {
-                fretesPorStatus = { solicitado:0, aceito:0, em_transito:0, entregue:0, cancelado:0 };
-                (dashboardData.fretesPorStatus || []).forEach(item => {
-                    const status = (item.status || item[0] || '').toString();
-                    const count = parseInt(item.count || item[1] || 0);
+            // Calcular fretes por status - usar sempre os dados do servidor já filtrados
+            let fretesPorStatus = { solicitado:0, aceito:0, em_transito:0, entregue:0, cancelado:0 };
+            
+            // Usar dados filtrados do backend (já aplicam o filtro de mês)
+            if (dashboardData.fretesPorStatus && Array.isArray(dashboardData.fretesPorStatus)) {
+                dashboardData.fretesPorStatus.forEach(item => {
+                    const status = (item.status || '').toString();
+                    const count = parseInt(item.count || 0);
                     if (status === 'pendente' || status === 'solicitado') fretesPorStatus.solicitado += count;
                     else if (status === 'aceito') fretesPorStatus.aceito += count;
                     else if (status === 'em_transito' || status === 'em trânsito') fretesPorStatus.em_transito += count;
@@ -621,6 +535,13 @@
                     else if (status === 'cancelado') fretesPorStatus.cancelado += count;
                 });
             }
+
+            console.log('Dados do gráfico por status:', fretesPorStatus);
+            console.log('Mês selecionado:', mes);
+            
+            // Verificar se há dados para mostrar no gráfico
+            const totalFretes = Object.values(fretesPorStatus).reduce((sum, count) => sum + count, 0);
+            console.log('Total de fretes para o gráfico:', totalFretes);
 
             // Dados por mês - usar dados reais da API
             let fretesPorMes = {
@@ -632,7 +553,10 @@
                 'Junho': 0,
                 'Julho': 0,
                 'Agosto': 0,
-                'Setembro': 0
+                'Setembro': 0,
+                'Outubro': 0,
+                'Novembro': 0,
+                'Dezembro': 0
             };
 
             if (dashboardData && dashboardData.fretesPorMes) {
@@ -651,7 +575,10 @@
                         '2025-06': 'Junho',
                         '2025-07': 'Julho',
                         '2025-08': 'Agosto',
-                        '2025-09': 'Setembro'
+                        '2025-09': 'Setembro',
+                        '2025-10': 'Outubro',
+                        '2025-11': 'Novembro',
+                        '2025-12': 'Dezembro'
                     };
                     
                     if (mesMap[mes]) {
@@ -663,62 +590,111 @@
             // Gráfico de fretes por status (pizza)
             const statusCtx = document.getElementById('fretes-status-chart').getContext('2d');
             const mesSelecionadoNome = getNomeMes(mes);
-            statusChart = new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Solicitado', 'Aceito', 'Em Trânsito', 'Entregue', 'Cancelado'],
-                    datasets: [{
-                        data: [
-                            fretesPorStatus.solicitado,
-                            fretesPorStatus.aceito,
-                            fretesPorStatus.em_transito,
-                            fretesPorStatus.entregue,
-                            fretesPorStatus.cancelado
-                        ],
-                        backgroundColor: [
-                            '#ffc107',
-                            '#17a2b8',
-                            '#007bff',
-                            '#28a745',
-                            '#dc3545'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: mes === 'todos' ? 'Status de Todos os Fretes' : `Status dos Fretes - ${mesSelecionadoNome}`,
-                            font: {
-                                size: 16
-                            },
-                            padding: {
-                                bottom: 15
-                            }
-                        },
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 15,
-                                usePointStyle: true,
-                                boxWidth: 12,
+            
+            // Se não há dados, mostrar gráfico vazio com mensagem
+            if (totalFretes === 0) {
+                statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Nenhum frete encontrado'],
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: ['#e2e8f0'],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: mes === 'todos' ? 'Status de Todos os Fretes' : `Status dos Fretes - ${mesSelecionadoNome}`,
                                 font: {
-                                    size: 12
+                                    size: 16
+                                },
+                                padding: {
+                                    bottom: 15
+                                }
+                            },
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    boxWidth: 12,
+                                    font: {
+                                        size: 12
+                                    }
                                 }
                             }
-                        }
-                    },
-                    layout: {
-                        padding: {
-                            bottom: 20
+                        },
+                        layout: {
+                            padding: {
+                                bottom: 20
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Solicitado', 'Aceito', 'Em Trânsito', 'Entregue', 'Cancelado'],
+                        datasets: [{
+                            data: [
+                                fretesPorStatus.solicitado,
+                                fretesPorStatus.aceito,
+                                fretesPorStatus.em_transito,
+                                fretesPorStatus.entregue,
+                                fretesPorStatus.cancelado
+                            ],
+                            backgroundColor: [
+                                '#ffc107',
+                                '#17a2b8',
+                                '#007bff',
+                                '#28a745',
+                                '#dc3545'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: mes === 'todos' ? 'Status de Todos os Fretes' : `Status dos Fretes - ${mesSelecionadoNome}`,
+                                font: {
+                                    size: 16
+                                },
+                                padding: {
+                                    bottom: 15
+                                }
+                            },
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    boxWidth: 12,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        },
+                        layout: {
+                            padding: {
+                                bottom: 20
+                            }
+                        }
+                    }
+                });
+            }
 
             // Gráfico de fretes por mês (linha)
             const mesCtx = document.getElementById('fretes-mes-chart').getContext('2d');

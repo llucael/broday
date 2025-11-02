@@ -164,8 +164,8 @@
                         <input type="tel" id="cliente-telefone" name="telefone" required>
                     </div>
                     <div class="form-group">
-                        <label for="cliente-cpf">CPF *</label>
-                        <input type="text" id="cliente-cpf" name="cpf" required>
+                        <label for="cliente-documento">CPF/CNPJ *</label>
+                        <input type="text" id="cliente-documento" name="documento" placeholder="000.000.000-00 ou 00.000.000/0001-00" maxlength="18" required>
                     </div>
                 </div>
 
@@ -175,13 +175,6 @@
                         <input type="text" id="cliente-empresa" name="empresa">
                     </div>
                     <div class="form-group">
-                        <label for="cliente-cnpj">CNPJ</label>
-                        <input type="text" id="cliente-cnpj" name="cnpj">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="cliente-tipo">Tipo de Usuário *</label>
                         <select id="cliente-tipo" name="user_type" required>
                             <option value="cliente">Cliente</option>
@@ -189,12 +182,12 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeClienteModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Cadastrar</button>
-                </div>
             </form>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeClienteModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" onclick="document.getElementById('cliente-form').requestSubmit()">Cadastrar</button>
+            </div>
         </div>
     </div>
 
@@ -224,8 +217,8 @@
                         <input type="tel" id="edit-usuario-telefone" name="telefone">
                     </div>
                     <div class="form-group">
-                        <label for="edit-usuario-cpf">CPF</label>
-                        <input type="text" id="edit-usuario-cpf" name="cpf">
+                        <label for="edit-usuario-documento">CPF/CNPJ</label>
+                        <input type="text" id="edit-usuario-documento" name="documento" placeholder="000.000.000-00 ou 00.000.000/0001-00" maxlength="18">
                     </div>
                 </div>
 
@@ -235,13 +228,6 @@
                         <input type="text" id="edit-usuario-empresa" name="empresa">
                     </div>
                     <div class="form-group">
-                        <label for="edit-usuario-cnpj">CNPJ</label>
-                        <input type="text" id="edit-usuario-cnpj" name="cnpj">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="edit-usuario-tipo">Tipo de Usuário *</label>
                         <select id="edit-usuario-tipo" name="user_type" required>
                             <option value="cliente">Cliente</option>
@@ -249,6 +235,9 @@
                             <option value="admin">Administrador</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
                         <label for="edit-usuario-status">Status</label>
                         <select id="edit-usuario-status" name="is_active">
@@ -256,9 +245,6 @@
                             <option value="false">Inativo</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group">
                         <label for="edit-usuario-password">Nova Senha</label>
                         <div class="password-input-container">
@@ -273,12 +259,12 @@
                         <small class="password-help">Deixe em branco para manter a senha atual, ou digite uma nova senha</small>
                     </div>
                 </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditUsuarioModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                </div>
             </form>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditUsuarioModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" onclick="document.getElementById('edit-usuario-form').requestSubmit()">Salvar Alterações</button>
+            </div>
         </div>
     </div>
 
@@ -367,6 +353,21 @@
     <script src="js/api.js"></script>
     <script src="js/validation.js"></script>
     <script>
+        // Suprimir erros comuns de extensões do Chrome
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('message channel closed')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && e.reason.message.includes('message channel closed')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
         // Verificar se o usuário está logado
         if (!isLoggedIn()) {
             window.location.href = 'login.html';
@@ -377,10 +378,88 @@
             window.location.href = 'login.html';
         }
 
-        // Carregar dados do usuário
+        // Inicialização principal - consolidando todos os eventos DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
-            loadUserData();
-            loadClientes();
+            try {
+                // 1. Carregar dados do usuário e clientes
+                loadUserData();
+                loadClientes();
+                
+                // 2. Configurar tema salvo
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'light') {
+                    document.body.classList.add('light-mode');
+                    const icon = document.querySelector('.theme-toggle i');
+                    if (icon) icon.className = 'fas fa-moon';
+                }
+                
+                // 3. Aplicar máscara inteligente para CPF/CNPJ nos dois modais
+                function applyDocumentMask(field) {
+                    if (field) {
+                        field.addEventListener('input', function(e) {
+                            try {
+                                let value = e.target.value.replace(/\D/g, '');
+                                
+                                // Limitar a 14 dígitos (tamanho máximo para CNPJ)
+                                if (value.length > 14) {
+                                    value = value.substring(0, 14);
+                                }
+                                
+                                if (value.length <= 11) {
+                                    // Máscara de CPF: 000.000.000-00
+                                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                                    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                                } else {
+                                    // Máscara de CNPJ: 00.000.000/0001-00
+                                    value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                                    value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                                    value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                                    value = value.replace(/(\d{4})(\d)/, '$1-$2');
+                                }
+                                e.target.value = value;
+                            } catch (error) {
+                                console.warn('Erro na aplicação de máscara:', error);
+                            }
+                        });
+                    }
+                }
+                
+                // 4. Aplicar máscara aos campos de documento
+                const documentoFieldCadastro = document.getElementById('cliente-documento');
+                const documentoFieldEdicao = document.getElementById('edit-usuario-documento');
+                applyDocumentMask(documentoFieldCadastro);
+                applyDocumentMask(documentoFieldEdicao);
+                
+                // 5. Configurar eventos dos formulários
+                const form = document.getElementById('cliente-form');
+                if (form) {
+                    form.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        try {
+                            await cadastrarCliente();
+                        } catch (error) {
+                            console.error('Erro no cadastro:', error);
+                            showNotification('Erro ao cadastrar cliente: ' + error.message, 'error');
+                        }
+                    });
+                }
+
+                const editForm = document.getElementById('edit-usuario-form');
+                if (editForm) {
+                    editForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        try {
+                            await atualizarUsuario();
+                        } catch (error) {
+                            console.error('Erro na atualização:', error);
+                            showNotification('Erro ao atualizar usuário: ' + error.message, 'error');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+            }
         });
 
         function loadUserData() {
@@ -559,9 +638,8 @@
             const nomeEl = document.getElementById('edit-usuario-nome');
             const emailEl = document.getElementById('edit-usuario-email');
             const telefoneEl = document.getElementById('edit-usuario-telefone');
-            const cpfEl = document.getElementById('edit-usuario-cpf');
+            const documentoEl = document.getElementById('edit-usuario-documento');
             const empresaEl = document.getElementById('edit-usuario-empresa');
-            const cnpjEl = document.getElementById('edit-usuario-cnpj');
             const tipoEl = document.getElementById('edit-usuario-tipo');
             const statusEl = document.getElementById('edit-usuario-status');
             
@@ -569,9 +647,8 @@
                 nome: !!nomeEl,
                 email: !!emailEl,
                 telefone: !!telefoneEl,
-                cpf: !!cpfEl,
+                documento: !!documentoEl,
                 empresa: !!empresaEl,
-                cnpj: !!cnpjEl,
                 tipo: !!tipoEl,
                 status: !!statusEl
             });
@@ -579,9 +656,18 @@
             if (nomeEl) nomeEl.value = usuario.nome || '';
             if (emailEl) emailEl.value = usuario.email || '';
             if (telefoneEl) telefoneEl.value = usuario.telefone || '';
-            if (cpfEl) cpfEl.value = usuario.cpf || '';
+            
+            // Preencher campo documento unificado - dar prioridade ao CPF se existir
+            if (documentoEl) {
+                if (usuario.cpf && usuario.cpf.trim() !== '') {
+                    documentoEl.value = usuario.cpf;
+                } else if (usuario.cnpj && usuario.cnpj.trim() !== '') {
+                    documentoEl.value = usuario.cnpj;
+                } else {
+                    documentoEl.value = '';
+                }
+            }
             if (empresaEl) empresaEl.value = usuario.empresa || '';
-            if (cnpjEl) cnpjEl.value = usuario.cnpj || '';
             if (tipoEl) tipoEl.value = usuario.user_type || 'cliente';
             if (statusEl) statusEl.value = usuario.is_active ? 'true' : 'false';
             
@@ -726,31 +812,45 @@
         }
 
 
-        // Adicionar eventos aos formulários
-        document.addEventListener('DOMContentLoaded', function() {
-            // Formulário de cadastro
-            const form = document.getElementById('cliente-form');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    await cadastrarCliente();
-                });
-            }
-
-            // Formulário de edição
-            const editForm = document.getElementById('edit-usuario-form');
-            if (editForm) {
-                editForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    await atualizarUsuario();
-                });
-            }
-        });
-
         async function cadastrarCliente() {
             try {
                 const form = document.getElementById('cliente-form');
                 const formData = new FormData(form);
+                
+                // Validar se documento foi preenchido
+                const documento = formData.get('documento');
+                if (!documento || documento.trim() === '') {
+                    showNotification('Por favor, informe um CPF ou CNPJ válido.', 'error');
+                    return;
+                }
+                
+                // Validar documento usando a classe FormValidation
+                const validation = new FormValidation();
+                const cleanDocument = documento.replace(/\D/g, '');
+                let documentValid = false;
+                let cpf = null;
+                let cnpj = null;
+                
+                if (cleanDocument.length === 11) {
+                    // Validar como CPF
+                    const result = validation.validateCPF(documento);
+                    if (result.valid) {
+                        documentValid = true;
+                        cpf = documento;
+                    }
+                } else if (cleanDocument.length === 14) {
+                    // Validar como CNPJ
+                    const result = validation.validateCNPJ(documento);
+                    if (result.valid) {
+                        documentValid = true;
+                        cnpj = documento;
+                    }
+                }
+                
+                if (!documentValid) {
+                    showNotification('Por favor, informe um CPF ou CNPJ válido.', 'error');
+                    return;
+                }
                 
                 const clienteData = {
                     email: formData.get('email'),
@@ -758,9 +858,9 @@
                     user_type: formData.get('user_type'),
                     nome: formData.get('nome'),
                     telefone: formData.get('telefone'),
-                    cpf: formData.get('cpf'),
+                    cpf: cpf,
                     empresa: formData.get('empresa'),
-                    cnpj: formData.get('cnpj')
+                    cnpj: cnpj
                 };
 
                 console.log('=== DEBUG CADASTRAR CLIENTE ===');
@@ -826,13 +926,27 @@
                 const password = formData.get('password');
                 console.log('Senha capturada do formulário:', password);
                 
+                // Processar documento unificado
+                const documento = formData.get('documento');
+                let cpf = null;
+                let cnpj = null;
+                
+                if (documento && documento.trim() !== '') {
+                    const cleanDocument = documento.replace(/\D/g, '');
+                    if (cleanDocument.length === 11) {
+                        cpf = documento;
+                    } else if (cleanDocument.length === 14) {
+                        cnpj = documento;
+                    }
+                }
+                
                 const usuarioData = {
                     nome: formData.get('nome'),
                     email: formData.get('email'),
                     telefone: formData.get('telefone'),
-                    cpf: formData.get('cpf'),
+                    cpf: cpf,
                     empresa: formData.get('empresa'),
-                    cnpj: formData.get('cnpj'),
+                    cnpj: cnpj,
                     user_type: formData.get('user_type'),
                     is_active: formData.get('is_active') === 'true'
                 };
@@ -929,16 +1043,6 @@
                 icon.className = 'fas fa-sun';
             }
         }
-        
-        // Carregar tema salvo
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-mode');
-                const icon = document.querySelector('.theme-toggle i');
-                if (icon) icon.className = 'fas fa-moon';
-            }
-        });
     </script>
 
     <style>
@@ -1057,6 +1161,72 @@
             overflow-y: auto;
             border-radius: 12px;
             padding: 0;
+            position: relative; /* Necessário para o posicionamento absoluto dos botões */
+        }
+
+        /* Garantir que o formulário e seus elementos fiquem dentro do modal */
+        #cliente-modal .usuario-form,
+        #edit-usuario-modal .usuario-form {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #cliente-modal .form-row,
+        #edit-usuario-modal .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        #cliente-modal .form-group,
+        #edit-usuario-modal .form-group {
+            flex: 1;
+            min-width: 0; /* Permite que o flex-item encolha */
+        }
+
+        #cliente-modal .form-actions,
+        #edit-usuario-modal .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin: 0; /* Sem margens */
+            padding: 20px;
+            border-top: 1px solid #4a5568;
+            background: #2d3748;
+            border-radius: 0 0 12px 12px; /* Cantos arredondados apenas na base */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Melhorar o visual dos containers de senha */
+        .password-input-container {
+            display: flex;
+            gap: 5px;
+            align-items: flex-start;
+        }
+
+        .password-input-container input {
+            flex: 1;
+        }
+
+        .password-help {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        /* Estilos para modo claro */
+        body.light-mode #cliente-modal .form-actions,
+        body.light-mode #edit-usuario-modal .form-actions {
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        body.light-mode .password-help {
+            color: #4a5568;
         }
 
         #cliente-modal .modal-content::-webkit-scrollbar,
