@@ -560,28 +560,49 @@
 
         .modal-content {
             background: #1a202c;
-            border-radius: 8px;
+            border: 2px solid #4a5568;
+            border-radius: 12px;
             width: 90%;
             max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 0;
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #667eea;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 30px;
-            border-bottom: 1px solid #4a5568;
+            padding: 20px;
+            border-bottom: 2px solid #4a5568;
             background: #2d3748;
-            border-radius: 8px 8px 0 0;
+            border-radius: 12px 12px 0 0;
         }
 
         .modal-header h2 {
             margin: 0;
             color: #ffffff;
             font-size: 1.5rem;
+            font-weight: 600;
         }
 
         .close-btn {
@@ -606,26 +627,26 @@
         }
 
         .modal-body {
-            padding: 0;
+            padding: 20px;
         }
 
         .frete-details-container {
-            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .detail-section {
-            padding: 25px 30px;
-            border-bottom: 1px solid #4a5568;
-        }
-
-        .detail-section:last-child {
-            border-bottom: none;
+            background: #2d3748;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
         }
 
         .detail-section h3 {
-            margin: 0 0 20px 0;
-            color: #e2e8f0;
-            font-size: 1.1rem;
+            margin: 0 0 12px 0;
+            color: #667eea;
+            font-size: 1rem;
             font-weight: 600;
         }
 
@@ -633,19 +654,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 20px;
-            margin-bottom: 8px;
-            background: #2d3748;
-            border-radius: 6px;
+            padding: 8px 0;
+            border-bottom: 1px solid #4a5568;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
         }
 
         .detail-item strong {
             color: #a0aec0;
             font-weight: 500;
+            min-width: 140px;
         }
 
         .detail-item span {
             color: #e2e8f0;
+            text-align: right;
+            flex: 1;
         }
 
         .status-badge {
@@ -817,11 +843,12 @@
         /* Modo claro */
         body.light-mode .modal-content {
             background: #ffffff;
+            border: 2px solid #e2e8f0;
         }
 
         body.light-mode .modal-header {
             background: #f7fafc;
-            border-bottom-color: #e2e8f0;
+            border-bottom: 2px solid #e2e8f0;
         }
 
         body.light-mode .modal-header h2 {
@@ -837,16 +864,29 @@
             background-color: rgba(45, 55, 72, 0.1);
         }
 
+        body.light-mode .modal-content::-webkit-scrollbar-track {
+            background: #f7fafc;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
+        }
+
         body.light-mode .detail-section {
-            border-bottom-color: #e2e8f0;
+            background: #f7fafc;
+            border-left-color: #667eea;
         }
 
         body.light-mode .detail-section h3 {
-            color: #2d3748;
+            color: #667eea;
         }
 
         body.light-mode .detail-item {
-            background: #f7fafc;
+            border-bottom-color: #e2e8f0;
         }
 
         body.light-mode .detail-item strong {
@@ -924,6 +964,71 @@
         .search-box input:focus {
             outline: none;
             border-color: #3182ce;
+        }
+        /* Estilos para lista de fretes - 3 colunas e cards menores */
+        .fretes-list {
+            display: grid !important;
+            gap: 1rem !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+        
+        .frete-card {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            padding: 1rem !important;
+        }
+        
+        .frete-header {
+            margin-bottom: 0.75rem !important;
+            padding-bottom: 0.5rem !important;
+        }
+        
+        .frete-header h3 {
+            font-size: 1rem !important;
+        }
+        
+        .frete-header .status {
+            font-size: 0.65rem !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+        
+        .frete-info {
+            margin-bottom: 0.75rem !important;
+        }
+        
+        .frete-info p {
+            font-size: 0.75rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        .frete-actions {
+            gap: 0.5rem !important;
+            padding-top: 0.5rem !important;
+        }
+        
+        .frete-actions .btn {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.75rem !important;
+        }
+        
+        /* Responsive para telas menores */
+        @media (max-width: 1200px) {
+            .fretes-list {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .fretes-list {
+                grid-template-columns: 1fr !important;
+                gap: 1rem;
+            }
         }
     </style>
 </body>
