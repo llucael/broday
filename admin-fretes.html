@@ -419,8 +419,9 @@
             const origem = `${frete.origin_city}/${frete.origin_state}`;
             const destino = `${frete.destination_city}/${frete.destination_state}`;
             
-            // Formatar data de coleta limite
-            const dataColeta = frete.data_coleta_limite ? new Date(frete.data_coleta_limite).toLocaleDateString('pt-BR') : 'Não definida';
+            // Formatar data de coleta - usar data_coleta_limite se data_coleta não estiver definida
+            const dataColetaField = frete.data_coleta || frete.data_coleta_limite;
+            const dataColeta = dataColetaField ? new Date(dataColetaField).toLocaleDateString('pt-BR') : 'Não definida';
             
             // Obter nomes do cliente e motorista
             const clienteNome = frete.cliente ? (frete.cliente.name || frete.cliente.email) : 'N/A';
@@ -625,8 +626,6 @@
             
             const origem = `${frete.origin_city || 'N/A'}, ${frete.origin_state || 'N/A'}`;
             const destino = `${frete.destination_city || 'N/A'}, ${frete.destination_state || 'N/A'}`;
-            const dataColeta = frete.data_coleta_limite ? new Date(frete.data_coleta_limite).toLocaleDateString('pt-BR') : 'N/A';
-            const dataEntrega = frete.data_entrega_limite ? new Date(frete.data_entrega_limite).toLocaleDateString('pt-BR') : 'N/A';
             const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'A negociar';
             
             content.innerHTML = `
@@ -691,10 +690,6 @@
                             <strong>Valor:</strong>
                             <span>${valorCarga}</span>
                         </div>
-                        <div class="detail-item">
-                            <strong>Dimensões:</strong>
-                            <span>${frete.cargo_dimensions || 'N/A'}</span>
-                        </div>
                     </div>
 
                     <div class="detail-section">
@@ -720,13 +715,25 @@
                     <div class="detail-section">
                         <h3>Datas</h3>
                         <div class="detail-item">
-                            <strong>Data de Coleta:</strong>
-                            <span>${dataColeta}</span>
+                            <strong>Data Limite de Coleta:</strong>
+                            <span>${frete.data_coleta_limite ? new Date(frete.data_coleta_limite).toLocaleDateString('pt-BR') : 'Não definida'}</span>
                         </div>
                         <div class="detail-item">
-                            <strong>Data de Entrega:</strong>
-                            <span>${dataEntrega}</span>
+                            <strong>Data Limite de Entrega:</strong>
+                            <span>${frete.data_entrega_limite ? new Date(frete.data_entrega_limite).toLocaleDateString('pt-BR') : 'Não definida'}</span>
                         </div>
+                        ${frete.data_coleta ? `
+                        <div class="detail-item">
+                            <strong>Data Real de Coleta:</strong>
+                            <span>${new Date(frete.data_coleta).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        ` : ''}
+                        ${frete.data_entrega ? `
+                        <div class="detail-item">
+                            <strong>Data Real de Entrega:</strong>
+                            <span>${new Date(frete.data_entrega).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        ` : ''}
                     </div>
 
                     ${frete.observacoes ? `
@@ -789,24 +796,20 @@
             
             if (frete.data_coleta_limite) {
                 const dataColeta = new Date(frete.data_coleta_limite);
-                // Converter para formato YYYY-MM-DDTHH:MM para input datetime-local
+                // Converter para formato YYYY-MM-DD para input date
                 const year = dataColeta.getFullYear();
                 const month = String(dataColeta.getMonth() + 1).padStart(2, '0');
                 const day = String(dataColeta.getDate()).padStart(2, '0');
-                const hours = String(dataColeta.getHours()).padStart(2, '0');
-                const minutes = String(dataColeta.getMinutes()).padStart(2, '0');
-                document.getElementById('editDataColeta').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                document.getElementById('editDataColeta').value = `${year}-${month}-${day}`;
             }
             
             if (frete.data_entrega_limite) {
                 const dataEntrega = new Date(frete.data_entrega_limite);
-                // Converter para formato YYYY-MM-DDTHH:MM para input datetime-local
+                // Converter para formato YYYY-MM-DD para input date
                 const year = dataEntrega.getFullYear();
                 const month = String(dataEntrega.getMonth() + 1).padStart(2, '0');
                 const day = String(dataEntrega.getDate()).padStart(2, '0');
-                const hours = String(dataEntrega.getHours()).padStart(2, '0');
-                const minutes = String(dataEntrega.getMinutes()).padStart(2, '0');
-                document.getElementById('editDataEntrega').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                document.getElementById('editDataEntrega').value = `${year}-${month}-${day}`;
             }
 
             // Armazenar ID do frete para edição
@@ -1422,11 +1425,11 @@
                     </div>
                     <div class="form-group">
                         <label for="editDataColeta">Data de Coleta:</label>
-                        <input type="datetime-local" id="editDataColeta" name="data_coleta" required>
+                        <input type="date" id="editDataColeta" name="data_coleta" required>
                     </div>
                     <div class="form-group">
                         <label for="editDataEntrega">Data de Entrega:</label>
-                        <input type="datetime-local" id="editDataEntrega" name="data_entrega">
+                        <input type="date" id="editDataEntrega" name="data_entrega">
                     </div>
                 </form>
             </div>

@@ -557,12 +557,11 @@
                             
                             <div class="dados-row">
                                 <p><i class="fas fa-phone"></i> <strong>Telefone:</strong> ${usuario.telefone || 'Não informado'}</p>
-                                <p><i class="fas fa-id-card"></i> <strong>CPF:</strong> ${usuario.cpf || 'Não informado'}</p>
+                                <p><i class="fas fa-id-card"></i> <strong>CPF/CNPJ:</strong> ${usuario.cpf || usuario.cnpj || 'Não informado'}</p>
                             </div>
                             
                             <div class="dados-row">
                                 <p><i class="fas fa-building"></i> <strong>Empresa:</strong> ${usuario.empresa || 'Não informado'}</p>
-                                <p><i class="fas fa-file-alt"></i> <strong>CNPJ:</strong> ${usuario.cnpj || 'Não informado'}</p>
                             </div>
                         </div>
                     </div>

@@ -77,33 +77,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="empresa">Empresa</label>
-                                <input type="text" id="empresa" name="empresa" placeholder="Digite o nome da empresa">
+                                <input type="text" id="empresa" name="empresa" placeholder="Digite o nome da empresa (opcional)">
                             </div>
                             <div class="form-group">
                                 <label for="cnpj">CNPJ</label>
-                                <input type="text" id="cnpj" name="cnpj" placeholder="Digite o CNPJ da empresa">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="endereco">Logradouro</label>
-                                <input type="text" id="endereco" name="endereco" placeholder="Digite o logradouro (rua, avenida, etc.)">
-                            </div>
-                            <div class="form-group">
-                                <label for="cidade">Cidade</label>
-                                <input type="text" id="cidade" name="cidade" placeholder="Digite sua cidade">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="estado">Estado</label>
-                                <input type="text" id="estado" name="estado" placeholder="Digite seu estado">
-                            </div>
-                            <div class="form-group">
-                                <label for="cep">CEP</label>
-                                <input type="text" id="cep" name="cep" placeholder="Digite seu CEP">
+                                <input type="text" id="cnpj" name="cnpj" placeholder="Digite o CNPJ da empresa (opcional)">
                             </div>
                         </div>
 
@@ -347,6 +325,23 @@
             loadUserData();
             loadProfileData();
             setupEventListeners();
+            
+            // Carregar tema salvo
+            const savedTheme = localStorage.getItem('theme');
+            const toggleIcon = document.querySelector('.theme-toggle i');
+            
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-moon';
+                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
+                }
+            } else {
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun';
+                    toggleIcon.parentElement.title = 'Alternar para modo claro';
+                }
+            }
         });
 
         function loadUserData() {
@@ -368,96 +363,43 @@
             try {
                 isLoadingProfile = true;
                 const user = getCurrentUser();
-                if (!user) return;
+                if (!user) {
+                    console.error('Usuário não encontrado!');
+                    showNotification('Usuário não encontrado. Faça login novamente.', 'error');
+                    return;
+                }
 
+                console.log('Carregando perfil do motorista...');
+                console.log('Usuário atual:', user);
+                console.log('Token no localStorage:', localStorage.getItem('accessToken'));
+                console.log('Token no api:', api.token);
+                
                 // Carregar dados do perfil do usuário
                 const response = await api.getUserProfile(user.id);
+                console.log('Resposta da API:', response);
+                
                 if (response.success) {
                     const profileData = response.data;
+                    console.log('Dados do perfil:', profileData);
                     
-                    // Limpar e preencher dados pessoais
-                    const nomeField = document.getElementById('nome');
-                    const emailField = document.getElementById('email');
-                    const telefoneField = document.getElementById('telefone');
-                    const cpfField = document.getElementById('cpf');
+                    // Preencher dados pessoais
+                    document.getElementById('nome').value = profileData.nome || '';
+                    document.getElementById('email').value = profileData.email || '';
+                    document.getElementById('telefone').value = profileData.telefone || '';
+                    document.getElementById('cpf').value = profileData.cpf || '';
                     
-                    nomeField.value = profileData.nome || '';
-                    nomeField.placeholder = profileData.nome ? `Atual: ${profileData.nome}` : 'Digite seu nome completo';
+                    // Preencher dados de empresa (opcional)
+                    document.getElementById('empresa').value = profileData.empresa || '';
+                    document.getElementById('cnpj').value = profileData.cnpj || '';
                     
-                    emailField.value = profileData.email || '';
-                    emailField.placeholder = profileData.email ? `Atual: ${profileData.email}` : 'Digite seu e-mail';
+                    // Preencher dados de documentos
+                    document.getElementById('cnh').value = profileData.cnh || '';
+                    document.getElementById('cnh_validade').value = profileData.cnh_validade || '';
+                    document.getElementById('cnh_emissao').value = profileData.cnh_emissao || '';
+                    document.getElementById('cnh_uf').value = profileData.cnh_uf || '';
+                    document.getElementById('cnh_observacoes').value = profileData.cnh_observacoes || '';
                     
-                    telefoneField.value = profileData.telefone || '';
-                    telefoneField.placeholder = profileData.telefone ? `Atual: ${profileData.telefone}` : 'Digite seu telefone';
-                    
-                    cpfField.value = profileData.cpf || '';
-                    cpfField.placeholder = profileData.cpf ? `Atual: ${profileData.cpf}` : 'Digite seu CPF';
-                    
-                    // Limpar e preencher dados de empresa
-                    const empresaField = document.getElementById('empresa');
-                    const cnpjField = document.getElementById('cnpj');
-                    
-                    if (empresaField) {
-                        empresaField.value = profileData.empresa || '';
-                        empresaField.placeholder = profileData.empresa ? `Atual: ${profileData.empresa}` : 'Digite o nome da empresa';
-                    }
-                    
-                    if (cnpjField) {
-                        cnpjField.value = profileData.cnpj || '';
-                        cnpjField.placeholder = profileData.cnpj ? `Atual: ${profileData.cnpj}` : 'Digite o CNPJ da empresa';
-                    }
-                    
-                    // Limpar e preencher dados de endereço
-                    const enderecoField = document.getElementById('endereco');
-                    const cidadeField = document.getElementById('cidade');
-                    const estadoField = document.getElementById('estado');
-                    const cepField = document.getElementById('cep');
-                    
-                    if (enderecoField) {
-                        enderecoField.value = profileData.endereco || '';
-                        enderecoField.placeholder = profileData.endereco ? `Atual: ${profileData.endereco}` : 'Digite seu endereço';
-                    }
-                    if (cidadeField) {
-                        cidadeField.value = profileData.cidade || '';
-                        cidadeField.placeholder = profileData.cidade ? `Atual: ${profileData.cidade}` : 'Digite sua cidade';
-                    }
-                    if (estadoField) {
-                        estadoField.value = profileData.estado || '';
-                        estadoField.placeholder = profileData.estado ? `Atual: ${profileData.estado}` : 'Digite seu estado';
-                    }
-                    if (cepField) {
-                        cepField.value = profileData.cep || '';
-                        cepField.placeholder = profileData.cep ? `Atual: ${profileData.cep}` : 'Digite seu CEP';
-                    }
-                    
-                    // Limpar e preencher dados de documentos
-                    const cnhField = document.getElementById('cnh');
-                    const cnhValidadeField = document.getElementById('cnh_validade');
-                    const cnhEmissaoField = document.getElementById('cnh_emissao');
-                    const cnhUfField = document.getElementById('cnh_uf');
-                    const cnhObservacoesField = document.getElementById('cnh_observacoes');
-                    
-                    if (cnhField) {
-                        cnhField.value = profileData.cnh || '';
-                        cnhField.placeholder = profileData.cnh ? `Atual: ${profileData.cnh}` : 'Digite o número da CNH';
-                    }
-                    if (cnhValidadeField) {
-                        cnhValidadeField.value = profileData.cnh_validade || '';
-                        cnhValidadeField.placeholder = profileData.cnh_validade ? `Atual: ${profileData.cnh_validade}` : 'Data de validade';
-                    }
-                    if (cnhEmissaoField) {
-                        cnhEmissaoField.value = profileData.cnh_emissao || '';
-                        cnhEmissaoField.placeholder = profileData.cnh_emissao ? `Atual: ${profileData.cnh_emissao}` : 'Data de emissão';
-                    }
-                    if (cnhUfField) {
-                        cnhUfField.value = profileData.cnh_uf || '';
-                    }
-                    if (cnhObservacoesField) {
-                        cnhObservacoesField.value = profileData.cnh_observacoes || '';
-                        cnhObservacoesField.placeholder = profileData.cnh_observacoes ? `Atual: ${profileData.cnh_observacoes}` : 'Observações sobre a CNH';
-                    }
-                    
-                    // Limpar e preencher categorias da CNH
+                    // Preencher categorias da CNH
                     document.querySelectorAll('input[name="categoria_cnh[]"]').forEach(checkbox => {
                         checkbox.checked = false;
                     });
@@ -468,38 +410,15 @@
                             const checkbox = document.querySelector(`input[name="categoria_cnh[]"][value="${cat.trim()}"]`);
                             if (checkbox) {
                                 checkbox.checked = true;
-                                checkbox.dispatchEvent(new Event('change'));
                             }
                         });
                     }
                     
-                    // Limpar e preencher endereço (se os campos existirem)
-                    const enderecoField = document.getElementById('endereco');
-                    const cidadeField = document.getElementById('cidade');
-                    const estadoField = document.getElementById('estado');
-                    const cepField = document.getElementById('cep');
-                    
-                    if (enderecoField) enderecoField.value = profileData.endereco || '';
-                    if (cidadeField) cidadeField.value = profileData.cidade || '';
-                    if (estadoField) estadoField.value = profileData.estado || '';
-                    if (cepField) cepField.value = profileData.cep || '';
-                    
-                    console.log('Dados do perfil carregados:', profileData);
-                    
-                    // Forçar atualização visual dos campos
-                    document.getElementById('nome').dispatchEvent(new Event('input'));
-                    document.getElementById('email').dispatchEvent(new Event('input'));
-                    document.getElementById('telefone').dispatchEvent(new Event('input'));
-                    document.getElementById('cpf').dispatchEvent(new Event('input'));
-                    
-                    if (cnhField) cnhField.dispatchEvent(new Event('input'));
-                    if (cnhValidadeField) cnhValidadeField.dispatchEvent(new Event('input'));
-                    if (cnhEmissaoField) cnhEmissaoField.dispatchEvent(new Event('input'));
-                    if (cnhUfField) cnhUfField.dispatchEvent(new Event('input'));
-                    if (cnhObservacoesField) cnhObservacoesField.dispatchEvent(new Event('input'));
-                    
-                    // Mostrar notificação de atualização
-                    showNotification('Dados atualizados na tela!', 'success');
+                    console.log('Dados do perfil carregados com sucesso!');
+                    showNotification('Dados carregados com sucesso!', 'success');
+                } else {
+                    console.error('Erro ao carregar perfil:', response.message);
+                    showNotification('Erro ao carregar dados: ' + response.message, 'error');
                 }
             } catch (error) {
                 console.error('Erro ao carregar dados do perfil:', error);
@@ -563,6 +482,8 @@
                 const user = getCurrentUser();
                 if (!user) return;
 
+                console.log('Salvando dados do perfil...');
+
                 // Coletar dados do formulário
                 const formData = {
                     nome: document.getElementById('nome').value,
@@ -570,37 +491,21 @@
                     telefone: document.getElementById('telefone').value,
                     cpf: document.getElementById('cpf').value,
                     empresa: document.getElementById('empresa').value,
-                    cnpj: document.getElementById('cnpj').value,
-                    cnh: document.getElementById('cnh').value,
-                    categoria: getSelectedCategories()
+                    cnpj: document.getElementById('cnpj').value
                 };
 
-                // Adicionar campos de endereço se existirem
-                const enderecoField = document.getElementById('endereco');
-                const cidadeField = document.getElementById('cidade');
-                const estadoField = document.getElementById('estado');
-                const cepField = document.getElementById('cep');
-                
-                if (enderecoField) formData.endereco = enderecoField.value;
-                if (cidadeField) formData.cidade = cidadeField.value;
-                if (estadoField) formData.estado = estadoField.value;
-                if (cepField) formData.cep = cepField.value;
-
-                // Coletar categorias da CNH
-                const categorias = [];
-                document.querySelectorAll('input[name="categoria_cnh[]"]:checked').forEach(checkbox => {
-                    categorias.push(checkbox.value);
-                });
-                formData.categoria = categorias.join(',');
+                console.log('Dados coletados:', formData);
 
                 // Salvar dados
                 const response = await api.updateUserProfile(user.id, formData);
+                console.log('Resposta da API:', response);
+                
                 if (response.success) {
                     showNotification('Dados salvos com sucesso!', 'success');
                     // Atualizar dados do usuário no localStorage
                     const updatedUser = { ...user, ...formData };
                     localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-                    // Recarregar dados do perfil imediatamente
+                    // Recarregar dados do perfil
                     await loadProfileData();
                 } else {
                     showNotification('Erro ao salvar dados: ' + response.message, 'error');
@@ -616,6 +521,8 @@
                 const user = getCurrentUser();
                 if (!user) return;
 
+                console.log('Salvando documentos...');
+
                 // Coletar dados do formulário de documentos
                 const formData = {
                     cnh: document.getElementById('cnh').value,
@@ -626,14 +533,18 @@
                     cnh_observacoes: document.getElementById('cnh_observacoes').value
                 };
 
+                console.log('Documentos coletados:', formData);
+
                 // Salvar todos os campos de documentos
                 const response = await api.updateUserProfile(user.id, formData);
+                console.log('Resposta da API:', response);
+                
                 if (response.success) {
-                    showNotification('Todos os documentos salvos com sucesso!', 'success');
+                    showNotification('Documentos salvos com sucesso!', 'success');
                     // Atualizar dados do usuário no localStorage
                     const updatedUser = { ...user, ...formData };
                     localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-                    // Recarregar dados do perfil imediatamente
+                    // Recarregar dados do perfil
                     await loadProfileData();
                 } else {
                     showNotification('Erro ao salvar documentos: ' + response.message, 'error');
@@ -673,25 +584,6 @@
                 }
             }
         }
-        
-        // Carregar tema salvo
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme');
-            const toggleIcon = document.querySelector('.theme-toggle i');
-            
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-mode');
-                if (toggleIcon) {
-                    toggleIcon.className = 'fas fa-moon';
-                    toggleIcon.parentElement.title = 'Alternar para modo escuro';
-                }
-            } else {
-                if (toggleIcon) {
-                    toggleIcon.className = 'fas fa-sun';
-                    toggleIcon.parentElement.title = 'Alternar para modo claro';
-                }
-            }
-        });
     </script>
 
     <style>

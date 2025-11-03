@@ -232,8 +232,9 @@
             const origem = `${frete.origin_city || 'N/A'}/${frete.origin_state || 'N/A'}`;
             const destino = `${frete.destination_city || 'N/A'}/${frete.destination_state || 'N/A'}`;
             
-            // Formatar data de coleta
-            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'Não definida';
+            // Formatar data de coleta - usar data_coleta_limite se data_coleta não estiver definida
+            const dataColetaField = frete.data_coleta || frete.data_coleta_limite;
+            const dataColeta = dataColetaField ? new Date(dataColetaField).toLocaleDateString('pt-BR') : 'Não definida';
             
             // Obter nome do motorista
             const motoristaNome = frete.motorista ? (frete.motorista.name || frete.motorista.email) : 'Não atribuído';
@@ -242,8 +243,8 @@
             let podeCancelar = false;
             let motivoNaoPodeCancelar = '';
             
-            if (frete.status === 'aceito' && frete.data_coleta) {
-                const dataColetaObj = new Date(frete.data_coleta);
+            if (frete.status === 'aceito' && dataColetaField) {
+                const dataColetaObj = new Date(dataColetaField);
                 const agora = new Date();
                 const seteDiasEmMs = 7 * 24 * 60 * 60 * 1000;
                 const limiteParaCancelamento = new Date(dataColetaObj.getTime() - seteDiasEmMs);
@@ -358,8 +359,6 @@
             const content = document.getElementById('freteDetailsContent');
             const origem = `${frete.origin_city || 'N/A'}, ${frete.origin_state || 'N/A'}`;
             const destino = `${frete.destination_city || 'N/A'}, ${frete.destination_state || 'N/A'}`;
-            const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'N/A';
-            const dataEntrega = frete.data_entrega ? new Date(frete.data_entrega).toLocaleDateString('pt-BR') : 'N/A';
             const valorCarga = frete.cargo_value ? `R$ ${parseFloat(frete.cargo_value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'A negociar';
             
             content.innerHTML = `
@@ -422,10 +421,6 @@
                             <span>${frete.cargo_weight || 'N/A'} kg</span>
                         </div>
                         <div class="detail-item">
-                            <strong>Dimensões:</strong>
-                            <span>${frete.cargo_dimensions || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
                             <strong>Valor:</strong>
                             <span>${valorCarga}</span>
                         </div>
@@ -434,13 +429,25 @@
                     <div class="detail-section">
                         <h3>Datas</h3>
                         <div class="detail-item">
-                            <strong>Data de Coleta:</strong>
-                            <span>${dataColeta}</span>
+                            <strong>Data Limite de Coleta:</strong>
+                            <span>${frete.data_coleta_limite ? new Date(frete.data_coleta_limite).toLocaleDateString('pt-BR') : 'Não definida'}</span>
                         </div>
                         <div class="detail-item">
-                            <strong>Data de Entrega:</strong>
-                            <span>${dataEntrega}</span>
+                            <strong>Data Limite de Entrega:</strong>
+                            <span>${frete.data_entrega_limite ? new Date(frete.data_entrega_limite).toLocaleDateString('pt-BR') : 'Não definida'}</span>
                         </div>
+                        ${frete.data_coleta ? `
+                        <div class="detail-item">
+                            <strong>Data Real de Coleta:</strong>
+                            <span>${new Date(frete.data_coleta).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        ` : ''}
+                        ${frete.data_entrega ? `
+                        <div class="detail-item">
+                            <strong>Data Real de Entrega:</strong>
+                            <span>${new Date(frete.data_entrega).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        ` : ''}
                     </div>
 
                     ${frete.observacoes ? `

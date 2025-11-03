@@ -399,7 +399,7 @@ const getPerfil = async (req, res) => {
     const motoristaId = req.user.id;
 
     const user = await User.findByPk(motoristaId, {
-      attributes: ['id', 'nome', 'email', 'telefone', 'cpf', 'cnh', 'categoria', 'cnh_validade', 'cnh_emissao', 'cnh_uf', 'cnh_observacoes', 'empresa', 'cnpj', 'endereco', 'cidade', 'estado', 'cep', 'created_at', 'updated_at']
+      attributes: ['id', 'nome', 'email', 'telefone', 'cpf', 'cnh', 'categoria', 'cnh_validade', 'cnh_emissao', 'cnh_uf', 'cnh_observacoes', 'empresa', 'cnpj', 'endereco', 'created_at', 'updated_at']
     });
 
     if (!user) {
@@ -415,9 +415,11 @@ const getPerfil = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao buscar perfil do motorista:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Erro interno do servidor'
+      message: 'Erro interno do servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -459,7 +461,7 @@ const atualizarPerfil = async (req, res) => {
       });
     }
 
-    // Atualizar dados do usuário
+    // Atualizar dados do usuário (remover campos cidade, estado, cep que não existem)
     const updateData = {
       email: email !== undefined ? email : user.email,
       nome: nome !== undefined ? nome : user.nome,
@@ -469,10 +471,7 @@ const atualizarPerfil = async (req, res) => {
       categoria: categoria !== undefined ? categoria : user.categoria,
       empresa: empresa !== undefined ? empresa : user.empresa,
       cnpj: cnpj !== undefined ? cnpj : user.cnpj,
-      endereco: endereco !== undefined ? endereco : user.endereco,
-      cidade: cidade !== undefined ? cidade : user.cidade,
-      estado: estado !== undefined ? estado : user.estado,
-      cep: cep !== undefined ? cep : user.cep
+      endereco: endereco !== undefined ? endereco : user.endereco
     };
 
     // Adicionar campos de documentos se fornecidos (incluindo strings vazias)

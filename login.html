@@ -74,7 +74,7 @@
                                 <span class="checkmark"></span>
                                 Lembrar de mim
                             </label>
-                            <a href="#" class="forgot-password">Esqueceu a senha?</a>
+                            <a href="#" class="forgot-password" onclick="openForgotPasswordModal(event)">Esqueceu a senha?</a>
                         </div>
                         
                         <button type="submit" class="btn btn-primary btn-full">
@@ -176,11 +176,139 @@
         </div>
     </footer>
 
+    <!-- Modal de Recuperação de Senha -->
+    <div class="modal" id="forgot-password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Recuperação de Senha</h3>
+                <button class="close-btn" onclick="closeForgotPasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="info-text">Para recuperar sua senha, entre em contato com a administração:</p>
+                
+                <div class="contact-methods">
+                    <div class="contact-item-wrapper">
+                        <a href="mailto:brodaytransportes@gmail.com" class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>brodaytransportes@gmail.com</span>
+                        </a>
+                        <button class="copy-btn" onclick="copyToClipboard('brodaytransportes@gmail.com', 'E-mail')" title="Copiar e-mail">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="contact-item-wrapper">
+                        <a href="tel:+554299852606" class="contact-item">
+                            <svg class="contact-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>(42) 99985-2606</span>
+                        </a>
+                        <button class="copy-btn" onclick="copyToClipboard('(42) 99985-2606', 'Telefone')" title="Copiar telefone">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="closeForgotPasswordModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script src="js/api.js"></script>
     <script src="js/validation.js"></script>
     <script src="auth.js"></script>
     <script>
+        // Funções para o modal de recuperação de senha
+        function openForgotPasswordModal(event) {
+            event.preventDefault();
+            document.getElementById('forgot-password-modal').style.display = 'flex';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').style.display = 'none';
+        }
+
+        // Função para copiar texto para a área de transferência
+        function copyToClipboard(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification(`${label} copiado com sucesso!`, 'success');
+            }).catch(() => {
+                // Fallback para navegadores mais antigos
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification(`${label} copiado com sucesso!`, 'success');
+                } catch (err) {
+                    showNotification('Erro ao copiar', 'error');
+                }
+                document.body.removeChild(textarea);
+            });
+        }
+
+        // Função para mostrar notificações
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            // Definir cores baseadas no tipo
+            let backgroundColor;
+            if (type === 'success') {
+                backgroundColor = '#48bb78';
+            } else if (type === 'info') {
+                backgroundColor = '#468ADC';
+            } else if (type === 'error') {
+                backgroundColor = '#f56565';
+            } else {
+                backgroundColor = '#468ADC'; // padrão azul
+            }
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${backgroundColor};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                z-index: 10000;
+                font-weight: 500;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Fechar modal ao clicar fora
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('forgot-password-modal');
+            if (event.target === modal) {
+                closeForgotPasswordModal();
+            }
+        });
+
         // Função para alternar tema
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
@@ -219,5 +347,268 @@
             }
         });
     </script>
+
+    <style>
+        /* Estilos para o modal de recuperação de senha */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #1a202c;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: 30px 25px;
+        }
+
+        .info-text {
+            color: #cbd5e0;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .contact-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .contact-item-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 15px;
+            background: #2d3748;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            flex: 1;
+        }
+
+        .contact-item:hover {
+            background: #374151;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .copy-btn {
+            background: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            height: 44px;
+        }
+
+        .copy-btn svg {
+            width: 20px;
+            height: 20px;
+            color: #ffffff;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd8;
+            border-color: #5a6fd8;
+            transform: scale(1.05);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .contact-icon {
+            width: 24px;
+            height: 24px;
+            color: #667eea;
+            flex-shrink: 0;
+        }
+
+        .contact-item span {
+            color: #e2e8f0;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #2d3748;
+            display: flex;
+            justify-content: center;
+        }
+
+        .modal-footer .btn {
+            min-width: 120px;
+        }
+
+        /* Modo claro */
+        body.light-mode .modal-content {
+            background: #ffffff;
+        }
+
+        body.light-mode .modal-header {
+            border-bottom-color: #e2e8f0;
+        }
+
+        body.light-mode .modal-header h3 {
+            color: #2d3748;
+        }
+
+        body.light-mode .close-btn {
+            color: #4a5568;
+        }
+
+        body.light-mode .close-btn:hover {
+            color: #2d3748;
+            background-color: rgba(45, 55, 72, 0.1);
+        }
+
+        body.light-mode .info-text {
+            color: #4a5568;
+        }
+
+        body.light-mode .contact-item {
+            background: #f7fafc;
+        }
+
+        body.light-mode .contact-item:hover {
+            background: #edf2f7;
+            border-color: #667eea;
+        }
+
+        body.light-mode .contact-item span {
+            color: #2d3748;
+        }
+
+        body.light-mode .copy-btn {
+            background: #3182ce;
+            border-color: #3182ce;
+        }
+
+        body.light-mode .copy-btn:hover {
+            background: #2c5aa0;
+            border-color: #2c5aa0;
+        }
+
+        body.light-mode .modal-footer {
+            border-top-color: #e2e8f0;
+        }
+
+        /* Animações para notificações */
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                max-width: none;
+                margin: 10px;
+            }
+
+            .contact-item {
+                padding: 15px;
+            }
+
+            .contact-item span {
+                font-size: 0.9rem;
+            }
+
+            .copy-btn {
+                min-width: 40px;
+                height: 40px;
+                padding: 8px;
+            }
+
+            .copy-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+    </style>
 </body>
 </html>
