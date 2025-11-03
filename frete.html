@@ -113,9 +113,13 @@
                 <div class="form-row address-section">
                     <div class="form-section">
                         <h3 class="section-title">Endereço de Origem</h3>
+                        <div class="address-hint">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Clique aqui para selecionar um endereço salvo automaticamente</span>
+                        </div>
                         <div class="form-group">
                             <label for="origin-cep">CEP</label>
-                            <input type="text" id="origin-cep" placeholder="Insira o CEP de origem" required>
+                            <input type="text" id="origin-cep" placeholder="Digite o CEP de origem" required>
                         </div>
                         <div class="form-group">
                             <label for="origin-street">Logradouro</label>
@@ -170,9 +174,13 @@
 
                     <div class="form-section">
                         <h3 class="section-title">Endereço de Destino</h3>
+                        <div class="address-hint">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Clique aqui para selecionar um endereço salvo automaticamente</span>
+                        </div>
                         <div class="form-group">
                             <label for="destination-cep">CEP</label>
-                            <input type="text" id="destination-cep" placeholder="Insira o CEP de destino" required>
+                            <input type="text" id="destination-cep" placeholder="Digite o CEP de destino" required>
                         </div>
                         <div class="form-group">
                             <label for="destination-street">Logradouro</label>
@@ -263,10 +271,6 @@
                     <i class="fas fa-times"></i>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-primary" onclick="preencherManualmente()">
-                    <i class="fas fa-edit"></i>
-                    Preencher Manualmente
-                </button>
             </div>
         </div>
     </div>
@@ -342,8 +346,149 @@
             setTimeout(() => {
                 loadUserData();
                 setupEnderecoClickHandlers();
+                setupCEPListeners();
             }, 200);
         });
+
+        // Função para consultar CEP via ViaCEP
+        async function consultarCEP(cep, tipo) {
+            try {
+                // Limpar CEP (remover caracteres não numéricos)
+                const cepLimpo = cep.replace(/\D/g, '');
+                
+                // Validar CEP (deve ter 8 dígitos)
+                if (cepLimpo.length !== 8) {
+                    return;
+                }
+
+                console.log(`🔍 Consultando CEP ${cepLimpo} para ${tipo}...`);
+                
+                const prefix = tipo === 'origin' ? 'origin' : 'destination';
+                const cepField = document.getElementById(`${prefix}-cep`);
+                
+                if (cepField) {
+                    cepField.classList.remove('cep-success', 'cep-error');
+                }
+                
+                // Fazer consulta à API ViaCEP
+                const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+                const data = await response.json();
+                
+                console.log('📍 Resposta do ViaCEP:', data);
+                
+                if (data.erro) {
+                    showNotification('CEP não encontrado', 'error');
+                    if (cepField) {
+                        cepField.classList.add('cep-error');
+                    }
+                    return;
+                }
+                
+                // Preencher campos automaticamente
+                preencherCamposViaCEP(data, prefix);
+                showNotification('Endereço preenchido automaticamente!', 'success');
+                
+                if (cepField) {
+                    cepField.classList.add('cep-success');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao consultar CEP:', error);
+                showNotification('Erro ao consultar CEP', 'error');
+                const prefix = tipo === 'origin' ? 'origin' : 'destination';
+                const cepField = document.getElementById(`${prefix}-cep`);
+                
+                if (cepField) {
+                    cepField.classList.add('cep-error');
+                }
+            }
+        }
+
+        // Função para preencher campos com dados do ViaCEP
+        function preencherCamposViaCEP(data, prefix) {
+            const fieldsMapping = [
+                { id: `${prefix}-street`, value: data.logradouro },
+                { id: `${prefix}-city`, value: data.localidade },
+                { id: `${prefix}-state`, value: data.uf }
+            ];
+            
+            fieldsMapping.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (element && field.value) {
+                    element.value = field.value;
+                    console.log(`✅ ${field.id}: ${field.value}`);
+                }
+            });
+        }
+
+        // Função para configurar listeners de CEP
+        function setupCEPListeners() {
+            // CEP de origem
+            const originCEP = document.getElementById('origin-cep');
+            if (originCEP) {
+                // Adicionar máscara de CEP
+                originCEP.addEventListener('input', function() {
+                    let value = this.value.replace(/\D/g, '');
+                    if (value.length > 8) value = value.slice(0, 8);
+                    if (value.length > 5) {
+                        value = value.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+                    }
+                    this.value = value;
+                });
+                
+                originCEP.addEventListener('blur', function() {
+                    const cep = this.value;
+                    if (cep && cep.replace(/\D/g, '').length === 8) {
+                        consultarCEP(cep, 'origin');
+                    }
+                });
+                
+                // Também consultar quando o usuário terminar de digitar
+                let timeoutOrigin;
+                originCEP.addEventListener('keyup', function() {
+                    clearTimeout(timeoutOrigin);
+                    const cep = this.value;
+                    if (cep && cep.replace(/\D/g, '').length === 8) {
+                        timeoutOrigin = setTimeout(() => {
+                            consultarCEP(cep, 'origin');
+                        }, 1000);
+                    }
+                });
+            }
+
+            // CEP de destino
+            const destinationCEP = document.getElementById('destination-cep');
+            if (destinationCEP) {
+                // Adicionar máscara de CEP
+                destinationCEP.addEventListener('input', function() {
+                    let value = this.value.replace(/\D/g, '');
+                    if (value.length > 8) value = value.slice(0, 8);
+                    if (value.length > 5) {
+                        value = value.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+                    }
+                    this.value = value;
+                });
+                
+                destinationCEP.addEventListener('blur', function() {
+                    const cep = this.value;
+                    if (cep && cep.replace(/\D/g, '').length === 8) {
+                        consultarCEP(cep, 'destination');
+                    }
+                });
+                
+                // Também consultar quando o usuário terminar de digitar
+                let timeoutDestination;
+                destinationCEP.addEventListener('keyup', function() {
+                    clearTimeout(timeoutDestination);
+                    const cep = this.value;
+                    if (cep && cep.replace(/\D/g, '').length === 8) {
+                        timeoutDestination = setTimeout(() => {
+                            consultarCEP(cep, 'destination');
+                        }, 1000);
+                    }
+                });
+            }
+        }
 
         // Também tentar preencher quando a página estiver completamente carregada
         window.addEventListener('load', function() {
@@ -702,11 +847,6 @@
             }, 300);
         }
 
-        // Função para preencher manualmente (fechar modal)
-        function preencherManualmente() {
-            closeEnderecoSelectionModal();
-        }
-
         // Função para preencher endereço (nova versão)
         function preencherEndereco(endereco, tipo) {
             console.log(`📝 Preenchendo endereço do ${tipo}:`, endereco);
@@ -809,6 +949,23 @@
                     toggleIcon.className = 'fas fa-sun';
                     toggleIcon.parentElement.title = 'Alternar para modo claro';
                 }
+            }
+            
+            // Configurar cliques nos hints de endereço
+            const originHint = document.querySelector('.form-section:first-child .address-hint');
+            if (originHint) {
+                originHint.addEventListener('click', function() {
+                    currentEnderecoTarget = 'origin';
+                    openEnderecoSelectionModal('Usar Endereço de Origem');
+                });
+            }
+            
+            const destinationHint = document.querySelector('.form-section:last-child .address-hint');
+            if (destinationHint) {
+                destinationHint.addEventListener('click', function() {
+                    currentEnderecoTarget = 'destination';
+                    openEnderecoSelectionModal('Usar Endereço de Destino');
+                });
             }
         });
     </script>

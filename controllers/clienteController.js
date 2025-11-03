@@ -350,6 +350,22 @@ const cancelarFrete = async (req, res) => {
       });
     }
 
+    // Verificar data limite para cancelamento (até 7 dias antes da data de coleta)
+    if (frete.data_coleta) {
+      const dataColeta = new Date(frete.data_coleta);
+      const agora = new Date();
+      const seteDiasEmMs = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
+      const limiteParaCancelamento = new Date(dataColeta.getTime() - seteDiasEmMs);
+
+      if (agora > limiteParaCancelamento) {
+        const diasRestantes = Math.ceil((dataColeta.getTime() - agora.getTime()) / (24 * 60 * 60 * 1000));
+        return res.status(400).json({
+          success: false,
+          message: `Não é possível cancelar este frete. O cancelamento deve ser feito até 7 dias antes da data de coleta. ${diasRestantes > 0 ? `Restam apenas ${diasRestantes} dias para a coleta.` : 'A data de coleta já passou ou está muito próxima.'}`
+        });
+      }
+    }
+
     // Cancelar frete
     await frete.update({
       status: 'cancelado',

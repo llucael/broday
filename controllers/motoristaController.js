@@ -85,21 +85,22 @@ const getFretesDisponiveis = async (req, res) => {
     const offset = (page - 1) * limit;
     const motoristaId = req.user.id;
 
-    // Motorista só pode ver fretes disponíveis se NÃO tiver frete ativo
-    const freteAtivoCount = await Frete.count({
+    // Motorista só pode ver fretes disponíveis se NÃO tiver frete em trânsito
+    const freteEmTransitoCount = await Frete.count({
       where: {
         motorista_id: motoristaId,
-        status: { [Op.in]: ['em_espera', 'em_transito'] }
+        status: 'em_transito' // Apenas em trânsito bloqueia, não aceito/em_espera
       }
     });
 
-    if (freteAtivoCount > 0) {
+    if (freteEmTransitoCount > 0) {
       return res.json({
         success: true,
         data: {
           fretes: [],
           pagination: { total: 0, page: parseInt(page), limit: parseInt(limit), pages: 0 }
-        }
+        },
+        message: 'Você já está em viagem com um frete'
       });
     }
 

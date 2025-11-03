@@ -275,6 +275,26 @@
             // Formatar data de coleta
             const dataColeta = frete.data_coleta ? new Date(frete.data_coleta).toLocaleDateString('pt-BR') : 'Não definida';
             
+            // Verificar se pode cancelar (até 7 dias antes da data de coleta)
+            let podeCancelar = false;
+            let motivoNaoPodeCancelar = '';
+            
+            if (frete.status === 'aceito' && frete.data_coleta) {
+                const dataColetaObj = new Date(frete.data_coleta);
+                const agora = new Date();
+                const seteDiasEmMs = 7 * 24 * 60 * 60 * 1000;
+                const limiteParaCancelamento = new Date(dataColetaObj.getTime() - seteDiasEmMs);
+                
+                if (agora <= limiteParaCancelamento) {
+                    podeCancelar = true;
+                } else {
+                    const diasRestantes = Math.ceil((dataColetaObj.getTime() - agora.getTime()) / (24 * 60 * 60 * 1000));
+                    motivoNaoPodeCancelar = diasRestantes > 0 
+                        ? `Só é possível cancelar até 7 dias antes da coleta. Restam ${diasRestantes} dias.`
+                        : 'Prazo para cancelamento expirado (7 dias antes da coleta)';
+                }
+            }
+            
             card.innerHTML = `
                 <div class="frete-header">
                     <h3>Frete #${frete.id}</h3>
@@ -297,10 +317,17 @@
                     </button>
                     ` : ''}
                     ${frete.status === 'aceito' ? `
-                    <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})">
-                        <i class="fas fa-times"></i>
-                        Cancelar
-                    </button>
+                        ${podeCancelar ? `
+                        <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        ` : `
+                        <button class="btn btn-sm btn-secondary" disabled title="${motivoNaoPodeCancelar}">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        `}
                     ` : ''}
                 </div>
             `;

@@ -266,6 +266,24 @@
         </div>
     </div>
 
+    <!-- Modal de Detalhes do Endereço -->
+    <div class="modal" id="endereco-details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalhes do Endereço</h3>
+                <button class="close-btn endereco-details-close-btn" onclick="closeEnderecoDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="endereco-details-content">
+                    <!-- Conteúdo dos detalhes será carregado aqui -->
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary endereco-details-fechar-btn" onclick="closeEnderecoDetailsModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -385,6 +403,21 @@
 
             // Carregar dados iniciais
             loadProfile();
+
+            // Event listeners para fechar modais ao clicar fora
+            window.addEventListener('click', function(event) {
+                // Modal de adicionar endereço
+                const enderecoModal = document.getElementById('endereco-modal');
+                if (event.target === enderecoModal) {
+                    closeEnderecoModal();
+                }
+
+                // Modal de detalhes do endereço
+                const enderecoDetailsModal = document.getElementById('endereco-details-modal');
+                if (event.target === enderecoDetailsModal) {
+                    closeEnderecoDetailsModal();
+                }
+            });
         }
 
         function showProfileTab(tabId) {
@@ -412,6 +445,102 @@
 
         function closeEnderecoModal() {
             document.getElementById('endereco-modal').style.display = 'none';
+        }
+
+        // Funções para o modal de detalhes do endereço
+        async function showEnderecoDetails(enderecoId) {
+            try {
+                console.log('Buscando detalhes do endereço:', enderecoId);
+                
+                // Buscar dados completos do endereço
+                const response = await api.getEnderecos();
+                if (response.success) {
+                    const endereco = response.data.find(e => e.id === enderecoId);
+                    if (endereco) {
+                        populateEnderecoDetails(endereco);
+                        document.getElementById('endereco-details-modal').style.display = 'flex';
+                    } else {
+                        showNotification('Endereço não encontrado', 'error');
+                    }
+                } else {
+                    showNotification('Erro ao carregar endereço', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar detalhes do endereço:', error);
+                showNotification('Erro ao carregar endereço', 'error');
+            }
+        }
+
+        function populateEnderecoDetails(endereco) {
+            const container = document.getElementById('endereco-details-content');
+            
+            // Determinar tipo de endereço com base nos campos disponíveis
+            const tipoEndereco = endereco.tipo || 'Não especificado';
+            const apelidoNome = endereco.apelido || endereco.nome || 'Sem nome';
+            
+            container.innerHTML = `
+                <div class="endereco-details-grid">
+                    <div class="detail-section">
+                        <h4><i class="fas fa-tag"></i> Identificação</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Nome/Apelido:</span>
+                            <span class="detail-value">${apelidoNome}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Tipo:</span>
+                            <span class="detail-value">${tipoEndereco}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4><i class="fas fa-map-marker-alt"></i> Endereço Completo</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">CEP:</span>
+                            <span class="detail-value">${endereco.cep || 'Não informado'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Logradouro:</span>
+                            <span class="detail-value">${endereco.logradouro || endereco.rua || 'Não informado'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Número:</span>
+                            <span class="detail-value">${endereco.numero || 'S/N'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Complemento:</span>
+                            <span class="detail-value">${endereco.complemento || 'Não informado'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Bairro:</span>
+                            <span class="detail-value">${endereco.bairro || 'Não informado'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Cidade:</span>
+                            <span class="detail-value">${endereco.cidade || 'Não informado'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Estado:</span>
+                            <span class="detail-value">${endereco.estado || endereco.uf || 'Não informado'}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4><i class="fas fa-info-circle"></i> Informações Adicionais</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Data de Criação:</span>
+                            <span class="detail-value">${endereco.created_at ? new Date(endereco.created_at).toLocaleDateString('pt-BR') : 'Não disponível'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Última Atualização:</span>
+                            <span class="detail-value">${endereco.updated_at ? new Date(endereco.updated_at).toLocaleDateString('pt-BR') : 'Não disponível'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeEnderecoDetailsModal() {
+            document.getElementById('endereco-details-modal').style.display = 'none';
         }
 
         // Função para alternar campos de documento
@@ -631,11 +760,15 @@
             card.className = 'endereco-card';
             card.innerHTML = `
                 <div class="endereco-info">
-                    <h4>${endereco.nome}</h4>
-                    <p>${endereco.rua}, ${endereco.numero}${endereco.complemento ? ', ' + endereco.complemento : ''}</p>
-                    <p>${endereco.cidade} - ${endereco.estado}, ${endereco.cep}</p>
+                    <h4>${endereco.nome || endereco.apelido || 'Endereço'}</h4>
+                    <p>${endereco.rua || endereco.logradouro}, ${endereco.numero}${endereco.complemento ? ', ' + endereco.complemento : ''}</p>
+                    <p>${endereco.cidade} - ${endereco.estado || endereco.uf}, ${endereco.cep}</p>
                 </div>
                 <div class="endereco-actions">
+                    <button class="btn btn-sm btn-primary" onclick="showEnderecoDetails(${endereco.id})">
+                        <i class="fas fa-eye"></i>
+                        Ver Detalhes
+                    </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteEndereco(${endereco.id})">
                         <i class="fas fa-trash"></i>
                         Excluir
@@ -800,6 +933,29 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
+        /* Estilo específico para o botão de fechar do modal de detalhes de endereço */
+        .endereco-details-close-btn {
+            color: #E53E3E !important;
+        }
+
+        .endereco-details-close-btn:hover {
+            color: #C53030 !important;
+            background-color: rgba(229, 62, 62, 0.1) !important;
+        }
+
+        /* Estilo específico para o botão "Fechar" do modal de detalhes de endereço */
+        .endereco-details-fechar-btn {
+            background-color: #E53E3E !important;
+            color: white !important;
+            border: 2px solid #E53E3E !important;
+        }
+
+        .endereco-details-fechar-btn:hover {
+            background-color: #C53030 !important;
+            border-color: #C53030 !important;
+            transform: translateY(-2px);
+        }
+
         .endereco-form {
             padding: 30px;
         }
@@ -848,7 +1004,7 @@
         .form-actions {
             display: flex;
             gap: 15px;
-            justify-content: flex-end;
+            justify-content: center;
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid #4a5568;
@@ -875,6 +1031,28 @@
         body.light-mode .close-btn:hover {
             color: #2d3748;
             background-color: rgba(45, 55, 72, 0.1);
+        }
+
+        /* Estilo específico para o botão de fechar do modal de detalhes de endereço no modo claro */
+        body.light-mode .endereco-details-close-btn {
+            color: #E53E3E !important;
+        }
+
+        body.light-mode .endereco-details-close-btn:hover {
+            color: #C53030 !important;
+            background-color: rgba(229, 62, 62, 0.1) !important;
+        }
+
+        /* Estilo específico para o botão "Fechar" do modal de detalhes de endereço no modo claro */
+        body.light-mode .endereco-details-fechar-btn {
+            background-color: #E53E3E !important;
+            color: white !important;
+            border: 2px solid #E53E3E !important;
+        }
+
+        body.light-mode .endereco-details-fechar-btn:hover {
+            background-color: #C53030 !important;
+            border-color: #C53030 !important;
         }
 
         body.light-mode .form-group label {
@@ -938,6 +1116,129 @@
 
         body.light-mode .endereco-info p {
             color: #4a5568;
+        }
+
+        /* Estilos para o modal de detalhes do endereço */
+        .endereco-details-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .detail-section {
+            background-color: #374151;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #4A5568;
+        }
+
+        .detail-section h4 {
+            margin: 0 0 1rem 0;
+            color: #E2E8F0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .detail-section h4 i {
+            color: #4299E1;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border-bottom: 1px solid rgba(74, 85, 104, 0.3);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #A0AEC0;
+            min-width: 120px;
+            text-align: left;
+            margin-right: 1rem;
+        }
+
+        .detail-value {
+            color: #E2E8F0;
+            text-align: right;
+            flex: 1;
+            word-break: break-word;
+            margin-left: 1rem;
+        }
+
+        /* Estilos para botões dos cards */
+        .endereco-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .endereco-actions .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Light mode para modal de detalhes */
+        body.light-mode .detail-section {
+            background-color: #F7FAFC;
+            border-color: #E2E8F0;
+        }
+
+        body.light-mode .detail-section h4 {
+            color: #2D3748;
+        }
+
+        body.light-mode .detail-section h4 i {
+            color: #3182CE;
+        }
+
+        body.light-mode .detail-label {
+            color: #4A5568;
+        }
+
+        body.light-mode .detail-value {
+            color: #2D3748;
+        }
+
+        body.light-mode .detail-item {
+            border-bottom-color: rgba(226, 232, 240, 0.5);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+
+            .detail-label {
+                min-width: auto;
+                font-weight: 700;
+            }
+
+            .detail-value {
+                text-align: left;
+            }
+
+            .endereco-actions {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .endereco-actions .btn-sm {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </body>

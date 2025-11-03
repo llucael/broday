@@ -254,10 +254,10 @@
                         Ver Detalhes
                     </button>
                     <button class="btn btn-sm ${isMotoristaEmViagem ? 'btn-disabled' : 'btn-success'}" 
-                            onclick="${isMotoristaEmViagem ? 'showNotification("Você já está em viagem!", "error")' : `acceptFrete(${frete.id})`}"
+                            onclick="${isMotoristaEmViagem ? 'showNotification("Você já está em viagem com outro frete!", "error")' : `acceptFrete(${frete.id})`}"
                             ${isMotoristaEmViagem ? 'disabled' : ''}>
                         <i class="fas fa-check"></i>
-                        ${isMotoristaEmViagem ? 'Indisponível' : 'Aceitar Frete'}
+                        ${isMotoristaEmViagem ? 'Em Viagem' : 'Aceitar Frete'}
                     </button>
                 </div>
             `;
@@ -411,6 +411,7 @@
                 const response = await api.getFretesByMotorista(1, 100);
                 if (response.success) {
                     const fretes = response.data.fretes;
+                    // Só bloqueia se estiver EM TRÂNSITO, não apenas aceito
                     return fretes.some(f => f.status === 'em_transito');
                 }
                 return false;

@@ -77,8 +77,9 @@ const getDashboard = async (req, res) => {
     // Fretes por status para gráficos (aplicar filtro de mês se necessário)
     let fretesPorStatusQuery = {};
     if (mes && mes !== 'todos') {
-      // Para um mês específico, buscar fretes que tiveram atividade no mês
-      // (criados OU entregues no mês)
+      // Para ser consistente com o gráfico de fretes por mês, usar a mesma lógica:
+      // - Para fretes entregues: usar data_entrega 
+      // - Para fretes não entregues: usar created_at (pois não têm data_entrega)
       const year = new Date().getFullYear();
       const monthNum = parseInt(mes, 10);
       const start = new Date(year, monthNum - 1, 1);
@@ -87,13 +88,19 @@ const getDashboard = async (req, res) => {
       
       fretesPorStatusQuery = {
         [Op.or]: [
+          // Fretes entregues no mês (usar data_entrega como no gráfico de fretes por mês)
           {
-            created_at: {
+            status: 'entregue',
+            data_entrega: {
               [Op.between]: [start, end]
             }
           },
+          // Fretes não entregues criados no mês
           {
-            data_entrega: {
+            status: {
+              [Op.ne]: 'entregue'
+            },
+            created_at: {
               [Op.between]: [start, end]
             }
           }

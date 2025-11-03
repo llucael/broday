@@ -25,6 +25,26 @@ body {
     line-height: 1.6;
 }
 
+/* Estilos de scrollbar personalizados */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1A202C;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4A5568;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6B7280;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -1803,7 +1823,7 @@ body.light-mode .enderecos-header h3 {
 .form-actions {
     display: flex;
     gap: 1rem;
-    justify-content: flex-end;
+    justify-content: center;
     margin-top: 2rem;
 }
 
@@ -1954,6 +1974,19 @@ input.valid {
 body.light-mode {
     background-color: #F0F8FF !important;
     color: #1A202C !important;
+}
+
+/* Scrollbar no modo claro */
+body.light-mode ::-webkit-scrollbar-track {
+    background: #E2E8F0;
+}
+
+body.light-mode ::-webkit-scrollbar-thumb {
+    background: #A0AEC0;
+}
+
+body.light-mode ::-webkit-scrollbar-thumb:hover {
+    background: #718096;
 }
 
 /* Header permanece escura no modo claro */
@@ -2980,9 +3013,10 @@ body.light-mode .preferences-form .checkbox-label input[type="checkbox"]:checked
 
 .form-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 1rem;
     margin-top: 2rem;
+    margin-bottom: 1rem;
     padding-top: 1rem;
     border-top: 1px solid #4A5568;
 }
@@ -3159,8 +3193,8 @@ body.light-mode .form-actions {
 .form-actions {
     display: flex;
     gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
+    justify-content: center;
+    margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid #4A5568;
 }
@@ -3556,4 +3590,108 @@ body.light-mode #endereco-modal .btn-secondary:hover {
     background-color: #C53030;
     border-color: #C53030;
     color: white;
+}
+
+/* Address hints */
+.address-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(66, 153, 225, 0.1);
+    border: 1px solid rgba(66, 153, 225, 0.3);
+    border-radius: 8px;
+    color: #63B3ED;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.address-hint:hover {
+    background-color: rgba(66, 153, 225, 0.2);
+    border-color: rgba(66, 153, 225, 0.5);
+    transform: translateY(-1px);
+}
+
+.address-hint i {
+    font-size: 1rem;
+    color: #4299E1;
+}
+
+/* Light mode address hints */
+body.light-mode .address-hint {
+    background-color: rgba(66, 153, 225, 0.1);
+    border-color: rgba(66, 153, 225, 0.3);
+    color: #3182CE;
+}
+
+body.light-mode .address-hint:hover {
+    background-color: rgba(66, 153, 225, 0.15);
+    border-color: rgba(66, 153, 225, 0.4);
+}
+
+body.light-mode .address-hint i {
+    color: #2B6CB0;
+}
+
+/* CEP input styling */
+#origin-cep,
+#destination-cep {
+    position: relative;
+}
+
+#origin-cep::placeholder,
+#destination-cep::placeholder {
+    color: #A0AEC0;
+}
+
+/* Success state for CEP fields */
+.cep-success {
+    border-color: #48BB78 !important;
+    background-color: rgba(72, 187, 120, 0.1);
+}
+
+/* Error state for CEP fields */
+.cep-error {
+    border-color: #F56565 !important;
+    background-color: rgba(245, 101, 101, 0.1);
+}
+
+/* Light mode CEP states */
+body.light-mode .cep-success {
+    background-color: rgba(72, 187, 120, 0.1);
+}
+
+body.light-mode .cep-error {
+    background-color: rgba(245, 101, 101, 0.1);
+}
+
+/* Botão de cancelar desabilitado por data limite */
+.btn-secondary:disabled {
+    background-color: #6B7280 !important;
+    color: #9CA3AF !important;
+    border-color: #6B7280 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.btn-secondary:disabled:hover {
+    background-color: #6B7280 !important;
+    color: #9CA3AF !important;
+    border-color: #6B7280 !important;
+    transform: none !important;
+}
+
+/* Light mode */
+body.light-mode .btn-secondary:disabled {
+    background-color: #D1D5DB !important;
+    color: #6B7280 !important;
+    border-color: #D1D5DB !important;
+}
+
+body.light-mode .btn-secondary:disabled:hover {
+    background-color: #D1D5DB !important;
+    color: #6B7280 !important;
+    border-color: #D1D5DB !important;
 }

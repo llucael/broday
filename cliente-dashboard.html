@@ -238,6 +238,26 @@
             // Obter nome do motorista
             const motoristaNome = frete.motorista ? (frete.motorista.name || frete.motorista.email) : 'Não atribuído';
             
+            // Verificar se pode cancelar (até 7 dias antes da data de coleta)
+            let podeCancelar = false;
+            let motivoNaoPodeCancelar = '';
+            
+            if (frete.status === 'aceito' && frete.data_coleta) {
+                const dataColetaObj = new Date(frete.data_coleta);
+                const agora = new Date();
+                const seteDiasEmMs = 7 * 24 * 60 * 60 * 1000;
+                const limiteParaCancelamento = new Date(dataColetaObj.getTime() - seteDiasEmMs);
+                
+                if (agora <= limiteParaCancelamento) {
+                    podeCancelar = true;
+                } else {
+                    const diasRestantes = Math.ceil((dataColetaObj.getTime() - agora.getTime()) / (24 * 60 * 60 * 1000));
+                    motivoNaoPodeCancelar = diasRestantes > 0 
+                        ? `Só é possível cancelar até 7 dias antes da coleta. Restam ${diasRestantes} dias.`
+                        : 'Prazo para cancelamento expirado (7 dias antes da coleta)';
+                }
+            }
+            
             card.innerHTML = `
                 <div class="frete-header">
                     <h3>Frete #${frete.id}</h3>
@@ -261,10 +281,17 @@
                     </button>
                     ` : ''}
                     ${frete.status === 'aceito' ? `
-                    <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})">
-                        <i class="fas fa-times"></i>
-                        Cancelar
-                    </button>
+                        ${podeCancelar ? `
+                        <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        ` : `
+                        <button class="btn btn-sm btn-secondary" disabled title="${motivoNaoPodeCancelar}">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        `}
                     ` : ''}
                 </div>
             `;
@@ -825,6 +852,42 @@
 
         body.light-mode .route-arrow {
             color: #e2e8f0;
+        }
+
+        /* Scrollbar customizada para o modal de detalhes do frete */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #1A202C;
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #4A5568;
+            border-radius: 4px;
+            border: 1px solid #2D3748;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #6B7280;
+        }
+
+        /* Scrollbar para modo claro */
+        body.light-mode .modal-content::-webkit-scrollbar-track {
+            background: #F7FAFC;
+            border-radius: 4px;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-thumb {
+            background: #CBD5E0;
+            border-radius: 4px;
+            border: 1px solid #E2E8F0;
+        }
+
+        body.light-mode .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #A0AEC0;
         }
     </style>
     </script>

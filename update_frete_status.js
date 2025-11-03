@@ -22,8 +22,8 @@ async function updateFreteStatus() {
             });
             
             // Atualizar o status
-            await frete.update({ status: 'aceito' });
-            console.log('Status atualizado para: aceito');
+            await frete.update({ status: 'solicitado' });
+            console.log('Status atualizado para: solicitado');
             
             // Verificar a atualização
             await frete.reload();
