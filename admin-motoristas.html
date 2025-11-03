@@ -102,19 +102,19 @@
                 <span>Broday Transportes</span>
             </div>
             <nav class="nav">
-                <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
-                <a href="admin-fretes.html" class="nav-link">Fretes</a>
-                <a href="admin-usuarios.html" class="nav-link">Usuários</a>
-                <a href="admin-motoristas.html" class="nav-link active">Motoristas</a>
-                <a href="admin-caminhoes.html" class="nav-link">Caminhões</a>
-                <a href="admin-configuracoes.html" class="nav-link">Configurações</a>
+                <a href="admin-dashboard.html" class="nav-link" title="Painel principal">Dashboard</a>
+                <a href="admin-fretes.html" class="nav-link" title="Gerenciar fretes">Fretes</a>
+                <a href="admin-usuarios.html" class="nav-link" title="Gerenciar clientes">Usuários</a>
+                <a href="admin-motoristas.html" class="nav-link active" title="Gerenciar motoristas">Motoristas</a>
+                <a href="admin-caminhoes.html" class="nav-link" title="Gerenciar veículos">Caminhões</a>
+                <a href="admin-configuracoes.html" class="nav-link" title="Configurações do sistema">Configurações</a>
             </nav>
             <div class="header-buttons">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
                     <i class="fas fa-sun"></i>
                 </button>
-                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Admin</span></span>
-                <button class="btn btn-secondary" onclick="logout()">
+                <span class="user-info" id="user-info" title="Usuário logado">Bem-vindo, <span id="user-name">Admin</span></span>
+                <button class="btn btn-secondary" onclick="logout()" title="Sair do sistema">
                     <i class="fas fa-sign-out-alt"></i>
                     Sair
                 </button>
@@ -128,94 +128,95 @@
             <!-- Motoristas Section -->
             <section id="motoristas" class="motoristas-section active">
                 <div class="section-header">
-                    <h1>Gerenciamento de Motoristas</h1>
+                    <h1 title="Gerenciar motoristas">Gerenciamento de Motoristas</h1>
                     <div class="filters">
                         <div class="search-box">
                             <input type="text" id="motorista-search" placeholder="Pesquisar por nome ou email" 
+                                title="Filtrar por nome ou e-mail"
                                 onkeyup="applyFilter()">
                             <i class="fas fa-search"></i>
                         </div>
-                        <select id="status-motorista-filter">
+                        <select id="status-motorista-filter" title="Filtrar por status">
                             <option value="">Todos os Status</option>
                             <option value="ativo">Ativo</option>
                             <option value="inativo">Inativo</option>
                             <option value="disponivel">Disponível</option>
                             <option value="em_viagem">Em Viagem</option>
                         </select>
-                        <button class="btn btn-success" onclick="showAddMotoristaModal()">
+                        <button class="btn btn-success" onclick="showAddMotoristaModal()" title="Cadastrar motorista">
                             <i class="fas fa-plus"></i>
                             Cadastrar Motorista
                         </button>
                     </div>
                 </div>
 
-                <div class="motoristas-list" id="motoristas-list">
+                <div class="motoristas-list" id="motoristas-list" title="Lista de motoristas">
                     <!-- Motoristas serão carregados aqui -->
                 </div>
                 <div class="list-footer">
-                    <p id="results-count"></p>
+                    <p id="results-count" title="Total encontrado"></p>
                 </div>
             </section>
         </div>
     </main>
 
     <!-- Modal para Cadastrar Motorista -->
-    <div class="modal" id="motorista-modal">
+    <div class="modal" id="motorista-modal" title="Cadastro de motorista">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Cadastrar Novo Motorista</h3>
-                <button class="close-btn" onclick="closeMotoristaModal()">&times;</button>
+                <h3 title="Formulário para adicionar novo motorista">Cadastrar Novo Motorista</h3>
+                <button class="close-btn" onclick="closeMotoristaModal()" title="Fechar modal">&times;</button>
             </div>
             <form class="motorista-form" id="motorista-form">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="motorista-nome">Nome Completo *</label>
-                        <input type="text" id="motorista-nome" name="nome" required>
+                        <input type="text" id="motorista-nome" name="nome" title="Nome completo do motorista" required>
                     </div>
                     <div class="form-group">
                         <label for="motorista-email">E-mail *</label>
-                        <input type="email" id="motorista-email" name="email" required>
+                        <input type="email" id="motorista-email" name="email" title="E-mail para login no sistema" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="motorista-telefone">Telefone *</label>
-                        <input type="tel" id="motorista-telefone" name="telefone" required>
+                        <input type="tel" id="motorista-telefone" name="telefone" title="Telefone com DDD" required>
                     </div>
                     <div class="form-group">
                         <label for="motorista-cpf">CPF *</label>
-                        <input type="text" id="motorista-cpf" name="cpf" required>
+                        <input type="text" id="motorista-cpf" name="cpf" title="CPF apenas números" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="motorista-cnh">CNH *</label>
-                        <input type="text" id="motorista-cnh" name="cnh" required>
+                        <input type="text" id="motorista-cnh" name="cnh" title="Número da Carteira Nacional de Habilitação" required>
                     </div>
                 </div>
 
                     <div class="form-group">
-                    <label>Categoria da CNH *</label>
+                    <label title="Selecione as categorias habilitadas">Categoria da CNH *</label>
                     <div class="checkbox-group">
                         <label class="checkbox-label">
-                            <input type="checkbox" name="categoria" value="A">
+                            <input type="checkbox" name="categoria" value="A" title="Motocicletas e ciclomotores">
                             <span class="checkmark"></span>
                             A - Motocicleta
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="categoria" value="B">
+                            <input type="checkbox" name="categoria" value="B" title="Veículos até 3.500kg">
                             <span class="checkmark"></span>
                             B - Carro
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="categoria" value="C">
+                            <input type="checkbox" name="categoria" value="C" title="Veículos de carga acima de 3.500kg">
                             <span class="checkmark"></span>
                             C - Caminhão
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="categoria" value="D">
+                            <input type="checkbox" name="categoria" value="D" title="Veículos para transporte de passageiros">
                             <span class="checkmark"></span>
                             D - Ônibus
                         </label>
@@ -384,11 +385,11 @@
                 <div class="footer-section">
                     <h4>Navegação</h4>
                     <div class="footer-nav">
-                        <a href="admin-dashboard.html">Dashboard</a>
-                        <a href="admin-fretes.html">Fretes</a>
-                        <a href="admin-usuarios.html">Usuários</a>
-                        <a href="admin-motoristas.html">Motoristas</a>
-                        <a href="admin-configuracoes.html">Configurações</a>
+                        <a href="admin-dashboard.html" title="Dashboard principal">Dashboard</a>
+                        <a href="admin-fretes.html" title="Gerenciar fretes">Fretes</a>
+                        <a href="admin-usuarios.html" title="Gerenciar usuários">Usuários</a>
+                        <a href="admin-motoristas.html" title="Gerenciar motoristas">Motoristas</a>
+                        <a href="admin-configuracoes.html" title="Configurações do sistema">Configurações</a>
                     </div>
                 </div>
                 

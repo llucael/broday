@@ -15,17 +15,17 @@
             <span>Broday Transportes</span>
         </div>
             <nav class="nav">
-                <a href="cliente-dashboard.html" class="nav-link active">Dashboard</a>
-                <a href="cliente-fretes.html" class="nav-link">Meus Fretes</a>
-                <a href="frete.html" class="nav-link">Solicitar Frete</a>
-                <a href="cliente-perfil.html" class="nav-link">Perfil</a>
+                <a href="cliente-dashboard.html" class="nav-link active" title="Dashboard principal">Dashboard</a>
+                <a href="cliente-fretes.html" class="nav-link" title="Histórico de fretes">Meus Fretes</a>
+                <a href="frete.html" class="nav-link" title="Solicitar novo frete">Solicitar Frete</a>
+                <a href="cliente-perfil.html" class="nav-link" title="Editar perfil">Perfil</a>
             </nav>
             <div class="header-buttons">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
                     <i class="fas fa-sun"></i>
                 </button>
-                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
-                <button class="btn btn-secondary" onclick="logout()">
+                <span class="user-info" id="user-info" title="Usuário logado">Bem-vindo, <span id="user-name">Cliente</span></span>
+                <button class="btn btn-secondary" onclick="logout()" title="Sair do sistema">
                     <i class="fas fa-sign-out-alt"></i>
                     Sair
                 </button>
@@ -45,7 +45,7 @@
 
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" title="Total de fretes solicitados">
                         <div class="stat-icon">
                             <i class="fas fa-truck"></i>
                         </div>
@@ -54,7 +54,7 @@
                             <p>Total de Fretes</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" title="Fretes aguardando aprovação, coleta ou em trânsito">
                         <div class="stat-icon">
                             <i class="fas fa-clock"></i>
                         </div>
@@ -63,7 +63,7 @@
                             <p>Fretes Pendentes</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" title="Fretes que foram entregues com sucesso">
                         <div class="stat-icon">
                             <i class="fas fa-check-circle"></i>
                         </div>
@@ -76,8 +76,8 @@
 
                 <!-- Fretes Ativos -->
                 <div class="recent-section">
-                    <h2>Fretes Ativos</h2>
-                    <div class="fretes-list" id="fretes-ativos">
+                    <h2 title="Lista dos seus fretes que estão atualmente em andamento">Fretes Ativos</h2>
+                    <div class="fretes-list" id="fretes-ativos" title="Clique em um frete para ver mais detalhes">
                         <!-- Fretes ativos serão carregados aqui -->
                     </div>
                 </div>
@@ -87,11 +87,11 @@
     </main>
 
     <!-- Modal de Detalhes do Frete -->
-    <div class="modal" id="freteDetailsModal">
+    <div class="modal" id="freteDetailsModal" title="Visualização detalhada das informações do frete selecionado">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Detalhes do Frete</h2>
-                <button class="close-btn" onclick="closeFreteDetailsModal()">&times;</button>
+                <button class="close-btn" onclick="closeFreteDetailsModal()" title="Fechar janela de detalhes">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="freteDetailsContent"></div>
@@ -111,10 +111,10 @@
                 <div class="footer-section">
                     <h4>Navegação</h4>
                     <div class="footer-nav">
-                        <a href="cliente-dashboard.html">Dashboard</a>
-                        <a href="cliente-fretes.html">Meus Fretes</a>
-                        <a href="frete.html">Solicitar Frete</a>
-                        <a href="cliente-perfil.html">Perfil</a>
+                        <a href="cliente-dashboard.html" title="Dashboard principal">Dashboard</a>
+                        <a href="cliente-fretes.html" title="Histórico de fretes">Meus Fretes</a>
+                        <a href="frete.html" title="Solicitar novo frete">Solicitar Frete</a>
+                        <a href="cliente-perfil.html" title="Editar perfil">Perfil</a>
                     </div>
                 </div>
                 
@@ -270,19 +270,19 @@
                     <p><strong>Motorista:</strong> ${motoristaNome}</p>
                 </div>
                 <div class="frete-actions">
-                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
+                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})" title="Ver detalhes completos do frete">
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>
                     ${frete.status === 'em_transito' ? `
-                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})">
+                    <button class="btn btn-sm btn-success" onclick="rastrearFrete(${frete.id})" title="Acompanhar localização em tempo real">
                         <i class="fas fa-map-marker-alt"></i>
                         Rastrear
                     </button>
                     ` : ''}
                     ${frete.status === 'aceito' ? `
                         ${podeCancelar ? `
-                        <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})">
+                        <button class="btn btn-sm btn-danger" onclick="cancelarFrete(${frete.id})" title="Cancelar este frete">
                             <i class="fas fa-times"></i>
                             Cancelar
                         </button>
@@ -320,7 +320,7 @@
                     <p><strong>Data:</strong> ${dataColeta}</p>
                 </div>
                 <div class="frete-actions">
-                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})">
+                    <button class="btn btn-sm btn-primary" onclick="viewFrete(${frete.id})" title="Ver detalhes completos do frete">
                         <i class="fas fa-eye"></i>
                         Ver Detalhes
                     </button>

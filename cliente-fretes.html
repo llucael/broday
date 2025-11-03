@@ -18,17 +18,17 @@
                 <span>Broday Transportes</span>
             </div>
             <nav class="nav">
-                <a href="cliente-dashboard.html" class="nav-link">Dashboard</a>
-                <a href="cliente-fretes.html" class="nav-link active">Meus Fretes</a>
-                <a href="frete.html" class="nav-link">Solicitar Frete</a>
-                <a href="cliente-perfil.html" class="nav-link">Perfil</a>
+                <a href="cliente-dashboard.html" class="nav-link" title="Dashboard principal">Dashboard</a>
+                <a href="cliente-fretes.html" class="nav-link active" title="Histórico de fretes">Meus Fretes</a>
+                <a href="frete.html" class="nav-link" title="Solicitar novo frete">Solicitar Frete</a>
+                <a href="cliente-perfil.html" class="nav-link" title="Editar perfil">Perfil</a>
             </nav>
             <div class="header-buttons">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
                     <i class="fas fa-sun"></i>
                 </button>
-                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
-                <button class="btn btn-secondary" onclick="logout()">
+                <span class="user-info" id="user-info" title="Usuário logado">Bem-vindo, <span id="user-name">Cliente</span></span>
+                <button class="btn btn-secondary" onclick="logout()" title="Sair do sistema">
                     <i class="fas fa-sign-out-alt"></i>
                     Sair
                 </button>
@@ -44,7 +44,7 @@
                 <div class="section-header">
                     <h1>Meus Fretes</h1>
                     <div class="filters">
-                        <select id="status-filter" onchange="loadFretes()">
+                        <select id="status-filter" onchange="loadFretes()" title="Filtrar fretes por status">
                             <option value="">Todos os Status</option>
                             <option value="nao_finalizados">Não Finalizados</option>
                             <option value="solicitado">Solicitado</option>
@@ -54,10 +54,10 @@
                             <option value="cancelado">Cancelado</option>
                         </select>
                         <div class="search-box">
-                            <input type="text" id="search-input" placeholder="Buscar por endereço, CEP, motorista ou cliente..." onkeyup="loadFretes()">
+                            <input type="text" id="search-input" placeholder="Buscar por endereço, CEP, motorista ou cliente..." onkeyup="loadFretes()" title="Buscar fretes por palavras-chave">
                             <i class="fas fa-search"></i>
                         </div>
-                        <button class="btn btn-primary" onclick="clearFilters()">
+                        <button class="btn btn-primary" onclick="clearFilters()" title="Limpar todos os filtros aplicados">
                             <i class="fas fa-times"></i>
                             Limpar Filtros
                         </button>
@@ -96,13 +96,13 @@
                 <div class="footer-section">
                     <h4>Navegação</h4>
                     <div class="footer-nav">
-                        <a href="cliente-dashboard.html">Dashboard</a>
-                        <a href="cliente-fretes.html">Meus Fretes</a>
-                        <a href="frete.html">Solicitar Frete</a>
-                        <a href="cliente-perfil.html">Perfil</a>
-                        <a href="index.html">Início</a>
-                        <a href="#">Política de Privacidade</a>
-                        <a href="#">Termos de Uso</a>
+                        <a href="cliente-dashboard.html" title="Dashboard principal">Dashboard</a>
+                        <a href="cliente-fretes.html" title="Histórico de fretes">Meus Fretes</a>
+                        <a href="frete.html" title="Solicitar novo frete">Solicitar Frete</a>
+                        <a href="cliente-perfil.html" title="Editar perfil">Perfil</a>
+                        <a href="index.html" title="Página inicial">Início</a>
+                        <a href="#" title="Política de privacidade">Política de Privacidade</a>
+                        <a href="#" title="Termos de uso">Termos de Uso</a>
                     </div>
                 </div>
                 

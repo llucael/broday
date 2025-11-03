@@ -15,17 +15,17 @@
             <span>Broday Transportes</span>
         </div>
             <nav class="nav">
-                <a href="cliente-dashboard.html">Dashboard</a>
-                <a href="cliente-fretes.html">Meus Fretes</a>
-                <a href="frete.html" class="nav-link active">Solicitar Frete</a>
-                <a href="cliente-perfil.html">Perfil</a>
+                <a href="cliente-dashboard.html" title="Página inicial">Dashboard</a>
+                <a href="cliente-fretes.html" title="Histórico de fretes">Meus Fretes</a>
+                <a href="frete.html" class="nav-link active" title="Solicitar frete">Solicitar Frete</a>
+                <a href="cliente-perfil.html" title="Gerenciar perfil">Perfil</a>
             </nav>
             <div class="header-buttons">
                 <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
                     <i class="fas fa-sun"></i>
                 </button>
-                <span class="user-info" id="user-info">Bem-vindo, <span id="user-name">Cliente</span></span>
-                <button class="btn btn-secondary" onclick="logout()">
+                <span class="user-info" id="user-info" title="Usuário logado">Bem-vindo, <span id="user-name">Cliente</span></span>
+                <button class="btn btn-secondary" onclick="logout()" title="Sair do sistema">
                     <i class="fas fa-sign-out-alt"></i>
                     Sair
                 </button>
@@ -42,69 +42,69 @@
                 <!-- Sender and Recipient Information -->
                 <div class="form-row">
                     <div class="form-section">
-                        <h3 class="section-title">Informações do Remetente</h3>
+                        <h3 class="section-title" title="Dados do remetente">Informações do Remetente</h3>
                         <div class="form-group">
                             <label for="sender-name">Nome Completo/Razão Social</label>
-                            <input type="text" id="sender-name" placeholder="Insira o nome completo ou razão social do remetente" required>
+                            <input type="text" id="sender-name" placeholder="Insira o nome completo ou razão social do remetente" title="Nome do remetente" required>
                         </div>
                         <div class="form-group">
                             <label for="sender-document">CPF/CNPJ</label>
-                            <input type="text" id="sender-document" placeholder="Insira o CPF ou CNPJ do remetente" required>
+                            <input type="text" id="sender-document" placeholder="Insira o CPF ou CNPJ do remetente" title="CPF ou CNPJ apenas números" required>
                         </div>
                         <div class="form-group">
                             <label for="sender-phone">Telefone</label>
-                            <input type="tel" id="sender-phone" placeholder="Insira o telefone do remetente" required>
+                            <input type="tel" id="sender-phone" placeholder="Insira o telefone do remetente" title="Telefone com DDD" required>
                         </div>
                         <div class="form-group">
                             <label for="sender-email">E-mail</label>
-                            <input type="email" id="sender-email" placeholder="Insira o e-mail do remetente" required>
+                            <input type="email" id="sender-email" placeholder="Insira o e-mail do remetente" title="E-mail para notificações" required>
                         </div>
                     </div>
 
                     <div class="form-section">
-                        <h3 class="section-title">Informações do Destinatário</h3>
+                        <h3 class="section-title" title="Dados do destinatário">Informações do Destinatário</h3>
                         <div class="form-group">
                             <label for="recipient-name">Nome Completo/Razão Social</label>
-                            <input type="text" id="recipient-name" placeholder="Insira o nome completo ou razão social do destinatário" required>
+                            <input type="text" id="recipient-name" placeholder="Insira o nome completo ou razão social do destinatário" title="Nome do destinatário" required>
                         </div>
                         <div class="form-group">
                             <label for="recipient-document">CPF/CNPJ</label>
-                            <input type="text" id="recipient-document" placeholder="Insira o CPF ou CNPJ do destinatário" required>
+                            <input type="text" id="recipient-document" placeholder="Insira o CPF ou CNPJ do destinatário" title="CPF ou CNPJ apenas números" required>
                         </div>
                         <div class="form-group">
                             <label for="recipient-phone">Telefone</label>
-                            <input type="tel" id="recipient-phone" placeholder="Insira o telefone do destinatário" required>
+                            <input type="tel" id="recipient-phone" placeholder="Insira o telefone do destinatário" title="Telefone para contato na entrega" required>
                         </div>
                         <div class="form-group">
                             <label for="recipient-email">E-mail</label>
-                            <input type="email" id="recipient-email" placeholder="Insira o e-mail do destinatário" required>
+                            <input type="email" id="recipient-email" placeholder="Insira o e-mail do destinatário" title="E-mail para notificações de entrega" required>
                         </div>
                     </div>
                 </div>
 
                 <!-- Cargo Details -->
                 <div class="form-section">
-                    <h3 class="section-title">Detalhes da Carga</h3>
+                    <h3 class="section-title" title="Detalhes da mercadoria">Detalhes da Carga</h3>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="cargo-type">Tipo de Carga</label>
-                            <input type="text" id="cargo-type" placeholder="Ex: Eletrônicos, Móveis" required>
+                            <input type="text" id="cargo-type" placeholder="Ex: Eletrônicos, Móveis" title="Tipo de mercadoria" required>
                         </div>
                         <div class="form-group">
                             <label for="cargo-value">Valor Declarado (R$)</label>
-                            <input type="text" id="cargo-value" inputmode="decimal" placeholder="Ex: 1.250,75" required>
+                            <input type="text" id="cargo-value" inputmode="decimal" placeholder="Ex: 1.250,75" title="Valor para seguro" required>
                         </div>
                         <div class="form-group">
                             <label for="cargo-weight">Peso (Kg)</label>
-                            <input type="number" id="cargo-weight" placeholder="Insira o peso em quilogramas" required>
+                            <input type="number" id="cargo-weight" placeholder="Insira o peso em quilogramas" title="Peso em quilogramas" required>
                         </div>
                         <div class="form-group">
                             <label for="data-coleta-limite">Data Limite de Coleta <span style="color: red;">*</span></label>
-                            <input type="date" id="data-coleta-limite" placeholder="Selecione a data limite de coleta" required>
+                            <input type="date" id="data-coleta-limite" placeholder="Selecione a data limite de coleta" title="Data máxima para coleta" required>
                         </div>
                         <div class="form-group">
                             <label for="data-entrega-limite">Data Limite de Entrega <span style="color: red;">*</span></label>
-                            <input type="date" id="data-entrega-limite" placeholder="Selecione a data limite de entrega" required>
+                            <input type="date" id="data-entrega-limite" placeholder="Selecione a data limite de entrega" title="Data máxima para entrega" required>
                         </div>
                     </div>
                 </div>
@@ -112,34 +112,34 @@
                 <!-- Addresses -->
                 <div class="form-row address-section">
                     <div class="form-section">
-                        <h3 class="section-title">Endereço de Origem</h3>
-                        <div class="address-hint">
+                        <h3 class="section-title" title="Local de coleta">Endereço de Origem</h3>
+                        <div class="address-hint" title="Usar endereço cadastrado">
                             <i class="fas fa-info-circle"></i>
                             <span>Clique aqui para selecionar um endereço salvo automaticamente</span>
                         </div>
                         <div class="form-group">
                             <label for="origin-cep">CEP</label>
-                            <input type="text" id="origin-cep" placeholder="Digite o CEP de origem" required>
+                            <input type="text" id="origin-cep" placeholder="Digite o CEP de origem" title="CEP para preenchimento automático" required>
                         </div>
                         <div class="form-group">
                             <label for="origin-street">Logradouro</label>
-                            <input type="text" id="origin-street" placeholder="Insira o logradouro de origem" required>
+                            <input type="text" id="origin-street" placeholder="Insira o logradouro de origem" title="Rua ou avenida" required>
                         </div>
                         <div class="form-group">
                             <label for="origin-number">Número</label>
-                            <input type="text" id="origin-number" placeholder="Insira o número" required>
+                            <input type="text" id="origin-number" placeholder="Insira o número" title="Número do imóvel" required>
                         </div>
                         <div class="form-group">
                             <label for="origin-complement">Complemento</label>
-                            <input type="text" id="origin-complement" placeholder="Ex: Apto 101">
+                            <input type="text" id="origin-complement" placeholder="Ex: Apto 101, Sala 205" title="Complemento opcional: apartamento, sala, andar, bloco, etc.">
                         </div>
                         <div class="form-group">
                             <label for="origin-city">Cidade</label>
-                            <input type="text" id="origin-city" placeholder="Insira a cidade de origem" required>
+                            <input type="text" id="origin-city" placeholder="Insira a cidade de origem" title="Cidade de origem" required>
                         </div>
                         <div class="form-group">
                             <label for="origin-state">Estado</label>
-                            <select id="origin-state" required>
+                            <select id="origin-state" title="Estado de origem" required>
                                 <option value="">Selecione o estado</option>
                                 <option value="AC">Acre (AC)</option>
                                 <option value="AL">Alagoas (AL)</option>
@@ -173,34 +173,34 @@
                     </div>
 
                     <div class="form-section">
-                        <h3 class="section-title">Endereço de Destino</h3>
-                        <div class="address-hint">
+                        <h3 class="section-title" title="Local de entrega">Endereço de Destino</h3>
+                        <div class="address-hint" title="Usar endereço cadastrado">
                             <i class="fas fa-info-circle"></i>
                             <span>Clique aqui para selecionar um endereço salvo automaticamente</span>
                         </div>
                         <div class="form-group">
                             <label for="destination-cep">CEP</label>
-                            <input type="text" id="destination-cep" placeholder="Digite o CEP de destino" required>
+                            <input type="text" id="destination-cep" placeholder="Digite o CEP de destino" title="CEP para preenchimento automático" required>
                         </div>
                         <div class="form-group">
                             <label for="destination-street">Logradouro</label>
-                            <input type="text" id="destination-street" placeholder="Insira o logradouro de destino" required>
+                            <input type="text" id="destination-street" placeholder="Insira o logradouro de destino" title="Rua ou avenida de entrega" required>
                         </div>
                         <div class="form-group">
                             <label for="destination-number">Número</label>
-                            <input type="text" id="destination-number" placeholder="Insira o número" required>
+                            <input type="text" id="destination-number" placeholder="Insira o número" title="Número do imóvel de entrega" required>
                         </div>
                         <div class="form-group">
                             <label for="destination-complement">Complemento</label>
-                            <input type="text" id="destination-complement" placeholder="Ex: Sala 200">
+                            <input type="text" id="destination-complement" placeholder="Ex: Sala 200" title="Complemento opcional">
                         </div>
                         <div class="form-group">
                             <label for="destination-city">Cidade</label>
-                            <input type="text" id="destination-city" placeholder="Insira a cidade de destino" required>
+                            <input type="text" id="destination-city" placeholder="Insira a cidade de destino" title="Cidade de entrega" required>
                         </div>
                         <div class="form-group">
                             <label for="destination-state">Estado</label>
-                            <select id="destination-state" required>
+                            <select id="destination-state" title="Estado de entrega" required>
                                 <option value="">Selecione o estado</option>
                                 <option value="AC">Acre (AC)</option>
                                 <option value="AL">Alagoas (AL)</option>
@@ -236,18 +236,18 @@
 
                 <!-- Submit Button -->
                 <div class="form-submit">
-                    <button type="submit" class="btn btn-primary">Enviar Solicitação</button>
+                    <button type="submit" class="btn btn-primary" title="Enviar solicitação de frete">Enviar Solicitação</button>
                 </div>
             </form>
         </div>
     </main>
 
     <!-- Modal de Seleção de Endereço -->
-    <div id="endereco-modal" class="modal">
+    <div id="endereco-modal" class="modal" title="Modal para seleção de endereços cadastrados">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="endereco-modal-title">Selecionar Endereço</h3>
-                <button class="close-btn" onclick="closeEnderecoSelectionModal()">&times;</button>
+                <button class="close-btn" onclick="closeEnderecoSelectionModal()" title="Fechar modal">&times;</button>
             </div>
             
             <div class="modal-body">
@@ -267,7 +267,7 @@
             </div>
             
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="closeEnderecoSelectionModal()">
+                <button type="button" class="btn btn-secondary" onclick="closeEnderecoSelectionModal()" title="Cancelar seleção">
                     <i class="fas fa-times"></i>
                     Cancelar
                 </button>
@@ -287,13 +287,13 @@
                 <div class="footer-section">
                     <h4>Navegação</h4>
                     <div class="footer-nav">
-                        <a href="cliente-dashboard.html">Dashboard</a>
-                        <a href="cliente-fretes.html">Meus Fretes</a>
-                        <a href="frete.html">Solicitar Frete</a>
-                        <a href="cliente-perfil.html">Perfil</a>
-                        <a href="index.html">Início</a>
-                        <a href="#">Política de Privacidade</a>
-                        <a href="#">Termos de Uso</a>
+                        <a href="cliente-dashboard.html" title="Dashboard principal">Dashboard</a>
+                        <a href="cliente-fretes.html" title="Histórico de fretes">Meus Fretes</a>
+                        <a href="frete.html" title="Solicitar novo frete">Solicitar Frete</a>
+                        <a href="cliente-perfil.html" title="Editar perfil">Perfil</a>
+                        <a href="index.html" title="Página inicial">Início</a>
+                        <a href="#" title="Política de privacidade">Política de Privacidade</a>
+                        <a href="#" title="Termos de uso">Termos de Uso</a>
                     </div>
                 </div>
                 
