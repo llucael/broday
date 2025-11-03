@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', function() {
         freteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Mostrar loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.textContent : 'Enviar Solicitação';
+            
             // Validação básica
             const requiredFields = this.querySelectorAll('[required]');
             let isValid = true;
@@ -52,9 +56,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Mostrar loading
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn ? submitBtn.textContent : 'Enviar Solicitação';
                 if (submitBtn) {
                     submitBtn.textContent = 'Enviando...';
                     submitBtn.disabled = true;
@@ -77,8 +78,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     cargo_value: parseFloat(document.getElementById('cargo-value').getAttribute('data-numeric-value') || 
                                 document.getElementById('cargo-value').value.replace(/\./g, '').replace(',', '.')),
                     cargo_weight: parseFloat(document.getElementById('cargo-weight').value),
-                    cargo_dimensions: document.getElementById('cargo-dimensions').value.trim(),
-                    data_entrega: document.getElementById('data-entrega').value || null,
+                    data_coleta_limite: document.getElementById('data-coleta-limite').value || null,
+                    data_entrega_limite: document.getElementById('data-entrega-limite').value || null,
                     // Endereço de origem (usando nomes do modelo)
                     origin_cep: document.getElementById('origin-cep').value.trim(),
                     origin_street: document.getElementById('origin-street').value.trim(),
@@ -134,18 +135,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Debug: mostrar dados que serão enviados
                 console.log('Dados do formulário:', formData);
-                console.log('Campos obrigatórios verificados:');
-                console.log('- cargo_type:', formData.cargo_type);
-                console.log('- cargo_value:', formData.cargo_value);
-                console.log('- cargo_weight:', formData.cargo_weight);
-                console.log('- origin_street:', formData.origin_street);
-                console.log('- origin_city:', formData.origin_city);
-                console.log('- origin_state:', formData.origin_state);
-                console.log('- origin_cep:', formData.origin_cep);
-                console.log('- destination_street:', formData.destination_street);
-                console.log('- destination_city:', formData.destination_city);
-                console.log('- destination_state:', formData.destination_state);
-                console.log('- destination_cep:', formData.destination_cep);
+                console.log('Todos os campos:');
+                Object.keys(formData).forEach(key => {
+                    console.log(`- ${key}:`, formData[key]);
+                });
                 
                 // Enviar para a API
                 const response = await api.createFrete(formData);

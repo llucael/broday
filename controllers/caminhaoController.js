@@ -122,9 +122,31 @@ const createCaminhao = async (req, res) => {
   try {
     const { modelo, ano, placa, motorista_id } = req.body;
 
+    console.log('=== CREATE CAMINHÃO ===');
+    console.log('Dados recebidos:', { modelo, ano, placa, motorista_id });
+
+    // Validar formato da placa
+    if (placa) {
+      const placaLimpa = placa.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const isOldFormat = /^[A-Z]{3}[0-9]{4}$/.test(placaLimpa);
+      const isMercosulFormat = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(placaLimpa);
+      
+      console.log('Placa limpa:', placaLimpa);
+      console.log('Formato antigo válido:', isOldFormat);
+      console.log('Formato Mercosul válido:', isMercosulFormat);
+      
+      if (!isOldFormat && !isMercosulFormat) {
+        return res.status(400).json({
+          success: false,
+          message: 'Formato de placa inválido. Use ABC-1234 ou ABC1D23'
+        });
+      }
+    }
+
     // Verificar se a placa já existe
     const existingCaminhao = await Caminhao.findOne({ where: { placa } });
     if (existingCaminhao) {
+      console.log('Placa já existe:', existingCaminhao.placa);
       return res.status(400).json({
         success: false,
         message: 'Já existe um caminhão com esta placa'

@@ -125,6 +125,43 @@ const validateAdmin = [
 
 // Validações para frete
 const validateFrete = [
+  // Informações do remetente
+  body('sender_name')
+    .trim()
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Nome do remetente deve ter entre 2 e 255 caracteres'),
+  body('sender_document')
+    .trim()
+    .isLength({ min: 11, max: 18 })
+    .withMessage('Documento do remetente é obrigatório'),
+  body('sender_phone')
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Telefone do remetente é obrigatório'),
+  body('sender_email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('E-mail do remetente deve ser válido'),
+  
+  // Informações do destinatário
+  body('recipient_name')
+    .trim()
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Nome do destinatário deve ter entre 2 e 255 caracteres'),
+  body('recipient_document')
+    .trim()
+    .isLength({ min: 11, max: 18 })
+    .withMessage('Documento do destinatário é obrigatório'),
+  body('recipient_phone')
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Telefone do destinatário é obrigatório'),
+  body('recipient_email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('E-mail do destinatário deve ser válido'),
+  
+  // Detalhes da carga
   body('cargo_type')
     .trim()
     .isLength({ min: 2, max: 100 })
@@ -135,10 +172,18 @@ const validateFrete = [
   body('cargo_value')
     .isFloat({ min: 0.01 })
     .withMessage('Valor deve ser maior que zero'),
-  body('cargo_dimensions')
-    .trim()
-    .isLength({ min: 1, max: 200 })
-    .withMessage('Dimensões da carga são obrigatórias'),
+  
+  // Datas limite
+  body('data_coleta_limite')
+    .optional()
+    .isISO8601()
+    .withMessage('Data limite de coleta deve ser uma data válida'),
+  body('data_entrega_limite')
+    .optional()
+    .isISO8601()
+    .withMessage('Data limite de entrega deve ser uma data válida'),
+  
+  // Endereço de origem
   body('origin_street')
     .trim()
     .isLength({ min: 5, max: 200 })
@@ -157,6 +202,8 @@ const validateFrete = [
   body('origin_cep')
     .matches(/^\d{5}-?\d{3}$/)
     .withMessage('CEP de origem deve estar no formato 00000-000 ou 00000000'),
+  
+  // Endereço de destino
   body('destination_street')
     .trim()
     .isLength({ min: 5, max: 200 })

@@ -12,6 +12,7 @@ const {
   getPerfil,
   getEnderecos,
   createEndereco,
+  deleteEndereco,
   atualizarPerfil,
   getHistoricoCompleto
 } = require('../controllers/clienteController');
@@ -50,6 +51,7 @@ router.put('/perfil', atualizarPerfil);
 // Endereços
 router.get('/enderecos', getEnderecos);
 router.post('/enderecos', createEndereco);
+router.delete('/enderecos/:id', deleteEndereco);
 
 // Histórico completo
 router.get('/historico', getHistoricoCompleto);

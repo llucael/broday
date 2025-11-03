@@ -183,7 +183,8 @@
                 console.log('Resposta - data:', response ? response.data : 'undefined');
                 
                 if (response && response.success && response.data) {
-                    motoristas = response.data;
+                    // A API retorna { data: { motoristas: [...] } }
+                    motoristas = response.data.motoristas || response.data;
                     console.log('Motoristas carregados:', motoristas);
                     console.log('Tipo de motoristas:', typeof motoristas);
                     console.log('É array?', Array.isArray(motoristas));
@@ -277,15 +278,111 @@
             if (placaInput) {
                 placaInput.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                    if (value.length > 3) {
-                        value = value.substring(0, 3) + '-' + value.substring(3, 7);
+                    
+                    // Aplicar formatação apenas para exibição
+                    if (value.length > 3 && value.length <= 7) {
+                        // Formato antigo: ABC-1234
+                        // Formato Mercosul: ABC-1D23
+                        if (value.length === 7) {
+                            // Determinar se é formato antigo ou Mercosul
+                            const isOldFormat = /^[A-Z]{3}[0-9]{4}$/.test(value);
+                            if (isOldFormat) {
+                                value = value.substring(0, 3) + '-' + value.substring(3);
+                            } else {
+                                value = value.substring(0, 3) + '-' + value.substring(3);
+                            }
+                        } else if (value.length > 3) {
+                            value = value.substring(0, 3) + '-' + value.substring(3);
+                        }
                     }
+                    
                     e.target.value = value;
+                    
+                    // Validar placa em tempo real com pequeno delay
+                    setTimeout(() => {
+                        validatePlaca(e.target);
+                    }, 100);
                 });
+                
+                // Validação também no blur (quando sai do campo)
+                placaInput.addEventListener('blur', function(e) {
+                    validatePlaca(e.target);
+                });
+                
                 console.log('Formatação da placa configurada com sucesso');
             } else {
                 console.error('Campo de placa não encontrado');
             }
+        }
+
+        // Validar placa brasileira
+        function validatePlaca(input) {
+            const originalValue = input.value;
+            const cleanValue = originalValue.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            const feedback = input.parentNode.querySelector('.placa-feedback');
+            
+            // Remover feedback anterior
+            if (feedback) {
+                feedback.remove();
+            }
+            
+            // Debug da validação
+            console.log('=== VALIDAÇÃO PLACA ===');
+            console.log('Valor original:', originalValue);
+            console.log('Valor limpo:', cleanValue);
+            console.log('Comprimento:', cleanValue.length);
+            
+            if (cleanValue.length === 0) {
+                // Campo vazio - não mostrar erro
+                input.style.borderColor = '';
+                return true;
+            }
+            
+            if (cleanValue.length < 7) {
+                // Incompleto
+                showPlacaFeedback(input, 'Placa incompleta', 'warning');
+                input.style.borderColor = '#f39c12';
+                return false;
+            }
+            
+            if (cleanValue.length > 7) {
+                // Muito longo
+                showPlacaFeedback(input, 'Placa muito longa', 'error');
+                input.style.borderColor = '#e74c3c';
+                return false;
+            }
+            
+            // Validar formato da placa (apenas se tem 7 caracteres)
+            const isOldFormat = /^[A-Z]{3}[0-9]{4}$/.test(cleanValue);
+            const isMercosulFormat = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(cleanValue);
+            const isValidFormat = isOldFormat || isMercosulFormat;
+            
+            console.log('Formato antigo (ABC1234):', isOldFormat);
+            console.log('Formato Mercosul (ABC1D23):', isMercosulFormat);
+            console.log('É válido:', isValidFormat);
+            
+            if (!isValidFormat) {
+                // Formato inválido
+                showPlacaFeedback(input, 'Formato inválido. Use ABC-1234 ou ABC1D23', 'error');
+                input.style.borderColor = '#e74c3c';
+                return false;
+            }
+            
+            // Válido
+            showPlacaFeedback(input, 'Placa válida', 'success');
+            input.style.borderColor = '#27ae60';
+            return true;
+        }
+
+        function showPlacaFeedback(input, message, type) {
+            const feedback = document.createElement('div');
+            feedback.className = `placa-feedback ${type}`;
+            feedback.style.fontSize = '12px';
+            feedback.style.marginTop = '5px';
+            feedback.style.color = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#f39c12';
+            feedback.textContent = message;
+            
+            input.parentNode.appendChild(feedback);
         }
 
         // Mostrar modal de adicionar caminhão
@@ -383,12 +480,31 @@
         document.getElementById('caminhao-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            // Validar placa antes de enviar
+            const placaInput = document.getElementById('caminhao-placa');
+            const placaValue = placaInput.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            
+            console.log('=== VALIDAÇÃO NO SUBMIT ===');
+            console.log('Placa digitada:', placaInput.value);
+            console.log('Placa limpa:', placaValue);
+            
+            const isPlacaValid = validatePlaca(placaInput);
+            console.log('Placa é válida:', isPlacaValid);
+            
+            if (!isPlacaValid && placaValue.length > 0) {
+                showNotification('Por favor, corrija os erros na placa antes de continuar', 'error');
+                placaInput.focus();
+                return;
+            }
+
             const formData = {
                 modelo: document.getElementById('caminhao-modelo').value,
                 ano: parseInt(document.getElementById('caminhao-ano').value),
-                placa: document.getElementById('caminhao-placa').value.toUpperCase(),
+                placa: placaValue, // Usar valor limpo
                 motorista_id: document.getElementById('caminhao-motorista').value || null
             };
+
+            console.log('Dados a serem enviados:', formData);
 
             try {
                 let response;
@@ -397,6 +513,8 @@
                 } else {
                     response = await api.createCaminhao(formData);
                 }
+
+                console.log('Resposta da API:', response);
 
                 if (response.success) {
                     showNotification(

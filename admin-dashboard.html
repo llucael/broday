@@ -185,7 +185,7 @@
                         </div>
                         <div class="stat-content">
                             <h3 id="fretes-ativos">0</h3>
-                            <p>Fretes Ativos</p>
+                            <p>Fretes Ativos (Total Atual)</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -194,7 +194,7 @@
                         </div>
                         <div class="stat-content">
                             <h3 id="fretes-concluidos-mes">0</h3>
-                            <p>Fretes Concluídos (<span id="mes-selecionado-texto">Mês</span>)</p>
+                            <p id="fretes-concluidos-label">Fretes Concluídos (<span id="mes-selecionado-texto">Mês</span>)</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -436,24 +436,29 @@
 
         async function loadStats(mes = 'todos') {
             try {
-                // Carregar dados do dashboard da API com filtro de mês
+                // Sempre carregar fretes ativos sem filtro usando endpoint específico
+                console.log('Carregando fretes ativos (endpoint específico)...');
+                const fretesAtivosResponse = await api.request('/admin/fretes-ativos');
+                
+                // Carregar outras estatísticas com filtro de mês
                 const url = mes === 'todos' ? '/admin/dashboard' : `/admin/dashboard?mes=${mes}`;
-                console.log('Fazendo requisição para:', url);
+                console.log('Fazendo requisição para outras estatísticas:', url);
                 const dashboardResponse = await api.request(url);
 
-                if (!dashboardResponse.success) {
-                    throw new Error(dashboardResponse.message || 'Erro ao carregar dashboard');
+                if (!dashboardResponse.success || !fretesAtivosResponse.success) {
+                    throw new Error('Erro ao carregar dados do dashboard');
                 }
 
-                // Servidor retorna { dashboard: {...} } ou dados diretos
+                // Dados dos fretes ativos (sempre sem filtro)
+                const fretesAtivos = fretesAtivosResponse.data.fretesAtivos || 0;
+
+                // Outras estatísticas (com filtro de mês)
                 dashboardData = dashboardResponse.data?.dashboard || dashboardResponse.data || {};
                 
-                console.log('Dados do dashboard carregados:', dashboardData);
+                console.log('Fretes ativos (endpoint específico):', fretesAtivos);
+                console.log('Dados do dashboard (com filtro):', dashboardData);
                 console.log('Mês solicitado:', mes);
-                console.log('fretesPorStatus:', dashboardData.fretesPorStatus);
 
-                // Usar os valores diretamente do backend (já filtrados por mês)
-                const fretesAtivos = dashboardData.fretesAtivos || 0;
                 const fretesConcluidos = dashboardData.fretesConcluidosMes || 0;
                 const totalClientes = dashboardData.usuarios?.totalClientes || 0;
                 const totalMotoristas = dashboardData.usuarios?.totalMotoristas || 0;
@@ -468,6 +473,9 @@
                 const mesTexto = getNomeMes(mes);
                 document.getElementById('mes-selecionado-texto').textContent = mesTexto;
                 
+                // Garantir que os dados globais incluam os fretes ativos corretos
+                dashboardData.fretesAtivos = fretesAtivos;
+                
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
                 // Valores padrão em caso de erro
@@ -477,6 +485,12 @@
                 document.getElementById('total-clientes').textContent = '0';
                 document.getElementById('mes-selecionado-texto').textContent = 'Mês';
             }
+        }
+
+        // Função para atualizar descrições dos cards (simplificada)
+        function updateCardDescriptions(mesTexto) {
+            // Esta função agora é desnecessária pois o card de fretes ativos não muda
+            // e o texto do mês já é atualizado diretamente em loadStats
         }
 
         // Função para filtrar dados por mês

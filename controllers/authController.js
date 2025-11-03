@@ -48,6 +48,8 @@ const register = async (req, res) => {
       email,
       password,
       user_type: userType,
+      cpf: cpf || null,
+      cnpj: cnpj || null,
       is_active: true,
       email_verified: false
     });

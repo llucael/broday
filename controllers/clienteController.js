@@ -563,12 +563,15 @@ const getEnderecos = async (req, res) => {
 const createEndereco = async (req, res) => {
   try {
     const clienteId = req.user.id;
-    const { nome, rua, numero, complemento, cidade, estado, cep, is_principal } = req.body;
+    const { nome, rua, logradouro, numero, complemento, cidade, estado, cep, is_principal } = req.body;
+
+    // Aceitar tanto 'rua' quanto 'logradouro' para compatibilidade
+    const ruaValue = logradouro || rua;
 
     console.log('Dados recebidos para criar endereço:', req.body);
 
     // Validação básica
-    if (!nome || !rua || !numero || !cidade || !estado || !cep) {
+    if (!nome || !ruaValue || !numero || !cidade || !estado || !cep) {
       return res.status(400).json({
         success: false,
         message: 'Todos os campos obrigatórios devem ser preenchidos'
@@ -586,7 +589,7 @@ const createEndereco = async (req, res) => {
     const endereco = await Endereco.create({
       cliente_id: clienteId,
       nome,
-      rua,
+      rua: ruaValue, // Usar ruaValue que aceita tanto 'rua' quanto 'logradouro'
       numero,
       complemento,
       cidade,
@@ -604,6 +607,45 @@ const createEndereco = async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao criar endereço:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Deletar endereço
+const deleteEndereco = async (req, res) => {
+  try {
+    const clienteId = req.user.id;
+    const { id } = req.params;
+
+    // Verificar se o endereço pertence ao cliente
+    const endereco = await Endereco.findOne({
+      where: {
+        id: id,
+        cliente_id: clienteId
+      }
+    });
+
+    if (!endereco) {
+      return res.status(404).json({
+        success: false,
+        message: 'Endereço não encontrado ou não pertence ao cliente'
+      });
+    }
+
+    // Deletar o endereço
+    await endereco.destroy();
+
+    console.log('Endereço deletado com sucesso:', id);
+    
+    res.json({
+      success: true,
+      message: 'Endereço excluído com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao deletar endereço:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
@@ -747,6 +789,7 @@ module.exports = {
   getPerfil,
   getEnderecos,
   createEndereco,
+  deleteEndereco,
   atualizarPerfil,
   getHistoricoCompleto
 };

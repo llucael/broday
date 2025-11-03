@@ -1,4 +1,4 @@
-const { User, Frete } = require('../models');
+const { User, Frete, Caminhao } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const bcrypt = require('bcryptjs');
@@ -56,13 +56,13 @@ const getDashboard = async (req, res) => {
       };
     }
     
-    // Fretes ativos (aplicar filtro de mês se necessário)
+    // Fretes ativos (NÃO aplicar filtro de mês - sempre mostrar todos os ativos)
     const fretesAtivos = await Frete.count({
       where: {
         status: {
           [Op.in]: ['solicitado', 'aceito', 'em_transito']
-        },
-        ...whereConditions
+        }
+        // Removido whereConditions para não filtrar por mês
       }
     });
 
@@ -1229,12 +1229,15 @@ const updateUser = async (req, res) => {
 
 // Excluir usuário
 const deleteUser = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
   try {
     const { id } = req.params;
 
     // Verificar se o usuário existe
     const usuario = await User.findByPk(id);
     if (!usuario) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: 'Usuário não encontrado'
@@ -1243,24 +1246,64 @@ const deleteUser = async (req, res) => {
 
     // Verificar se é o próprio admin (não pode se excluir)
     if (usuario.id === req.user.id) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: 'Você não pode excluir sua própria conta'
       });
     }
 
+    // Verificar se o usuário tem fretes associados
+    const fretesCount = await Frete.count({
+      where: {
+        [Op.or]: [
+          { cliente_id: id },
+          { motorista_id: id }
+        ]
+      }
+    });
+
+    if (fretesCount > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Não é possível excluir usuário que possui fretes associados. Primeiro cancele ou finalize todos os fretes.'
+      });
+    }
+
+    // Verificar se é motorista e tem caminhões associados
+    if (usuario.user_type === 'motorista') {
+      const caminhaoCount = await Caminhao.count({
+        where: { motorista_id: id }
+      });
+
+      if (caminhaoCount > 0) {
+        // Remover a associação com motorista dos caminhões ao invés de impedir a exclusão
+        await Caminhao.update(
+          { motorista_id: null },
+          { 
+            where: { motorista_id: id },
+            transaction 
+          }
+        );
+      }
+    }
+
     // Excluir usuário
-    await usuario.destroy();
+    await usuario.destroy({ transaction });
+    
+    await transaction.commit();
 
     res.json({
       success: true,
       message: 'Usuário excluído com sucesso'
     });
   } catch (error) {
+    await transaction.rollback();
     console.error('Erro ao excluir usuário:', error);
     res.status(500).json({
       success: false,
-      message: 'Erro interno do servidor'
+      message: 'Erro interno do servidor: ' + error.message
     });
   }
 };
@@ -1303,6 +1346,32 @@ const deleteFrete = async (req, res) => {
   }
 };
 
+// Função específica para buscar apenas fretes ativos (sem filtro de mês)
+const getFretesAtivos = async (req, res) => {
+  try {
+    const fretesAtivos = await Frete.count({
+      where: {
+        status: {
+          [Op.in]: ['solicitado', 'aceito', 'em_transito']
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        fretesAtivos
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar fretes ativos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+};
+
 module.exports = {
   getDashboard,
   getClientes,
@@ -1322,5 +1391,6 @@ module.exports = {
   getMonitoramentoTempoReal,
   getRelatoriosUsuarios,
   generateRandomPassword,
-  deleteFrete
+  deleteFrete,
+  getFretesAtivos
 };

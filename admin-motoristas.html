@@ -193,7 +193,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="motorista-cnh">CNH *</label>
-                        <input type="text" id="motorista-cnh" name="cnh" title="Número da Carteira Nacional de Habilitação" required>
+                        <input type="text" id="motorista-cnh" name="cnh" title="Número da Carteira Nacional de Habilitação" placeholder="Digite os 11 dígitos da CNH" maxlength="11" required>
                     </div>
                 </div>
 
@@ -270,7 +270,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="edit-motorista-cnh">CNH *</label>
-                        <input type="text" id="edit-motorista-cnh" name="cnh" required>
+                        <input type="text" id="edit-motorista-cnh" name="cnh" title="Número da Carteira Nacional de Habilitação" placeholder="Digite os 11 dígitos da CNH" maxlength="11" required>
                     </div>
                 </div>
 
@@ -726,13 +726,20 @@
 
         // Função para fechar modal de edição
         function closeEditMotoristaModal() {
-            document.getElementById('edit-motorista-modal').style.display = 'none';
+            const modal = document.getElementById('edit-motorista-modal');
+            modal.classList.remove('show');
+            modal.style.display = 'none';
             document.getElementById('edit-motorista-form').reset();
         }
 
         // Função para cadastrar motorista
         async function cadastrarMotorista() {
             try {
+                // Validar CNH antes de enviar
+                if (!validateCnhBeforeSubmit('motorista-form')) {
+                    return;
+                }
+
                 const form = document.getElementById('motorista-form');
                 const formData = new FormData(form);
                 
@@ -784,6 +791,11 @@
         // Função para atualizar motorista
         async function atualizarMotorista() {
             try {
+                // Validar CNH antes de enviar
+                if (!validateCnhBeforeSubmit('edit-motorista-form')) {
+                    return;
+                }
+
                 const form = document.getElementById('edit-motorista-form');
                 const formData = new FormData(form);
                 const motoristaId = form.dataset.motoristaId;
@@ -979,7 +991,149 @@
                 const icon = document.querySelector('.theme-toggle i');
                 if (icon) icon.className = 'fas fa-moon';
             }
+            
+            // Adicionar validação de CNH aos campos
+            setupCnhValidation();
         });
+
+        // Funções de validação de CNH
+        function setupCnhValidation() {
+            const cnhInputs = [
+                document.getElementById('motorista-cnh'),
+                document.getElementById('edit-motorista-cnh')
+            ];
+
+            cnhInputs.forEach(input => {
+                if (input) {
+                    input.addEventListener('input', function(e) {
+                        formatCnh(e.target);
+                    });
+                    
+                    input.addEventListener('blur', function(e) {
+                        validateCnh(e.target);
+                    });
+                }
+            });
+        }
+
+        function formatCnh(input) {
+            // Remove caracteres não numéricos
+            let value = input.value.replace(/\D/g, '');
+            
+            // Limita a 11 dígitos
+            if (value.length > 11) {
+                value = value.substring(0, 11);
+            }
+            
+            // Aplica formatação visual (apenas visual, não afeta validação)
+            if (value.length >= 9) {
+                value = value.replace(/(\d{9})(\d{0,2})/, '$1$2');
+            }
+            
+            input.value = value;
+        }
+
+        function validateCnh(input) {
+            const cnh = input.value.replace(/\D/g, '');
+            const isValid = isValidCnh(cnh);
+            
+            // Remove classes de validação anteriores
+            input.classList.remove('valid', 'invalid');
+            
+            // Adiciona classe baseada na validação
+            if (cnh.length > 0) {
+                if (isValid) {
+                    input.classList.add('valid');
+                    showCnhFeedback(input, 'CNH válida', 'success');
+                } else {
+                    input.classList.add('invalid');
+                    showCnhFeedback(input, 'CNH inválida', 'error');
+                }
+            } else {
+                removeCnhFeedback(input);
+            }
+            
+            return isValid;
+        }
+
+        function isValidCnh(cnh) {
+            // Verifica se tem 11 dígitos
+            if (cnh.length !== 11) return false;
+            
+            // Verifica se não são todos os dígitos iguais
+            if (/^(\d)\1{10}$/.test(cnh)) return false;
+            
+            // Converter para array de números
+            const digitos = cnh.split('').map(Number);
+            
+            // ALGORITMO CNH CORRETO - Primeiro dígito verificador
+            const fatores1 = [9, 8, 7, 6, 5, 4, 3, 2, 1];
+            let soma1 = 0;
+            
+            for (let i = 0; i < 9; i++) {
+                soma1 += digitos[i] * fatores1[i];
+            }
+            
+            let dv1 = soma1 % 11;
+            if (dv1 >= 10) {
+                dv1 = 0;
+            }
+            
+            // Verificar se o primeiro DV está correto
+            if (dv1 !== digitos[9]) return false;
+            
+            // ALGORITMO CNH CORRETO - Segundo dígito verificador
+            const fatores2 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            let soma2 = 0;
+            
+            for (let i = 0; i < 9; i++) {
+                soma2 += digitos[i] * fatores2[i];
+            }
+            
+            soma2 += dv1 * 2; // Multiplicar o primeiro DV por 2
+            
+            let dv2 = soma2 % 11;
+            if (dv2 >= 10) {
+                dv2 = 0;
+            }
+            
+            // Verificar se o segundo DV está correto
+            return dv2 === digitos[10];
+        }
+
+        function showCnhFeedback(input, message, type) {
+            removeCnhFeedback(input);
+            
+            const feedback = document.createElement('div');
+            feedback.className = `cnh-feedback ${type}`;
+            feedback.textContent = message;
+            
+            input.parentNode.appendChild(feedback);
+        }
+
+        function removeCnhFeedback(input) {
+            const existingFeedback = input.parentNode.querySelector('.cnh-feedback');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+        }
+
+        // Validação antes do envio dos formulários
+        function validateCnhBeforeSubmit(formId) {
+            const form = document.getElementById(formId);
+            const cnhInput = form.querySelector('input[name="cnh"]');
+            
+            if (cnhInput) {
+                const isValid = validateCnh(cnhInput);
+                if (!isValid && cnhInput.value.trim() !== '') {
+                    showNotification('Por favor, insira uma CNH válida', 'error');
+                    cnhInput.focus();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
     </script>
 
     <style>
@@ -1617,6 +1771,76 @@
         body.light-mode .checkbox-label input[type="checkbox"]:checked + .checkmark {
             background-color: #468ADC !important;
             border-color: #468ADC !important;
+        }
+
+        /* Estilos para validação de CNH */
+        .form-group input.valid {
+            border-color: #48bb78 !important;
+            box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1) !important;
+        }
+
+        .form-group input.invalid {
+            border-color: #e53e3e !important;
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+        }
+
+        .cnh-feedback {
+            margin-top: 5px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cnh-feedback::before {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+
+        .cnh-feedback.success {
+            background: rgba(72, 187, 120, 0.1);
+            color: #48bb78;
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .cnh-feedback.success::before {
+            content: "\f00c"; /* fa-check */
+        }
+
+        .cnh-feedback.error {
+            background: rgba(229, 62, 62, 0.1);
+            color: #e53e3e;
+            border: 1px solid rgba(229, 62, 62, 0.3);
+        }
+
+        .cnh-feedback.error::before {
+            content: "\f00d"; /* fa-times */
+        }
+
+        /* Modo claro para validação de CNH */
+        body.light-mode .form-group input.valid {
+            border-color: #38a169 !important;
+            box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.1) !important;
+        }
+
+        body.light-mode .form-group input.invalid {
+            border-color: #e53e3e !important;
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+        }
+
+        body.light-mode .cnh-feedback.success {
+            background: rgba(56, 161, 105, 0.1);
+            color: #2f855a;
+            border-color: rgba(56, 161, 105, 0.3);
+        }
+
+        body.light-mode .cnh-feedback.error {
+            background: rgba(229, 62, 62, 0.1);
+            color: #c53030;
+            border-color: rgba(229, 62, 62, 0.3);
         }
 
     </style>

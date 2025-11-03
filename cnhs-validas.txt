@@ -1,0 +1,52 @@
+LISTA DE CNHs VÁLIDAS PARA TESTES
+=====================================
+
+CNHs válidas (11 dígitos) com dígitos verificadores CORRETOS:
+
+12345678900
+23456789022
+34567890156
+45678901290
+56789012336
+67890123492
+78901234550
+89012345628
+90123456707
+01234567809
+11111111113
+22222222226
+33333333339
+44444444441
+55555555554
+66666666667
+77777777770
+88888888882
+99999999995
+98765432100
+87654321096
+76543210973
+65432109840
+54321098705
+43210987660
+32109876503
+21098765446
+10987654378
+19283746565
+91827364543
+
+ALGORITMO CNH BRASILEIRO:
+========================
+
+1º Dígito Verificador:
+- Multiplica os 9 primeiros dígitos por: 9,8,7,6,5,4,3,2,1
+- Soma os resultados
+- Divide por 11 e pega o resto
+- Se resto ≥ 10, DV = 0
+
+2º Dígito Verificador:
+- Multiplica os 9 primeiros dígitos por: 1,2,3,4,5,6,7,8,9
+- Soma os resultados + (1º DV × 2)
+- Divide por 11 e pega o resto
+- Se resto ≥ 10, DV = 0
+
+GARANTIA: Todas as CNHs acima foram calculadas matematicamente e são VÁLIDAS!

@@ -19,7 +19,8 @@ const {
   ajustarCondicoes,
   getMonitoramentoTempoReal,
   getRelatoriosUsuarios,
-  deleteFrete
+  deleteFrete,
+  getFretesAtivos
 } = require('../controllers/adminController');
 
 // Aplicar autenticação e verificação de tipo de usuário em todas as rotas
@@ -28,6 +29,9 @@ router.use(requireAdmin);
 
 // Dashboard do administrador
 router.get('/dashboard', getDashboard);
+
+// Fretes ativos (sem filtro de mês)
+router.get('/fretes-ativos', getFretesAtivos);
 
 // Gerenciamento de usuários
 router.get('/users', getClientes); // Rota para listar todos os usuários

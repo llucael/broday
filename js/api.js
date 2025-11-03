@@ -216,6 +216,16 @@ class ApiService {
     throw new Error('Funcionalidade não disponível para este tipo de usuário');
   }
 
+  async deleteEndereco(enderecoId) {
+    const userType = getUserType();
+    if (userType === 'cliente') {
+      return await this.request(`/cliente/enderecos/${enderecoId}`, {
+        method: 'DELETE'
+      });
+    }
+    throw new Error('Funcionalidade não disponível para este tipo de usuário');
+  }
+
   // ===== MÉTODOS DE FRETE =====
 
   // Criar frete
